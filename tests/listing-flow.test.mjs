@@ -24,9 +24,9 @@ class FakeD1{
     return stmt;
   }
 }
-function context(body,method='POST',id){
+function context(body,method='POST',id,authenticated=true){
   const request=new Request('https://yukvinc.com.tr/api/listings'+(id?'/'+id:''),{
-    method,headers:{origin:'https://yukvinc.com.tr','content-type':'application/json',cookie:'__Host-yv_member=test-session'},
+    method,headers:{origin:'https://yukvinc.com.tr','content-type':'application/json',...(authenticated?{cookie:'__Host-yv_member=test-session'}:{})},
     ...(body===undefined?{}:{body:JSON.stringify(body)})
   });
   const waiting=[];
@@ -74,3 +74,5 @@ test('bad city returns a safe field-aware API error before an insert',async()=>{
   assert.equal(result.field,'city');
   assert.equal('stack'in result,false);
 });
+
+test('up to three compressed photos are accepted and a fourth is rejected',()=>{\n  const bytes=Buffer.from([0x52,0x49,0x46,0x46,0,0,0,0,0x57,0x45,0x42,0x50]);\n  const photo={mime_type:'image/webp',data:bytes.toString('base64')};\n  assert.equal(validatePhotoPayloads([photo,photo,photo]),true);\n  assert.throws(()=>validatePhotoPayloads([photo,photo,photo,photo]),/en fazla 3/);\n});\ntest('unauthenticated create, edit and delete are denied',async()=>{\n  const created=await onRequestPost(context(payload(), 'POST', undefined, false));\n  assert.equal(created.status,401);\n  assert.equal((await json(created)).code,'AUTH_REQUIRED');\n  const edited=await onRequestPatch(context(payload(), 'PATCH', 'listing_123456', false));\n  assert.equal(edited.status,401);\n  const removed=await onRequestDelete(context(undefined, 'DELETE', 'listing_123456', false));\n  assert.equal(removed.status,401);\n});\n
