@@ -73,7 +73,7 @@ function secure(response, request, isApi = false) {
   headers.set('content-security-policy', CSP);
   if (new URL(request.url).protocol === 'https:') headers.set('strict-transport-security', 'max-age=31536000');
   const path = new URL(request.url).pathname;
-  if (isApi || /^\\/(?:admin|giris|ilan-ver|hesabim|yonetici-kurulum)(?:\\/|$)/.test(path)) headers.set('x-robots-tag', 'noindex, nofollow');
+  if (isApi || /^\/(?:admin|giris|ilan-ver|hesabim|yonetici-kurulum)(?:\/|$)/.test(path)) headers.set('x-robots-tag', 'noindex, nofollow');
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
