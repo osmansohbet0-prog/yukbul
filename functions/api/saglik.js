@@ -38,6 +38,13 @@ export async function onRequestGet({env}){
   try{
     await env.DB.prepare('SELECT 1 AS ok').first();
     report.database.reachable=true;
+    try{
+      const tracking=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='d1_migrations'").first();
+      if(tracking){
+        const migrations=await env.DB.prepare('SELECT name FROM d1_migrations ORDER BY name').all();
+        report.database.migrations={tracking_table:true,applied:(migrations.results||[]).map(row=>String(row.name))};
+      }else report.database.migrations={tracking_table:false,applied:[]};
+    }catch{report.database.migrations={tracking_table:'unavailable',applied:[]}}
     for(const [name,required] of Object.entries(TABLES)){
       const columns=await tableInfo(env.DB,name);
       report.database.tables[name]={exists:columns.size>0,required_columns:required.map(column=>({name:column,exists:columns.has(column)}))};
