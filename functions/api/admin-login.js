@@ -1,4 +1,4 @@
-import {fail,json,isAllowedOrigin,readJson,rateLimited,noteAttempt,verifyPassword,randomId,digest,setCookie,audit,ipHash,equalSecret} from '../_lib/core.js';
+import {fail,json,isAllowedOrigin,readJson,rateLimited,noteAttempt,verifyPassword,randomId,digest,setCookie,audit,ipHash,equalSecret,ADMIN_EMAIL} from '../_lib/core.js';
 const DUMMY='pbkdf2$210000$MDEyMzQ1Njc4OWFiY2RlZg$4iB6f3p-jfQ5csC8mIi0oGZleGrJ2z1Tl3taRaVsmxM';
 export async function onRequestPost({request,env}) {
   if(!isAllowedOrigin(request))return fail('İstek kaynağı doğrulanamadı.',403);
@@ -8,6 +8,7 @@ export async function onRequestPost({request,env}) {
     if(await rateLimited(env,request,5))return fail('Çok fazla giriş denemesi. 15 dakika bekle.',429);
     await noteAttempt(env,request);
     const d=await readJson(request,4096), email=String(d.email||'').trim().toLowerCase(), password=String(d.password||''), securityCode=String(d.security_code||'');
+    if(email!==ADMIN_EMAIL)return fail('E-posta, şifre veya güvenlik kodu hatalı.',401);
     if(email.length>254||password.length>128||securityCode.length>128)return fail('E-posta, şifre veya güvenlik kodu hatalı.',401);
     const user=await env.DB.prepare("SELECT id,email,password_hash FROM users WHERE email_norm=? AND role='admin' AND active=1").bind(email).first();
     const valid=await verifyPassword(password,user?.password_hash||DUMMY);
