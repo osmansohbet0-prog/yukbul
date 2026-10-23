@@ -1,0 +1,6 @@
+import {json,fail,isAllowedOrigin,limited,clearAttempts,verifyTurnstile,loginMember,createSession,setMemberCookie,readMemberJson} from '../../_lib/member.js';
+import {audit} from '../../_lib/core.js';
+export async function onRequestPost({request,env}){
+ if(!isAllowedOrigin(request))return fail('İstek kaynağı doğrulanamadı.',403);if(!env.DB)return fail('D1 henüz bağlanmamış.',503);
+ try{if(await limited(env,request,'login',8,900))return fail('Çok fazla giriş denemesi. 15 dakika sonra tekrar dene.',429);const d=await readMemberJson(request,8192),email=String(d.email||'').trim().toLowerCase(),password=String(d.password||'');if(email.length>254||password.length>128)return fail('E-posta veya şifre hatalı.',401);if(!await verifyTurnstile(d.turnstile_token,request,env))return fail('Bot doğrulamasını tamamla.',403);const user=await loginMember(env,email,password);if(!user)return fail('E-posta veya şifre hatalı. Büyük-küçük harfleri kontrol et.',401);const token=await createSession(env,user.id);await clearAttempts(env,request,'login');await audit(env,user.id,'member.login','session',null,{});return json({ok:true,user:{id:user.id,email:user.email}},200,{'set-cookie':setMemberCookie(token)});}catch{return fail('Giriş işlemi tamamlanamadı.',400);}
+}

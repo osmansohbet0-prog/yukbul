@@ -1,0 +1,2 @@
+import {fail,json,requireAdmin} from '../_lib/core.js';
+export async function onRequestGet(context){const a=await requireAdmin(context);if(a.response)return a.response;try{const {results=[]}=await context.env.DB.prepare('SELECT a.id,u.email,a.action,a.entity_type,a.entity_id,a.metadata_json,a.created_at FROM admin_activity a LEFT JOIN users u ON u.id=a.actor_user_id ORDER BY a.created_at DESC LIMIT 100').all();return json({items:results});}catch{return fail('Yönetim hareketleri alınamadı.',503);}}

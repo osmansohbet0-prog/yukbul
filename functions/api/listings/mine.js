@@ -1,0 +1,2 @@
+import {json,fail,requireMember} from '../../_lib/member.js';
+export async function onRequestGet(context){const a=await requireMember(context);if(a.response)return a.response;try{const{results=[]}=await context.env.DB.prepare('SELECT id,listing_type,category,title,description,city,district,address,price_amount,price_unit,contact_phone,status,moderation_note,created_at FROM listings WHERE user_id=? AND status<>\'deleted\' ORDER BY created_at DESC LIMIT 100').bind(a.member.id).all();return json({items:results})}catch{return fail('İlanların alınamadı.',503)}}

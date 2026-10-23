@@ -1,0 +1,2 @@
+import {fail} from '../../_lib/member.js';
+export async function onRequestGet({params,env}){if(!env.DB)return fail('Görsel bulunamadı.',404);try{const r=await env.DB.prepare('SELECT mime_type,image_blob FROM site_assets WHERE id=?').bind(String(params.id||'')).first();if(!r)return fail('Görsel bulunamadı.',404);return new Response(r.image_blob,{headers:{'content-type':r.mime_type,'cache-control':'public,max-age=86400','x-content-type-options':'nosniff','content-disposition':'inline'}})}catch{return fail('Görsel bulunamadı.',404)}}
