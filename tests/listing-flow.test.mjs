@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {validateListing,validatePhotoPayloads,isNearDuplicate,redactForAI} from '../functions/_lib/listings.js';
 import {onRequestPost} from '../functions/api/listings/index.js';
 import {onRequestPatch,onRequestDelete} from '../functions/api/listings/[id].js';
+import {listingFailure} from '../functions/_lib/listing-errors.js';
 
 const listing=overrides=>({
   category:'crane',listing_type:'equipment',title:'50 ton mobil vinç kiralama',
@@ -90,4 +91,13 @@ test('unauthenticated create, edit and delete are denied',async()=>{
   assert.equal(edited.status,401);
   const removed=await onRequestDelete(context(undefined, 'DELETE', 'listing_123456', false));
   assert.equal(removed.status,401);
+});
+
+test('database and oversized request failures get safe diagnostic codes',async()=>{
+  const request=new Request('https://yukvinc.com.tr/api/listings',{method:'POST'});
+  const large=await listingFailure(new Error('İstek çok büyük.'),request,'test',413).json();
+  assert.equal(large.code,'REQUEST_TOO_LARGE');
+  const schema=await listingFailure(new Error('no such table: listings'),request,'test',500).json();
+  assert.equal(schema.code,'TABLE_MISSING');
+  assert.equal('stack' in schema,false);
 });
