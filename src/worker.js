@@ -15,6 +15,7 @@ import * as r12 from "../functions/api/auth/logout.js";
 import * as r13 from "../functions/api/auth/me.js";
 import * as r14 from "../functions/api/auth/password.js";
 import * as r15 from "../functions/api/auth/register.js";
+import * as r27 from "../functions/api/auth/google.js";
 import * as r16 from "../functions/api/listing-photo/[id].js";
 import * as r17 from "../functions/api/listings/[id]/report.js";
 import * as r18 from "../functions/api/listings/[id].js";
@@ -40,6 +41,7 @@ const ROUTES = [
   { path: '/api/admin-users', params: [], handlers: r9 },
   { path: '/api/ai/suggest', params: [], handlers: r10 },
   { path: '/api/auth/login', params: [], handlers: r11 },
+  { path: '/api/auth/google', params: [], handlers: r27 },
   { path: '/api/auth/logout', params: [], handlers: r12 },
   { path: '/api/auth/me', params: [], handlers: r13 },
   { path: '/api/auth/password', params: [], handlers: r14 },
@@ -58,7 +60,7 @@ const ROUTES = [
 ];
 
 const API_NOT_FOUND = () => Response.json({ error: 'Uç nokta bulunamadı.' }, { status: 404 });
-const CSP = "default-src 'self'; script-src 'self' https://challenges.cloudflare.com 'sha256-cuGDcrjM3cwUHCANhsm/i8vSNyU8cJb1acONQuNkTEQ='; frame-src https://challenges.cloudflare.com; style-src 'self'; img-src 'self' data:; connect-src 'self' https://challenges.cloudflare.com; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests";
+const CSP = "default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://accounts.google.com 'sha256-cuGDcrjM3cwUHCANhsm/i8vSNyU8cJb1acONQuNkTEQ='; frame-src https://challenges.cloudflare.com https://accounts.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.gstatic.com; connect-src 'self' https://challenges.cloudflare.com https://accounts.google.com; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests";
 
 function secure(response, request, isApi = false) {
   const headers = new Headers(response.headers);

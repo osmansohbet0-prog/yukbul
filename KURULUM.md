@@ -33,6 +33,7 @@ Hiçbir parola veya anahtar depoya yazılmamalıdır. Cloudflare Dashboard → *
 |---|---|---|
 | `TURNSTILE_SITE_KEY` | Text (açık anahtar) | Kayıt/giriş bot doğrulama widget'ı. Turnstile widget'ında `yukvinc.com.tr` ve `www.yukvinc.com.tr` hostname'leri tanımlı olmalı. |
 | `TURNSTILE_SECRET` | Secret | Turnstile sunucu doğrulaması. |
+| `GOOGLE_CLIENT_ID` | Text (açık istemci kimliği) | Google Identity Services web OAuth istemci kimliği; gizli anahtar değildir. |
 | `ADMIN_SECURITY_CODE` | Secret | Yönetici e-posta/şifresine ek güvenlik kodu; en az 8 karakter kullanın. |
 | `ADMIN_BOOTSTRAP_SECRET` | Secret, ilk kurulum için | İlk yönetici hesabını oluşturmak için en az 32 karakterli tek kullanımlık gizli değer. Hesap oluşturulunca kaldırın. |
 
@@ -44,6 +45,12 @@ Adımlar: **Add variable** → değişken adını yazın → değerini girin →
 2. `ADMIN_BOOTSTRAP_SECRET`, yönetici e-postası ve en az 14 karakterli güçlü bir parola girin. Bu işlem yalnızca ilk yönetici yoksa çalışır.
 3. Kurulum tamamlanınca Variables and Secrets'tan `ADMIN_BOOTSTRAP_SECRET` değerini silin.
 4. `/admin/` adresinde e-posta, parola ve `ADMIN_SECURITY_CODE` ile oturum açın.
+
+## Giriş, Turnstile ve Google
+
+Giriş/kayıt formunda gizli honeypot alanı ve Cloudflare Turnstile vardır; sunucu, her e-posta/şifre ve Google girişinde Turnstile yanıtını doğrular ve IP başına istekleri sınırlar. Turnstile için hem `TURNSTILE_SITE_KEY` hem `TURNSTILE_SECRET` Production değişkenleri gerekir; Turnstile widget'ında iki alan adı da izinli olmalıdır. Bu anahtarlar yoksa bot doğrulaması geçmez.
+
+Google girişini açmak için Google Cloud Console → **APIs & Services** → **OAuth consent screen** bölümünde uygulama adını ve gerekli iletişim e-postalarını tamamlayın. Ardından **Credentials** → **Create Credentials** → **OAuth client ID** → **Web application** seçin; Authorized JavaScript origins alanına `https://yukvinc.com.tr` ve `https://www.yukvinc.com.tr` ekleyin. OAuth client ID değerini Cloudflare Workers → yukbul → Settings → Variables and Secrets ekranında Production için `GOOGLE_CLIENT_ID` adlı Text değişkeni olarak ekleyin. Client secret bu Google Identity Services akışında kullanılmaz ve depoya eklenmez. Google hesabı e-postası doğrulanmış olmalı; kayıtlı aynı e-posta varsa o hesaba bağlanır. Yeni D1 kurulumu için aşağıdaki migration'ı önceki SQL dosyalarından sonra bir kez çalıştırın: `migrations/0003_google_accounts.sql`.
 
 Panelde ilan onayı, düzenleme ve kullanıcı yönetimi; site renkleri, logo, font, metin, SEO başlığı, SSS, bölüm sırası ve iletişim bilgileri bulunur. Yönetici paneli `noindex` olarak işaretlenmiştir. KVKK sayfasındaki gerçek ticari unvan, adres ve başvuru e-postasını yayın öncesi tamamlayın.
 
