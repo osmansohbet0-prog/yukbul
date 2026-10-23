@@ -75,4 +75,18 @@ test('bad city returns a safe field-aware API error before an insert',async()=>{
   assert.equal('stack'in result,false);
 });
 
-test('up to three compressed photos are accepted and a fourth is rejected',()=>{\n  const bytes=Buffer.from([0x52,0x49,0x46,0x46,0,0,0,0,0x57,0x45,0x42,0x50]);\n  const photo={mime_type:'image/webp',data:bytes.toString('base64')};\n  assert.equal(validatePhotoPayloads([photo,photo,photo]),true);\n  assert.throws(()=>validatePhotoPayloads([photo,photo,photo,photo]),/en fazla 3/);\n});\ntest('unauthenticated create, edit and delete are denied',async()=>{\n  const created=await onRequestPost(context(payload(), 'POST', undefined, false));\n  assert.equal(created.status,401);\n  assert.equal((await json(created)).code,'AUTH_REQUIRED');\n  const edited=await onRequestPatch(context(payload(), 'PATCH', 'listing_123456', false));\n  assert.equal(edited.status,401);\n  const removed=await onRequestDelete(context(undefined, 'DELETE', 'listing_123456', false));\n  assert.equal(removed.status,401);\n});\n
+test('up to three compressed photos are accepted and a fourth is rejected',()=>{
+  const bytes=Buffer.from([0x52,0x49,0x46,0x46,0,0,0,0,0x57,0x45,0x42,0x50]);
+  const photo={mime_type:'image/webp',data:bytes.toString('base64')};
+  assert.equal(validatePhotoPayloads([photo,photo,photo]),true);
+  assert.throws(()=>validatePhotoPayloads([photo,photo,photo,photo]),/en fazla 3/);
+});
+test('unauthenticated create, edit and delete are denied',async()=>{
+  const created=await onRequestPost(context(payload(), 'POST', undefined, false));
+  assert.equal(created.status,401);
+  assert.equal((await json(created)).code,'AUTH_REQUIRED');
+  const edited=await onRequestPatch(context(payload(), 'PATCH', 'listing_123456', false));
+  assert.equal(edited.status,401);
+  const removed=await onRequestDelete(context(undefined, 'DELETE', 'listing_123456', false));
+  assert.equal(removed.status,401);
+});
