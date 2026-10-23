@@ -56,6 +56,7 @@ const ROUTES = [
   { path: new RegExp("^/api/listings/([^/]+)/report$"), params: ['id'], handlers: r17 },
   { path: new RegExp("^/api/listings/([^/]+)$"), params: ['id'], handlers: r18 },
   { path: new RegExp("^/api/site\-asset/([^/]+)$"), params: ['id'], handlers: r22 },
+  { path: new RegExp("^/ilan/([^/]+)/([^/]+)$"), params: ['id', 'slug'], handlers: r23 },
   { path: new RegExp("^/ilan/([^/]+)$"), params: ['id'], handlers: r23 },
   { path: new RegExp("^/kategori/([^/]+)$"), params: ['slug'], handlers: r24 },
   { path: new RegExp("^/sehir/([^/]+)$"), params: ['slug'], handlers: r25 },
