@@ -75,7 +75,7 @@ function secure(response, request, isApi = false) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const host = (request.headers.get("host") || url.hostname).toLowerCase();
     if (host === "www.yukvinc.com.tr") {
@@ -97,7 +97,7 @@ export default {
       const method = request.method.toLowerCase();
       const handler = route.handlers[`onRequest${method[0].toUpperCase()}${method.slice(1)}`] || (method === "head" ? route.handlers.onRequestGet : undefined);
       if (!handler) return secure(new Response("Method not allowed", { status: 405, headers: { allow: Object.keys(route.handlers).filter((key) => key.startsWith("onRequest")).map((key) => key.slice(8).toUpperCase()).join(", ") } }), request, pathname.startsWith('/api/'));
-      const response = await handler({ request, env, params });
+      const response = await handler({ request, env, params, ctx });
       if (request.method === "HEAD") return secure(new Response(null, { status: response.status, statusText: response.statusText, headers: response.headers }), request, pathname.startsWith('/api/'));
       return secure(response, request, pathname.startsWith('/api/'));
     }
