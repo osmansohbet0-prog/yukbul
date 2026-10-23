@@ -17,7 +17,10 @@
     }
   ],
   "ai": { "binding": "AI" },
-  "vars": { "AI_ENABLED": "false" },
+  "vars": {
+    "AI_ENABLED": "false",
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAFix_9Aae1ng9JT8"
+  },
   "routes": [
     { "pattern": "yukvinc.com.tr", "custom_domain": true },
     { "pattern": "www.yukvinc.com.tr", "custom_domain": true }
