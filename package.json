@@ -1,8 +1,11 @@
 {
-  "name": "yukvinc-cloudflare-pages",
+  "name": "yukvinc-workers",
   "private": true,
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.134.0"
   }
 }
