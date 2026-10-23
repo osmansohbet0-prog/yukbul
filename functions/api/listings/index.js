@@ -23,7 +23,7 @@ export async function onRequestPost(context){
       return listingError(status===401?'AUTH_REQUIRED':status===503?'DB_BINDING_MISSING':'VALIDATION_FAILED',request,status);
     }
     if(await limited(env,request,'listing',8,3600))return listingError('RATE_LIMIT',request,429);
-    const data=await readMemberJson(request,2500000);
+    const data=await readMemberJson(request,7500000);
     const input=data.listing||{};
     const validation=validateListing(input);
     if(validation){
