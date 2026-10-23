@@ -38,7 +38,7 @@ export async function hashPassword(password) {
   const salt=new Uint8Array(16); crypto.getRandomValues(salt);
   const key=await crypto.subtle.importKey('raw',encoder.encode(password),'PBKDF2',false,['deriveBits']);
   const bits=await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt,iterations:PASSWORD_ITERATIONS},key,256);
-  return `pbkdf2${PASSWORD_ITERATIONS}$${toB64(salt)}$${toB64(new Uint8Array(bits))}`;
+  return `pbkdf2$${PASSWORD_ITERATIONS}$${toB64(salt)}$${toB64(new Uint8Array(bits))}`;
 }
 function fromB64(s) { const x=s.replace(/-/g,'+').replace(/_/g,'/'); const raw=atob(x+'='.repeat((4-x.length%4)%4)); return Uint8Array.from(raw,c=>c.charCodeAt(0)); }
 export async function verifyPassword(password, stored) {
