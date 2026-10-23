@@ -1,4 +1,5 @@
 // Former Pages handlers are bundled and dispatched through this single Workers entry.
+import * as health from "../functions/api/saglik.js";
 import * as r0 from "../functions/api/admin-activity.js";
 import * as r1 from "../functions/api/admin-bootstrap.js";
 import * as r2 from "../functions/api/admin-listings.js";
@@ -29,6 +30,7 @@ import * as r25 from "../functions/sehir/[slug].js";
 import * as r26 from "../functions/sitemap.xml.js";
 
 const ROUTES = [
+  { path: '/api/saglik', params: [], handlers: health },
   { path: '/api/admin-activity', params: [], handlers: r0 },
   { path: '/api/admin-bootstrap', params: [], handlers: r1 },
   { path: '/api/admin-listings', params: [], handlers: r2 },
