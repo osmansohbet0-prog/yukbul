@@ -17,7 +17,7 @@ const MESSAGES = {
 };
 function errorCode(error) {
   const m=String(error?.message||error||'');
-  if(/too large|body.*large|request.*size|limit.*body|413|istek.{0,20}çok büyük|form.{0,20}çok büyük/i.test(m))return 'REQUEST_TOO_LARGE';
+  if(/too large|body.*large|request.*size|limit.*body|413|çok büyük/i.test(m))return 'REQUEST_TOO_LARGE';
   if(/UNIQUE|unique constraint/i.test(m))return 'DUPLICATE_LISTING';
   if(/no such table|table .* does not exist/i.test(m))return 'TABLE_MISSING';
   if(/no such column|has no column named|column .* does not exist/i.test(m))return 'COLUMN_MISSING';
