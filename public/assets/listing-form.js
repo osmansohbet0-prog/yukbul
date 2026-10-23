@@ -1,5 +1,5 @@
 'use strict';
-const $=s=>document.querySelector(s),form=$('#listing-form'),panels=[...document.querySelectorAll('[data-step]')];let step=0,photos=[];
+const $=s=>document.querySelector(s),form=$('#listing-form'),panels=[...document.querySelectorAll('[data-step]')];let step=0,photos=[];const MAX_COMPRESSED_PHOTO_BYTES=1_800_000;
 const TURKISH_CITIES=["Adana","Adıyaman","Afyonkarahisar","Ağrı","Aksaray","Amasya","Ankara","Antalya","Ardahan","Artvin","Aydın","Balıkesir","Bartın","Batman","Bayburt","Bilecik","Bingöl","Bitlis","Bolu","Burdur","Bursa","Çanakkale","Çankırı","Çorum","Denizli","Diyarbakır","Düzce","Edirne","Elazığ","Erzincan","Erzurum","Eskişehir","Gaziantep","Giresun","Gümüşhane","Hakkari","Hatay","Iğdır","Isparta","İstanbul","İzmir","Kahramanmaraş","Karabük","Karaman","Kars","Kastamonu","Kayseri","Kilis","Kırıkkale","Kırklareli","Kırşehir","Kocaeli","Konya","Kütahya","Malatya","Manisa","Mardin","Mersin","Muğla","Muş","Nevşehir","Niğde","Ordu","Osmaniye","Rize","Sakarya","Samsun","Siirt","Sinop","Sivas","Şanlıurfa","Şırnak","Tekirdağ","Tokat","Trabzon","Tunceli","Uşak","Van","Yalova","Yozgat","Zonguldak"];
 const cityInput=form.elements.city,cityMenu=$('#city-options'),cityCollator=new Intl.Collator('tr',{sensitivity:'base'});
 const cityKey=v=>String(v||'').normalize('NFKC').toLocaleLowerCase('tr').trim();
@@ -38,15 +38,15 @@ async function compress(file){
   let blob=null;
   for(const quality of [.90,.85,.80,.75,.70,.65,.60,.55,.50,.45,.40,.35,.30,.25]){
    blob=await encode('image/webp',quality);
-   if(blob&&blob.type==='image/webp'&&blob.size<=1024*1024)break;
+   if(blob&&blob.type==='image/webp'&&blob.size<=MAX_COMPRESSED_PHOTO_BYTES)break;
   }
-  if(!blob||blob.type!=='image/webp'||blob.size>1024*1024){
+  if(!blob||blob.type!=='image/webp'||blob.size>MAX_COMPRESSED_PHOTO_BYTES){
    for(const quality of [.78,.68,.58,.48,.38,.28]){
     blob=await encode('image/jpeg',quality);
-    if(blob&&blob.type==='image/jpeg'&&blob.size<=1024*1024)break;
+    if(blob&&blob.type==='image/jpeg'&&blob.size<=MAX_COMPRESSED_PHOTO_BYTES)break;
    }
   }
-  if(!blob||blob.size>1024*1024)throw Error('Fotoğrafın çözünürlüğünü koruyarak güvenli boyuta sıkıştırılamadı. Daha küçük çözünürlüklü bir fotoğraf seç.');
+  if(!blob||blob.size>MAX_COMPRESSED_PHOTO_BYTES)throw Error('Fotoğraf 1,8 MB sınırının altına sıkıştırılamadı. JPG, PNG veya WebP fotoğraf seçip tekrar dene.');
   const data=await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=()=>no(Error('Fotoğraf okunamadı.'));r.readAsDataURL(blob)});
   return{mime_type:blob.type,data}
  }finally{img.close?.()}
