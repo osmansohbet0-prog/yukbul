@@ -16,7 +16,7 @@ function review(){const x=collect();$('#review-box').innerHTML=`<h3>İlan önizl
 $('#step-next').addEventListener('click',()=>{if(validStep(step)){if(step===1&&form.elements.category.value==='operator'){form.elements.price_amount.value='';form.elements.contact_phone.required=false}setStep(Math.min(2,step+1));note('')}});$('#step-back').addEventListener('click',()=>setStep(Math.max(0,step-1)));
 function setPhotoProgress(value,label,show=true){const box=$('#photo-upload-progress'),bar=$('#photo-upload-bar'),text=$('#photo-upload-label');if(!box)return;box.hidden=!show;if(bar)bar.value=value;if(text)text.textContent=label}
 async function compress(file){
- if(file.size>50*1024*1024)throw Error('Fotoğraf 50 MB sınırını aşamaz.');
+ if(file.size>100*1024*1024)throw Error('Fotoğraf 100 MB sınırını aşamaz.');
  if(!file.type.startsWith('image/'))throw Error('Fotoğraf dosyası seç.');
  let img;try{img=await createImageBitmap(file)}catch{throw Error('Bu fotoğraf biçimi bu tarayıcıda açılamadı. Telefonda fotoğrafı JPG olarak seçip yeniden dene.')}
  try{
