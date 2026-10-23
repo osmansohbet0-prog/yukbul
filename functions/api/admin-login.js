@@ -1,5 +1,5 @@
 import {fail,json,isAllowedOrigin,readJson,rateLimited,noteAttempt,verifyPassword,randomId,digest,setCookie,audit,ipHash,equalSecret,ADMIN_EMAIL} from '../_lib/core.js';
-const DUMMY='pbkdf2$210000$MDEyMzQ1Njc4OWFiY2RlZg$4iB6f3p-jfQ5csC8mIi0oGZleGrJ2z1Tl3taRaVsmxM';
+const DUMMY='pbkdf2$100000$MDEyMzQ1Njc4OWFiY2RlZg$4iB6f3p-jfQ5csC8mIi0oGZleGrJ2z1Tl3taRaVsmxM';
 export async function onRequestPost({request,env}) {
   if(!isAllowedOrigin(request))return fail('İstek kaynağı doğrulanamadı.',403);
   if(!env.DB)return fail('D1 bağlantısı henüz yapılmamış.',503);

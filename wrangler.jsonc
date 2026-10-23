@@ -13,6 +13,7 @@
     {
       "binding": "DB",
       "database_name": "yukvinc-db",
+      "database_id": "e7bba0a3-eb81-4122-9d16-7787d8fd531c",
       "migrations_dir": "migrations"
     }
   ],
