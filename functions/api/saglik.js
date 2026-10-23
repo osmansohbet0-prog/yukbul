@@ -16,7 +16,7 @@ export async function onRequestGet({env}){
   const report={
     ok:true,
     database:{binding:!!env.DB,reachable:false,tables:{}},
-    storage:{r2_binding:!!env.LISTING_IMAGES,photo_storage:'D1 BLOB'},
+    storage:{r2_binding_configured_in_code:false,photo_storage:'D1 BLOB'},
     bindings:{workers_ai:!!env.AI,assets:!!env.ASSETS},
     secrets:{
       turnstile_secret:!!env.TURNSTILE_SECRET,
