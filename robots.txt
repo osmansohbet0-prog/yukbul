@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /ilan-ver/
+Disallow: /giris/
+Sitemap: https://yukvinc.com.tr/sitemap.xml
