@@ -28,7 +28,8 @@ export async function onRequestPost(context){
     const validation=validateListing(input);
     if(validation){
       const code=validation.startsWith('81 ilden')?'CITY_INVALID':'VALIDATION_FAILED';
-      return listingError(code,request,400,code==='CITY_INVALID'?'city':undefined);
+      const field=code==='CITY_INVALID'?'city':/Kategori/.test(validation)?'category':/Başlık/.test(validation)?'title':/Açıklama/.test(validation)?'description':/İlçe/.test(validation)?'district':/telefon|İletişim/.test(validation)?'contact_phone':/Fiyat/.test(validation)?'price_amount':/Adres/.test(validation)?'address':undefined;
+      return listingError(code,request,400,field);
     }
     if(data.privacy_ok!==true)return listingError('VALIDATION_FAILED',request,400,'privacy_ok');
     if(typeof data.hp==='string'&&data.hp.trim())return listingError('VALIDATION_FAILED',request,400);
