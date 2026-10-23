@@ -23,7 +23,7 @@ export async function readMemberJson(request,max=20000){
    return data;
   }
   throw new Error('Desteklenmeyen form türü.');
- }catch{throw new Error('Form verileri okunamadı.')}
+ }catch(e){if(String(e?.message||'').includes('İstek çok büyük'))throw new Error('İstek çok büyük.');throw new Error('Form verileri okunamadı.')}
 }
 export async function createMember(env,email,password){const id=randomId(16),encoded=await hashPassword(password);await env.DB.prepare("INSERT INTO users(id,email,email_norm,password_hash,role,active) VALUES(?,?,?,?,'member',1)").bind(id,email,email,encoded).run();return{id,email,role:'member'};}
 export async function loginMember(env,email,password){const user=await env.DB.prepare("SELECT id,email,password_hash,role,active FROM users WHERE email_norm=? AND role='member'").bind(email).first();const dummy='pbkdf2$100000$MDEyMzQ1Njc4OWFiY2RlZg$4iB6f3p-jfQ5csC8mIi0oGZleGrJ2z1Tl3taRaVsmxM';const ok=await verifyPassword(password,user?.password_hash||dummy);return user&&Number(user.active)===1&&ok?{id:user.id,email:user.email,role:user.role}:null;}
