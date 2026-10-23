@@ -1,5 +1,6 @@
 export const COOKIE = '__Host-yv_admin';
 export const SESSION_SECONDS = 30 * 60;
+export const ADMIN_EMAIL = 'osmansohbet0@gmail.com';
 const encoder = new TextEncoder();
 const ALLOWED_ORIGINS = new Set(['https://yukvinc.com.tr', 'https://www.yukvinc.com.tr']);
 const DEFAULT_SITE = {
@@ -57,7 +58,7 @@ export function clearCookie() { return `${COOKIE}=; Path=/; Max-Age=0; HttpOnly;
 export async function currentAdmin(request, env) {
   const token=cookieValue(request); if(!token)return null;
   const tokenHash=await digest(token);
-  const row=await env.DB.prepare(`SELECT u.id,u.email,u.role FROM admin_sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>? AND u.active=1 AND u.role='admin'`).bind(tokenHash,Math.floor(Date.now()/1000)).first();
+  const row=await env.DB.prepare(`SELECT u.id,u.email,u.role FROM admin_sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>? AND u.active=1 AND u.role='admin' AND u.email_norm=?`).bind(tokenHash,Math.floor(Date.now()/1000),ADMIN_EMAIL).first();
   return row||null;
 }
 export async function requireAdmin(context) {
