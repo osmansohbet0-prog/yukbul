@@ -23,6 +23,7 @@ class FakeD1{
     }};
     return stmt;
   }
+  async batch(statements){for(const statement of statements)await statement.run();return statements.map(()=>({meta:{changes:1}}))}
 }
 function context(body,method='POST',id,authenticated=true){
   const request=new Request('https://yukvinc.com.tr/api/listings'+(id?'/'+id:''),{
