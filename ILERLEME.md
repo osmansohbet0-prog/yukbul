@@ -50,3 +50,12 @@
 - Aşama 4: Armut teklif/karşılaştırma akışı, Çekici Bul konum + araç + teklif karşılaştırması, 24destek mesafe hesaplama ve sektör ilanlarındaki makine kapasitesi bilgileri araştırıldı. Uygulanabilir dersler: teklif isteme, standart ekipman özellikleri, açık fiyat birimi, mesafe hesabı, gerçek yorum/kanıt koşulları. Sahte yorum/puan eklenmedi.
 - GitHub checks API bu commitlerde `statuses: []` döndürüyor; başarılı build check görünür değil. `main`'e birleştirme/deploy yapılmadı. Cloudflare API erişimi açıldı; D1 production şeması ve migration geçmişi doğrudan doğrulandı. Worker build yayın durumu ayrıca doğrulanmalı.
 - Kalan: Cloudflare deploy/check ve /api/saglik + Workers Logs doğrulaması; gerçek fotoğraflı kullanıcı akışı; gerekiyorsa D1 migration uyumsuzluğunu canlı migration tablosuyla belirleme. Taslak kaydetme, yenileme/yayından kaldırma ve sektöre özgü kapasite şeması değişikliği migration belirsizliği nedeniyle ana dala alınmadı.
+
+## 2026-10-23T23:21:00Z — Cloudflare Preview build ve güvenli test ortamı
+- Workers Builds Preview ilk denemesi wrangler.jsonc dosyasında zorunlu previews bloğu bulunmadığı için başarısız oldu. Hata build logundan doğrulandı.
+- Canlı DB'den ayrı, ücretli özellik kullanmayan yukvinc-preview D1 oluşturuldu; repo migration'ları izole preview DB'ye uygulandı. Preview'da AI kapalı; üretim D1'i kullanılmıyor.
+- wrangler.jsonc içine preview vars, DB ve AI bağları eklendi. İkinci Cloudflare Preview build 2026-10-23 23:19 UTC'de başarılı bitti. Worker Preview URL, hesapta Version/Preview URL devre dışı olduğu için yorumda paylaşılmadı.
+- GitHub PR #2, 39ba4b4 commit'i üzerinde açık ve hazır. Cloudflare Preview Build başarılı; GitHub combined status ve Actions workflow API'leri boş durum döndürdü.
+- Birleştirme otomatik inceleme tarafından reddedildi: kullanıcı şartı olan yeşil GitHub status/check doğrulanamıyor. Main korunuyor; kontrolü atlatma girişimi yapılmayacak. PR ve geliştirme dalı GitHub'da yayınlanmış durumda.
+- Canlı D1 hatası düzeltildi ve yazma/temizleme probe'u doğrulandı. Gerçek kullanıcıyla canlı fotoğraf yükleme testi yapılmadı; üretim hesabı/oturumu kullanılmadı. İstemci ve API akışına ait 10 otomatik test önceki aşamada geçti.
+- Sonraki adım: Cloudflare Preview URL'lerini Worker Settings > Domains & Routes > Version URLs üzerinden açarsan Preview uçtan uca test edilebilir. Açılmadan kod değişikliğinin main'e alınması, kullanıcının yeşil GitHub check koşuluna uymuyor.
