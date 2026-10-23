@@ -11,7 +11,20 @@ export async function verifyTurnstile(token,request,env){if(!env.TURNSTILE_SECRE
 export async function limited(env,request,action,max=8,windowSecs=3600){const h=await ipHash(request),now=Math.floor(Date.now()/1000);await env.DB.prepare('DELETE FROM user_login_attempts WHERE created_at<?').bind(now-86400).run();const r=await env.DB.prepare('SELECT COUNT(*) n FROM user_login_attempts WHERE ip_hash=? AND action=? AND created_at>?').bind(h,action,now-windowSecs).first();if(Number(r?.n||0)>=max)return true;await env.DB.prepare('INSERT INTO user_login_attempts(ip_hash,action) VALUES(?,?)').bind(h,action).run();return false;}
 export async function clearAttempts(env,request,action){await env.DB.prepare('DELETE FROM user_login_attempts WHERE ip_hash=? AND action=?').bind(await ipHash(request),action).run();}
 export async function createSession(env,userId){const token=randomId(32),hash=await digest(token),now=Math.floor(Date.now()/1000);await env.DB.prepare('DELETE FROM user_sessions WHERE expires_at<=?').bind(now).run();await env.DB.prepare('INSERT INTO user_sessions(token_hash,user_id,expires_at) VALUES(?,?,?)').bind(hash,userId,now+MEMBER_SECONDS).run();return token;}
-export async function readMemberJson(request,max=20000){try{return await readJson(request,max)}catch(e){throw new Error(e.message==='JSON bekleniyor.'?'Form verileri okunamadı.':'Form alanlarını kontrol et.')}}
+export async function readMemberJson(request,max=20000){
+ const type=(request.headers.get('content-type')||'').toLowerCase();
+ try{
+  if(type.includes('application/json'))return await readJson(request,max);
+  if(type.includes('application/x-www-form-urlencoded')){
+   const raw=await request.text();
+   if(raw.length>max)throw new Error('İstek çok büyük.');
+   const params=new URLSearchParams(raw),data={};
+   for(const [key,value] of params){if(Object.prototype.hasOwnProperty.call(data,key))throw new Error('Tekrarlanan alan.');data[key]=value}
+   return data;
+  }
+  throw new Error('Desteklenmeyen form türü.');
+ }catch{throw new Error('Form verileri okunamadı.')}
+}
 export async function createMember(env,email,password){const id=randomId(16),encoded=await hashPassword(password);await env.DB.prepare("INSERT INTO users(id,email,email_norm,password_hash,role,active) VALUES(?,?,?,?,'member',1)").bind(id,email,email,encoded).run();return{id,email,role:'member'};}
 export async function loginMember(env,email,password){const user=await env.DB.prepare("SELECT id,email,password_hash,role,active FROM users WHERE email_norm=? AND role='member'").bind(email).first();const dummy='pbkdf2$210000$MDEyMzQ1Njc4OWFiY2RlZg$4iB6f3p-jfQ5csC8mIi0oGZleGrJ2z1Tl3taRaVsmxM';const ok=await verifyPassword(password,user?.password_hash||dummy);return user&&Number(user.active)===1&&ok?{id:user.id,email:user.email,role:user.role}:null;}
 export {json,fail,randomId,digest,hashPassword,verifyPassword,isAllowedOrigin,ipHash};
