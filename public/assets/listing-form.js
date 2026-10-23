@@ -18,12 +18,22 @@ function setPhotoProgress(value,label,show=true){const box=$('#photo-upload-prog
 async function compress(file){
  if(file.size>100*1024*1024)throw Error('Fotoğraf 100 MB sınırını aşamaz.');
  if(!file.type.startsWith('image/'))throw Error('Fotoğraf dosyası seç.');
- let img;try{img=await createImageBitmap(file)}catch{throw Error('Bu fotoğraf biçimi bu tarayıcıda açılamadı. Telefonda fotoğrafı JPG olarak seçip yeniden dene.')}
+ let img;
+ if(typeof createImageBitmap==='function'){try{img=await createImageBitmap(file)}catch{}}
+ if(!img){
+  img=await new Promise((resolve,reject)=>{
+   const url=URL.createObjectURL(file),image=new Image();
+   image.onload=()=>{URL.revokeObjectURL(url);resolve(image)};
+   image.onerror=()=>{URL.revokeObjectURL(url);reject(Error('Bu fotoğraf biçimi bu tarayıcıda açılamadı. JPG, PNG veya WebP fotoğraf seçip yeniden dene.'))};
+   image.src=url;
+  });
+ }
  try{
-  if(!img.width||!img.height||img.width*img.height>64_000_000)throw Error('Fotoğrafın çözünürlüğü bu cihazın güvenli işleme sınırını aşıyor.');
-  const canvas=document.createElement('canvas');canvas.width=img.width;canvas.height=img.height;
+  const width=img.width||img.naturalWidth,height=img.height||img.naturalHeight;
+  if(!width||!height||width*height>64_000_000)throw Error('Fotoğrafın çözünürlüğü bu cihazın güvenli işleme sınırını aşıyor.');
+  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
   const ctx=canvas.getContext('2d',{alpha:false});if(!ctx)throw Error('Fotoğraf düzenleyici başlatılamadı.');
-  ctx.drawImage(img,0,0,canvas.width,canvas.height);
+  ctx.drawImage(img,0,0,width,height);
   const encode=(type,q)=>new Promise(ok=>canvas.toBlob(ok,type,q));
   let blob=null;
   for(const quality of [.90,.85,.80,.75,.70,.65,.60,.55,.50,.45,.40,.35,.30,.25]){
