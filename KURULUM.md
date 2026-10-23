@@ -1,78 +1,56 @@
-# YükVinç — GitHub ve Cloudflare Pages kurulumu
+# YükVinç — GitHub ve Cloudflare Workers
 
-Bu paket Aşama 1–3 kaynak kodunu içerir. Site görünümü korunur; ana sayfa artık örnek kart yerine yönetici onaylı gerçek ilanları okur. Admin görünümünde renk, yazı tipi, logo/kapak görseli, SEO başlığı/açıklaması, iletişim metinleri, SSS ve bölüm sırası düzenlenebilir. Üye kaydı/girişi, ilan verme ve fotoğraflar Cloudflare D1 üzerinde çalışır.
+Bu depo tek bir Cloudflare Worker üzerinden statik siteyi ve eski Pages Functions API rotalarını yayımlar. Marka/canonical alan adı `https://yukvinc.com.tr`; `www.yukvinc.com.tr` otomatik olarak ana alan adına yönlenir. Görünüm korunmuştur. Site; üye girişi, ilan verme, yönetici onayı, görseller, içerik ayarları, şikayetler ve SEO sayfalarını içerir.
 
-**Canlıya almadan önce:** D1 migration dosyalarını çalıştırın, Pages ayarlarında `DB` binding ile Turnstile anahtarlarını ekleyin, ilk admin hesabını kurun ve admin iletişim alanlarına gerçek bilgileri girin. Gizli değerleri GitHub'a yüklemeyin.
+## Depodaki dağıtım yapılandırması
 
-## 1. GitHub'a yükleme (bilgisayarda komut satırı gerekmez)
+`wrangler.jsonc` Workers giriş dosyasını (`src/worker.js`), `public` statik varlıklarını, D1 (`DB`), Workers AI (`AI`), gözlemlenebilirliği ve iki custom domain'i tanımlar. `wrangler` sürümü 4.134 veya sonrası olacak şekilde `package.json` içinde tutulur. Wrangler 4.45 ve sonrasında D1 binding'i kimlik numarası olmadan tanımlandığında veritabanı otomatik oluşturulabilir; adı `yukvinc-db` olarak belirlenmiştir. Bu, önceki Pages kurulumunda kullanılan veritabanını tekrar bulabilmesi içindir.
 
-1. GitHub'da `yukbul` deposunu açın. Değişiklikleri geri alabilmek için mevcut depo dosyalarının bir kopyasını indirin.
-2. Bu ZIP'i bilgisayarınıza indirin ve açın. ZIP içindeki `public`, `functions`, `migrations`, `tests` klasörleri ile `package.json` ve `KURULUM.md` dosyalarını seçin. ZIP'in kendisini değil, içeriğini yükleyin.
-3. GitHub'da **Add file > Upload files** seçin. Dosyaları deponun köküne sürükleyin; klasör yolları aynı kalsın. Örneğin `public/index.html`, `functions/api/auth/register.js`, `migrations/0002_accounts_marketplace.sql`.
-4. Sayfanın altındaki **Commit changes** düğmesiyle kaydedin. Aynı adlı dosyalar güncellenir; yeni dosya ve klasörler eklenir. ZIP'teki bir dosya GitHub'da bulunmuyorsa ve artık kullanılmıyorsa eski dosyayı ayrıca silin.
-5. Cloudflare **Workers & Pages > yukvinc projesi > Settings > Builds & deployments** ekranında Framework preset'i **None**, Build output directory değerini `public`, Root directory değerini boş bırakın. Build command boş kalabilir. Proje GitHub'a bağlı olmalı; her commit otomatik yayın başlatır.
+`functions/` içindeki modüller Pages çalışma zamanında çalıştırılmaz; `src/worker.js` bunları Worker içinden açıkça yönlendirir. API yolları, SEO sayfaları ve `/sitemap.xml` aynı adresleri kullanır. Statik dosyalar `env.ASSETS.fetch()` ile sunulur. `www` yönlendirmesi Worker'da yapılır. Pages'e özel `_routes.json` ve hataya yol açan tam URL'li `_redirects` kaldırılmıştır.
 
-## 2. D1 veritabanı
+## GitHub ve Workers Builds
 
-Daha önce Aşama 2 kurulumu yapıldıysa `0001_initial.sql` zaten çalışmıştır. Bu durumda yalnızca `migrations/0002_accounts_marketplace.sql` dosyasını **bir kez** çalıştırın. D1 hiç kurulmadıysa önce `0001_initial.sql`, ardından `0002_accounts_marketplace.sql` çalıştırın.
+Depoda `main` dalına commit geldiğinde Workers Builds yapılandırmanızdaki `npx wrangler deploy` komutu çalışır. Eski sağlayıcı yapılandırma dosyaları ve Pages yönlendirme dosyası repodan kaldırılmıştır. Dağıtımı Cloudflare/GitHub check ekranında izleyin. `wrangler.jsonc` ve giriş kodu, bu komutun kullanacağı tek Worker'ı tanımlar.
 
-1. Cloudflare **Workers & Pages > D1 SQL Database > yukvinc-db > Console** ekranını açın.
-2. İlgili SQL dosyasını bilgisayarda metin düzenleyiciyle açıp tümünü kopyalayın; D1 Console'a yapıştırıp **Execute** seçin.
-3. Tables ekranında `users`, `listings`, `listing_photos`, `listing_reports`, `site_settings`, `admin_sessions`, `user_sessions`, `site_assets` ve `ai_usage` tablolarını görün.
-4. D1 görselleri de küçük BLOB kayıtları olarak saklar; üçüncü taraf görsel alanı veya R2 gerekmez. İlan başına en çok üç görsel, her biri 200 KB; admin logo/kapak dosyaları 350 KB ile sınırlıdır. Bu, ilk küçük kullanım için uygun çözümdür; D1 Free toplam 500 MB ve satır/BLOB başına 2 MB sınırına sahiptir. Günlük ücretsiz okuma/yazma kotaları aşılırsa sorgular kota yenilenene dek durabilir. Kullanım büyürse ücretli depolama/Workers planına geçmeden önce onay alın. Cloudflare D1 limitleri ve fiyat bilgisi: https://developers.cloudflare.com/d1/platform/limits/ ve https://developers.cloudflare.com/d1/platform/pricing/.
+## D1 ve SQL migration'ları
 
-## 3. D1'i Pages'e bağlama
+D1 otomatik kaynak oluşturma Wrangler 4.45+ ile kullanılabilir; mevcut `yukvinc-db` bulunursa ona bağlanır, yoksa oluşturur. **Worker deploy'u SQL migration dosyalarını kendiliğinden çalıştırmaz.** İlk deployment D1'i oluşturduktan sonra bu tek seferlik işlem gerekir:
 
-1. Cloudflare **Workers & Pages > yukvinc > Settings > Bindings > Add > D1 database** seçin.
-2. Variable name alanına tam olarak `DB` yazın, `yukvinc-db` veritabanını seçip kaydedin.
-3. Önizleme alan adlarında API yazma işlemleri güvenlik nedeniyle kapalıdır; uçtan uca hesap/ilan testini özel alan adınız açıldıktan sonra yapın. **Deployments > Retry deployment** ile yeniden yayınlayın.
+1. Cloudflare Dashboard → **Workers & Pages** → **D1 SQL Database** → `yukvinc-db` → **Console**.
+2. `migrations/0001_initial.sql` dosyasını açıp içeriğini Console'a yapıştırın ve çalıştırın.
+3. `migrations/0002_accounts_marketplace.sql` dosyasını aynı şekilde çalıştırın.
+4. Veritabanı daha önce kurulduysa SQL Console’da `PRAGMA table_info(listings);` ve `PRAGMA table_info(listing_photos);` ile `content_hash`, `mime_type`, `byte_size` ve `image_blob` sütunlarını kontrol edin. `0001` tabloları yoksa iki dosyayı sırayla çalıştırın; tablolar var ama bu sütunlar yoksa yalnızca `0002` çalıştırın. Sütunlar zaten varsa migration dosyalarını yeniden çalıştırmayın.
 
-## 4. Turnstile ve gizli ayarlar
+Bu adım, mevcut sabit `npx wrangler deploy` komutuna güvenli ve desteklenen biçimde eklenemiyor: Cloudflare deploy aşaması kaynak kodunu dağıtır, D1 SQL migration'larını çalıştırmaz. D1 veritabanı adı ile `wrangler.jsonc` içindeki `yukvinc-db` aynı olmalı.
 
-Turnstile, kayıt/giriş bot korumasıdır. Cloudflare **Turnstile > Add widget** ekranında `yukvinc.com.tr` ve `www.yukvinc.com.tr` hostnamelerini ekleyin. Cloudflare'ın gösterdiği Site Key herkese açık anahtardır; Secret Key gizlidir.
+İlan fotoğrafları D1'de küçük BLOB olarak saklanır; R2 gerekmez. İlan başına en fazla üç fotoğraf vardır. Kullanım kotaları veya saklama sınırları büyürse ücretli plana geçmeden önce onay alın.
 
-Pages projesinde **Settings > Variables and Secrets > Add** açın ve Production ortamına ekleyin:
+## Gerekli değişkenler ve gizli anahtarlar
 
-| Ad | Tür | Nerede kullanılır |
+Hiçbir parola veya anahtar depoya yazılmamalıdır. Cloudflare Dashboard → **Workers & Pages** → **yukbul** → **Settings** → **Variables and Secrets** ekranında aşağıdakileri Production ortamına ekleyin; Secret türündekileri **Encrypt** olarak kaydedin:
+
+| Ad | Tür | Açıklama |
 |---|---|---|
-| `TURNSTILE_SITE_KEY` | Text (public key) | Üye giriş/kayıt ekranındaki doğrulama kutusu |
-| `TURNSTILE_SECRET` | Secret / Encrypt | Sunucunun Turnstile doğrulaması |
-| `ADMIN_SECURITY_CODE` | Secret / Encrypt | Admin girişinde parola yanındaki ek güvenlik kodu |
-| `ADMIN_BOOTSTRAP_SECRET` | Secret / Encrypt, yalnızca ilk kurulumda | İlk admin hesabını bir defa açar; admin kurulduktan sonra silin |
+| `TURNSTILE_SITE_KEY` | Text (açık anahtar) | Kayıt/giriş bot doğrulama widget'ı. Turnstile widget'ında `yukvinc.com.tr` ve `www.yukvinc.com.tr` hostname'leri tanımlı olmalı. |
+| `TURNSTILE_SECRET` | Secret | Turnstile sunucu doğrulaması. |
+| `ADMIN_SECURITY_CODE` | Secret | Yönetici e-posta/şifresine ek güvenlik kodu; en az 8 karakter kullanın. |
+| `ADMIN_BOOTSTRAP_SECRET` | Secret, ilk kurulum için | İlk yönetici hesabını oluşturmak için en az 32 karakterli tek kullanımlık gizli değer. Hesap oluşturulunca kaldırın. |
 
-`ADMIN_SECURITY_CODE` için en az 8 karakterli, tahmin edilmesi zor yeni bir kod kullanın. `ADMIN_BOOTSTRAP_SECRET` en az 32 karakterli rastgele bir değer olsun. Bu değerleri sohbet, dosya veya GitHub'a yazmayın; ayarları kaydettikten sonra yeni deployment başlatın. Daha önce admin oluşturduysanız tekrar bootstrap yapmayın; yalnızca `ADMIN_SECURITY_CODE` kontrol edin.
+Adımlar: **Add variable** → değişken adını yazın → değerini girin → Secret için **Encrypt** seçin → **Save**. Site key gizli değildir, diğer üç değer gizlidir. Anahtar değerlerini bana veya GitHub'a göndermeyin. `AI_ENABLED` yapılandırmada `false` olarak kalır; böylece AI çağrısı yapılmaz. Workers AI'ı açmak isteğe bağlıdır; hesabınızın ücretsiz kullanımını doğrulamadan veya ücret gerekirse onay almadan etkinleştirmeyin.
 
-## 5. Admin hesabı ve panel
+## İlk yönetici ve panel
 
-İlk yönetici hesabı henüz oluşturulmadıysa HTTPS alan adınız açıldıktan sonra `/yonetici-kurulum/` adresini açın. Secret, yönetici e-postası ve güçlü bir parola girin. Başarı mesajından sonra Cloudflare Secrets listesinden `ADMIN_BOOTSTRAP_SECRET` değerini silin. Admin'e `/admin/` adresinden e-posta, parola ve `ADMIN_SECURITY_CODE` ile girin.
+1. Secret'ları kaydedip Worker dağıtıldıktan ve D1 migration'ları tamamlandıktan sonra `https://yukvinc.com.tr/yonetici-kurulum/` adresini açın.
+2. `ADMIN_BOOTSTRAP_SECRET`, yönetici e-postası ve en az 14 karakterli güçlü bir parola girin. Bu işlem yalnızca ilk yönetici yoksa çalışır.
+3. Kurulum tamamlanınca Variables and Secrets'tan `ADMIN_BOOTSTRAP_SECRET` değerini silin.
+4. `/admin/` adresinde e-posta, parola ve `ADMIN_SECURITY_CODE` ile oturum açın.
 
-Admin'de **Site tasarımı** bölümünden renk, font, logo/kapak dosyası, ana başlık, tanıtım, Google başlığı/açıklaması, FAQ, iletişim alanları ve bölüm sırası değişir. “Dosya seç” ile logo veya kapak görselini doğrudan panele yükleyebilirsiniz. Önizleme alanı yazarken anında güncellenir. **İlanlar** sekmesinde admin ilanı ekleyebilir; kullanıcı ilanlarını düzenleyip onaylayabilir, reddedebilir veya kaldırabilir. **Kullanıcılar** sekmesinde hesabı kapatmak tüm kullanıcı oturumlarını da iptal eder.
+Panelde ilan onayı, düzenleme ve kullanıcı yönetimi; site renkleri, logo, font, metin, SEO başlığı, SSS, bölüm sırası ve iletişim bilgileri bulunur. Yönetici paneli `noindex` olarak işaretlenmiştir. KVKK sayfasındaki gerçek ticari unvan, adres ve başvuru e-postasını yayın öncesi tamamlayın.
 
-Admin e-posta/telefon/adres alanları şu anda bilerek boş başlar. Admin'den gerçek iletişim verilerini ekleyin. Kullanıcıların ilan telefonu, kullanıcı açıkça rıza verdiğinde ilan detay sayfasında görünür; şirket adına sahte telefon/WhatsApp düğmesi eklenmez.
+## Son kontrol
 
-## 6. Google ve SEO
-
-Ana sayfa için başlık/açıklama admin panelinden değişir. Onaylı ilan detayları sunucu tarafında başlık, açıklama, canonical ve WebPage JSON-LD ile oluşturulur. Sitemap onaylı ilanları, ilan şehri ve dolu kategorileri otomatik ekler: `https://yukvinc.com.tr/sitemap.xml`. Yayımlanmamış ilanlar Google'a açılmaz. Sahte şehir/hizmet sayfaları veya LocalBusiness işletme şeması eklenmedi; bu bir ilan pazaryeridir, doğrulanmış tek bir yerel şirket/filo bilgisi verilmedi.
-
-1. Cloudflare'da **Workers & Pages > yukvinc > Custom domains** altında `yukvinc.com.tr` ve `www.yukvinc.com.tr` etkin olsun. `www` ana alan adına yönlenir; canonical URL `https://yukvinc.com.tr`.
-2. Google Search Console'da `https://yukvinc.com.tr` alan adının doğrulanmış mülkünü açın. Site taşındıysa yeni mülkte **Sitemaps** ekranına `sitemap.xml` gönderin.
-3. Yayından sonra URL Inspection ile ana sayfayı ve örnek bir *onaylı ilan* detayını kontrol edip gerekirse bir kez **Request indexing** seçin. Tarama/dizin oluşturma birkaç gün ya da daha uzun sürebilir; Google sıralama veya dizine alma garantisi vermez. Search Console yalnızca erişebildiğiniz mülkün URL'leri için dizin isteği alır: https://developers.google.com/search/docs/crawling-indexing/ask-google-to-recrawl.
-4. “Vinç kirala” veya “şehir yol yardım” aramalarında rekabetçi görünürlük; gerçek ilanların, kullanıcıların doldurduğu özgün açıklamaların, şehir bazlı arzın, erişilebilir sayfaların ve güvenilir dış bağlantıların zamanla oluşmasına bağlıdır. Onaysız/boş şehir sayfaları indekslenmez; arama konumunu kodla garanti etmek mümkün değildir. Google çok sayıda özgün olmayan yapay sayfayı sıralama manipülasyonu sayabilir: https://developers.google.com/search/docs/essentials/spam-policies.
-
-## 7. Test akışı
-
-Ayarlar ve migration sonrası şu sırayla kontrol edin:
-
-1. `https://yukvinc.com.tr/giris/` adresinde bir test üye hesabı açın; Turnstile kutusunu bir kez doğrulayın.
-2. `/ilan-ver/` ekranında vinç, oto kurtarıcı, sepetli platform, iş makinesi, nakliyat asansörü veya operatör türü seçin. İl/ilçe, açıklama, iletişim telefonu girin; adresi boş bırakabilirsiniz. En fazla üç küçük fotoğraf ekleyip son adımda onaya gönderin.
-3. `/hesabim/` sayfasında ilanı “Onay bekliyor” görün. Admin panelinden onayladıktan sonra ana sayfada filtreleyin, detay sayfasını, fotoğrafı, ilan sahibinin numarasını ve “Şikayet et” akışını kontrol edin. Arama/karşılaştırma yalnızca fiyatı bulunan gerçek onaylı ilanları kullanır.
-4. Aynı ilanı yeniden deneyin; yinelenen içerik reddedilmeli. Aynı üye günde beşten fazla ilan veremez; hesap/IP hız kontrolleri geçerli olmalıdır.
-5. Admin ayarları kaydedip ana sayfada değişiklikleri doğrulayın. `npm test` yerel testleri çalıştırır (Node.js gerekir); bu adım canlı ortamın yerine geçmez.
-
-## 8. Şu an kapalı tutulan ücret riski
-
-İlan metni önerisi için Workers AI uç noktası hazır, ancak güvenli varsayılan olarak kapalıdır. Bu kodda `AI_ENABLED` etkin değil ve Cloudflare AI binding yoksa form normal biçimde çalışır, kullanıcı metni elle yazabilir. Workers AI fiyatı model/kullanıma bağlı olduğu için Cloudflare panelinde hesabınızda gerçekten ücretsiz kullanım bulunduğunu doğrulamadan açmayın veya ücretli plana geçmeyin. Cloudflare AI fiyatları: https://developers.cloudflare.com/workers-ai/platform/pricing/.
-
-## 9. KVKK alanları
-
-`/gizlilik/` metni veri akışını açıklar; ancak veri sorumlusu ticari unvanı, adresi ve başvuru kanalı size ait olduğu için hazır doldurulmamıştır. Yayından önce gerçek unvanı/adresi ve KVKK başvuru e-postasını ekleyin; bu iletişim alanları admin tasarım ayarlarında bulunur. İlana girilen telefonun herkese açık detayda yayımlanmasına dair onay kutusu vardır. Üyelik, IP hız kontrolü, fotoğraf, ilan görünürlüğü, saklama ve silme süresi metni dağıtımdan önce işletme koşullarınıza göre gözden geçirin.
+- `https://yukvinc.com.tr` ana adresi açılır; `https://www.yukvinc.com.tr` aynı sayfa yoluyla ana adrese 301 yönlenir.
+- `/api/public-settings`, `/api/listings`, `/api/auth/*`, `/api/admin-*`, `/ilan/{id}/`, `/kategori/{slug}/`, `/sehir/{slug}/` ve `/sitemap.xml` Worker router'ından geçer.
+- Robots/sitemap/canonical ve JSON-LD `yukvinc.com.tr` kullanır.
+- Arama sıralaması veya Google dizine alınması garanti edilemez; Search Console'da yeni alan adının sahipliğini doğrulayıp `https://yukvinc.com.tr/sitemap.xml` gönderin.
+- Yerel test: `npm test` (13 test). `node --check src/worker.js` Worker giriş dosyasının sözdizimini kontrol eder.
