@@ -101,3 +101,11 @@ test('database and oversized request failures get safe diagnostic codes',async()
   assert.equal(schema.code,'TABLE_MISSING');
   assert.equal('stack' in schema,false);
 });
+
+test('AI review failure never blocks publishing a newly submitted listing to moderation',async()=>{
+  const ctx=context(payload());
+  ctx.env.AI_ENABLED='true';ctx.env.AI={async run(){throw new Error('AI temporarily unavailable')}};
+  const response=await onRequestPost(ctx);
+  assert.equal(response.status,201);
+  await Promise.all(ctx.waiting);
+});
