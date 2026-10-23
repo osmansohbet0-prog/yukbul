@@ -25,5 +25,5 @@ export async function onRequestPost({request,env}) {
     await env.DB.prepare('DELETE FROM admin_login_attempts WHERE ip_hash=?').bind(await ipHash(request)).run();
     await audit(env,id,existing?'admin.password_reset':'admin.bootstrap','user',id,{email:ADMIN_EMAIL});
     return json({ok:true,message:existing?'Yönetici hesabı güncellendi. Kurulum secret’ını kaldırıp giriş yap.':'Yönetici hesabı kuruldu. Kurulum secret’ını kaldırıp giriş yap.'},status);
-  }catch(e){return fail(e.message==='JSON bekleniyor.'?'Form verileri okunamadı.':'Kurulum tamamlanamadı; alanları ve D1 tablolarını kontrol et.',400);}
+  }catch(e){console.error('admin-bootstrap failed',e?.name||'Error',e?.message||'unknown');return fail(e.message==='JSON bekleniyor.'?'Form verileri okunamadı.':'Kurulum tamamlanamadı; Observability loglarını kontrol et.',500);}
 }
