@@ -13,7 +13,7 @@ test('worker routes static assets through the assets binding', async () => {
 test('worker dispatches public API handlers instead of Pages Functions', async () => {
   const response = await worker.fetch(new Request('https://yukvinc.com.tr/api/public-settings'), { ASSETS: assets });
   assert.equal(response.status, 200);
-  assert.equal((await response.json()).settings.brand_name, 'YükVinç');
+  assert.equal((await response.json()).settings.brand_name, 'Yük Vinç');
 });
 
 test('worker does not shadow the static /mine listing route with the dynamic id route', async () => {
