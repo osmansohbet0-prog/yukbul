@@ -35,3 +35,8 @@ export async function notifyListingPublished(env,actor,listing) {
     html:`<p>${escapeHtml(state)}</p><p><strong>${escapeHtml(title)}</strong><br>${escapeHtml(city)}</p>${comparison?`<p>Fiyat karşılaştırması: ${escapeHtml(comparison)}</p>`:''}<p><a href="${url}">İlanı görüntüle</a></p>`
   });
 }
+
+export async function notifyListingReview(env,listing){
+ const title=String(listing.title||'İlan').slice(0,120),reason=String(listing.reason||'İlanı ve fotoğrafları inceleyin.').slice(0,500);
+ return sendAdminEmail(env,{action:'ai.listing.review_notification',listingId:listing.id,subject:'YükUsta uyarısı: ilan ve fotoğraf incelemesi gerekli',text:title+'\n'+reason+'\nhttps://yukvinc.com.tr/admin/',html:'<p><strong>'+escapeHtml(title)+'</strong></p><p>'+escapeHtml(reason)+'</p><p><a href="https://yukvinc.com.tr/admin/">Yönetim panelinde incele</a></p>'});
+}
