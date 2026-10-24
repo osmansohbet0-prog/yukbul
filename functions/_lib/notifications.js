@@ -2,7 +2,7 @@ function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-async function sendAdminEmail(env,{action,subject,text,html,listingId,actor='system'}) {
+async function sendAdminEmail(env,{action,subject,text,html,listingId,actor=null}) {
   let result='not_configured';
   const recipient=String(env.ADMIN_EMAIL||'').trim();
   const sender=String(env.LISTING_NOTIFICATION_FROM||'').trim();
@@ -29,7 +29,7 @@ export async function notifyListingPublished(env,actor,listing) {
   const ai=actor==='ai',title=String(listing.title||'Yeni ilan').slice(0,120),city=String(listing.city||'').slice(0,80),url=`https://yukvinc.com.tr/ilan/${encodeURIComponent(String(listing.id||''))}`;
   const comparison=String(listing.agent_summary||''),state=ai?'YükUsta ön incelemeyi tamamladı ve ilanı yayına aldı. Yönetici incelemesi panelde bekliyor.':'Yeni ilan yönetici onayıyla yayına çıktı.';
   return sendAdminEmail(env,{
-    action:ai?'ai.listing.auto_published.notification':'listing.published.notification',listingId:listing.id,actor:actor||'system',
+    action:ai?'ai.listing.auto_published.notification':'listing.published.notification',listingId:listing.id,actor:ai?null:actor||null,
     subject:ai?'YükUsta ön incelemesi: ilan yayında, yönetici kontrolü bekliyor':'YükVinç’te yeni ilan yayında',
     text:`${state}\n\n${title}\n${city}${comparison?'\nFiyat karşılaştırması: '+comparison:''}\n${url}`,
     html:`<p>${escapeHtml(state)}</p><p><strong>${escapeHtml(title)}</strong><br>${escapeHtml(city)}</p>${comparison?`<p>Fiyat karşılaştırması: ${escapeHtml(comparison)}</p>`:''}<p><a href="${url}">İlanı görüntüle</a></p>`
