@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {searchIntent,rankAssistantListings,cleanAssistantHistory,siteHelp} from '../functions/_lib/ai-search.js';
+import {searchIntent,rankAssistantListings,cleanAssistantHistory,siteHelp,canonicalUnit} from '../functions/_lib/ai-search.js';
 import {onRequestPost} from '../functions/api/ai/assistant.js';
 import {aiReview} from '../functions/_lib/listings.js';
 import {runImprovementReview} from '../functions/_lib/ai-improvements.js';
@@ -84,3 +84,27 @@ test('administrator pause stops scheduled inference while retention cleanup cont
  assert.equal(result.reason,'disabled_by_admin');assert.equal(called,false);assert.ok(db.writes.some(x=>x.sql.includes('DELETE FROM ai_conversations')));
 });
 
+
+test('district, capacity, fee unit and budget are applied as exact assistant search filters',()=>{
+ const intent=searchIntent('Gebze’de 25 ton saatlik vinç, 10.000 TL bütçem var.');
+ assert.equal(intent.category,'crane');assert.equal(intent.city,'Kocaeli');assert.equal(intent.district,'gebze');
+ assert.equal(intent.tons,25);assert.equal(intent.unit,'saatlik');assert.equal(intent.maxPrice,10000);
+ const matches=[
+  {...item,id:'fits',city:'Kocaeli',district:'Gebze',title:'25 ton mobil vinç',price_amount:9500,price_unit:'saatlik'},
+  {...item,id:'over-budget',city:'Kocaeli',district:'Gebze',title:'25 ton mobil vinç',price_amount:12000,price_unit:'saatlik'},
+  {...item,id:'wrong-unit',city:'Kocaeli',district:'Gebze',title:'25 ton mobil vinç',price_amount:8000,price_unit:'günlük'},
+  {...item,id:'wrong-district',city:'Kocaeli',district:'İzmit',title:'25 ton mobil vinç',price_amount:7000,price_unit:'saatlik'}
+ ];
+ assert.deepEqual(rankAssistantListings(matches,intent).map(x=>x.id),['fits']);
+ assert.equal(canonicalUnit('sefer başı'),'is_basi');
+});
+test('follow-up keeps matching criteria but a new city clears the old district',()=>{
+ const history=cleanAssistantHistory([{role:'user',content:'Gebze’de 25 ton saatlik vinç, 10.000 TL bütçem var.'}]);
+ const follow=searchIntent('Başka ilan var mı?',history);
+ assert.equal(follow.city,'Kocaeli');assert.equal(follow.district,'gebze');assert.equal(follow.tons,25);assert.equal(follow.unit,'saatlik');assert.equal(follow.maxPrice,10000);
+ const moved=searchIntent('İzmir’de var mı?',history);
+ assert.equal(moved.city,'İzmir');assert.equal(moved.district,'');assert.equal(moved.tons,25);
+});
+test('YükUsta explains that all search filters are in the menu',()=>{
+ assert.match(siteHelp('Arama filtreleri nerede?'),/Menüyü açıp önce kategoriyi seç/);
+});
