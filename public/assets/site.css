@@ -92,3 +92,43 @@
   body.yv-menu-open{overflow:hidden}
 }
 @media(prefers-reduced-motion:reduce){.yv-sidebar{transition:none}}
+
+/* Homepage listings use compact horizontal cards, with promoted listings first. */
+.listing-home .listing-grid{display:flex;flex-direction:column;gap:12px}
+.listing-home .listing-card{display:grid;grid-template-columns:minmax(190px,260px) minmax(0,1fr);min-height:190px;border-radius:12px;transition:border-color .16s,box-shadow .16s}
+.listing-home .listing-card:has(.featured-badge){border-color:#e4ad5f;box-shadow:0 5px 18px #d8871b14}
+.listing-home .card-art{height:100%;min-height:190px;padding:0;border-radius:0;background:#e9ede4}
+.listing-home .card-art img{height:100%;min-height:190px;border-radius:0;object-fit:cover}
+.listing-home .card-art>svg{width:78%;height:145px}
+.listing-home .card-body{display:flex;min-width:0;flex-direction:column;padding:16px 19px}
+.listing-home .card-meta{align-items:center;flex-wrap:wrap;gap:7px;font-size:.64rem}
+.listing-home .card-body h3{font-size:1.12rem;margin:9px 0 5px}
+.listing-home .description{min-height:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;margin:0 0 8px}
+.listing-home .place{margin-top:auto}
+.listing-home .card-bottom{margin-top:10px}
+@media(max-width:640px){
+  .listing-home .listing-grid{gap:9px}
+  .listing-home .listing-card{grid-template-columns:112px minmax(0,1fr);min-height:0;border-radius:10px}
+  .listing-home .card-art,.listing-home .card-art img{min-height:136px;height:100%}
+  .listing-home .card-art>svg{width:90%;height:90px}
+  .listing-home .card-body{padding:9px 10px}
+  .listing-home .card-meta{gap:4px;font-size:.53rem;line-height:1.3}
+  .listing-home .featured-badge{font-size:.56rem;padding:2px 6px}
+  .listing-home .card-body h3{font-size:.86rem;line-height:1.2;margin:6px 0 4px}
+  .listing-home .description{font-size:.67rem;line-height:1.35;-webkit-line-clamp:2;margin-bottom:5px}
+  .listing-home .place{padding:5px 0;font-size:.63rem}
+  .listing-home .card-bottom{padding-top:7px;margin-top:6px;gap:5px}
+  .listing-home .price{font-size:.8rem}
+  .listing-home .price small{font-size:.56rem}
+  .listing-home .compare-check{font-size:.58rem!important}
+  .listing-home .compare-check input{width:14px;height:14px}
+  .listing-home .job-pill{font-size:.52rem;padding:4px 6px}
+  .listing-home .demo-badge{left:6px;top:6px;padding:3px 5px;font-size:.5rem}
+}
+@media(max-width:380px){
+  .listing-home .listing-card{grid-template-columns:96px minmax(0,1fr)}
+  .listing-home .card-art,.listing-home .card-art img{min-height:128px}
+  .listing-home .card-body{padding:8px}
+  .listing-home .card-body h3{font-size:.8rem}
+  .listing-home .description{font-size:.62rem}
+}
