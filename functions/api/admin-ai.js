@@ -63,7 +63,7 @@ export async function onRequestPost(context){
   if(suggestion.title.length<10||suggestion.description.length<40)throw new Error('AI suggestion invalid');
   await audit(context.env,auth.admin.id,'ai.seo.suggestion','site_settings','public_site',{title:suggestion.title});
   return json({suggestion,publish_automatically:false});
- }catch(error){console.error('[admin-ai]',JSON.stringify({event:'seo_suggestion_failed',name:error?.name||'Error'}));return fail('SEO önerisi üretilemedi. Biraz sonra tekrar deneyin.',503)}
+ }catch(error){console.error('[admin-ai]',JSON.stringify({event:'seo_suggestion_failed',name:error?.name||'Error'}));return fail('Yapay zekâ önerisi üretilemedi. Gerekçeyi kendiniz yazabilir veya tekrar deneyebilirsiniz.',503)}
 }
 
 
