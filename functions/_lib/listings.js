@@ -23,12 +23,12 @@ function bytesToDataUri(bytes,mimeType){
  return 'data:'+mimeType+';base64,'+btoa(parts.join(''));
 }
 export async function aiReview(env,db,userId,item,excludeId=null){
- if(env.AI_ENABLED!=='true'||!env.AI)return{reviewed:false,reason:'disabled',suspicious:false,duplicate:false,images_reviewed:0};
+ if(env.AI_ENABLED!=='true'||!env.AI)return{reviewed:false,reason:'disabled',suspicious:false,duplicate:false};
  try{
   const date=new Date().toISOString().slice(0,10);
   await db.prepare('INSERT OR IGNORE INTO ai_usage(user_id,usage_date,count) VALUES(?,?,0)').bind(userId,date).run();
   const quota=await db.prepare('UPDATE ai_usage SET count=count+1 WHERE user_id=? AND usage_date=? AND count<5').bind(userId,date).run();
-  if(!quota.meta?.changes)return{reviewed:false,reason:'daily_limit',suspicious:false,duplicate:false,images_reviewed:0};
+  if(!quota.meta?.changes)return{reviewed:false,reason:'daily_limit',suspicious:false,duplicate:false};
   const cutoff=Math.floor(Date.now()/1000)-90*86400;
   let sql="SELECT id,title,description,city,district FROM listings WHERE created_at>? AND status IN ('pending','approved','flagged') AND category=? AND city=? AND (district=? OR user_id=? OR contact_phone=?)";
   const args=[cutoff,item.category,item.city,item.district,userId,String(item.contact_phone||'').trim()];
@@ -51,8 +51,8 @@ export async function aiReview(env,db,userId,item,excludeId=null){
   let output=typeof result.response==='string'?result.response:JSON.stringify(result.response||result);
   output=output.replace(/^```(?:json)?\s*|\s*```$/g,'');
   const parsed=JSON.parse(output);
-  return{reviewed:true,suspicious:parsed.suspicious===true,duplicate:parsed.duplicate===true,reason:redactForAI(String(parsed.reason||'')).slice(0,300),images_reviewed:imageObservations.length};
- }catch(error){console.error('[ai-review]',JSON.stringify({event:'review_failed',name:error?.name||'Error'}));return{reviewed:false,reason:'error',suspicious:false,duplicate:false,images_reviewed:0}}
+  const review={reviewed:true,suspicious:parsed.suspicious===true,duplicate:parsed.duplicate===true};const reason=redactForAI(String(parsed.reason||'')).slice(0,300);if(reason)review.reason=reason;if(imageObservations.length)review.images_reviewed=imageObservations.length;return review;
+ }catch(error){console.error('[ai-review]',JSON.stringify({event:'review_failed',name:error?.name||'Error'}));return{reviewed:false,reason:'error',suspicious:false,duplicate:false}}
 }
 export async function reviewListingInBackground(env,listingId,userId,item){
  const db=env.DB;
