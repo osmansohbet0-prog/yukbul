@@ -135,3 +135,9 @@ test('YükUsta answers from approved listings and redacts personal data before i
 
 test('YükUsta rejects cross-origin requests before calling AI',async()=>{let called=false;const request=new Request('https://yukvinc.com.tr/api/ai/assistant',{method:'POST',headers:{origin:'https://bad.example','content-type':'application/json'},body:JSON.stringify({message:'Konya’da vinç arıyorum'})});const response=await onYukustaPost({request,env:{DB:{},AI_ENABLED:'true',AI:{async run(){called=true}}}});assert.equal(response.status,403);assert.equal(called,false)});
 
+
+test('public listing photo URLs bypass stale broken image responses',async()=>{
+ const db={prepare(){return{bind(){return this},async all(){return{results:[{id:'listing_1',photo_id:'photo_1',price_amount:null}]}}}}};
+ const [item]=await publicItems(db);
+ assert.equal(item.photo_url,'/api/listing-photo/photo_1?v=2');
+});
