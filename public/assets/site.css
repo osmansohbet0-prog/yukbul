@@ -204,3 +204,31 @@
   .seo-listing-card .place{font-size:.68rem;padding:7px 0}
   .seo-listing-card .price{font-size:.92rem}
 }
+
+/* Guided listing search lives inside the account/category menu. */
+.yv-search-toggle{width:100%;border:0;background:transparent;text-align:left;font:inherit;cursor:pointer}
+.yv-search-toggle:hover,.yv-search-toggle[aria-expanded="true"]{background:#fff3e4;color:#804600}
+.yv-search-toggle[aria-expanded="true"] .yv-icon{color:#d7831c}
+.yv-search-menu{display:grid;gap:12px;padding:12px 3px 3px}
+.yv-search-menu[hidden]{display:none!important}
+.yv-search-menu .search-menu-stage{display:block}
+.yv-search-menu .search-menu-stage .search-step-number{display:none}
+.yv-search-menu label{display:grid;gap:5px;margin:0;color:var(--ink);font-size:.73rem;font-weight:700}
+.yv-search-menu input,.yv-search-menu select{width:100%;min-width:0;min-height:40px;margin:0;padding:8px 9px;border:1px solid #cdd8d2;border-radius:8px;background:#fff;color:var(--ink);font:inherit;font-size:.78rem}
+.yv-search-menu .search-step-details{display:grid;gap:11px;padding-top:12px}
+.yv-search-menu .search-step-details[hidden]{display:none!important}
+.yv-filter-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.yv-search-menu .listing-modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:0}
+.yv-search-menu .mode-chip{min-width:0;padding:7px 4px;font-size:.68rem}
+.yv-filter-actions{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px}
+.yv-filter-actions .button{min-height:42px;justify-content:center;padding:9px 12px;font-size:.82rem}
+.yv-filter-actions .reset-btn{height:42px}
+.yukusta-tools button{min-height:32px;white-space:normal}
+#yukusta-form[aria-busy="true"]{opacity:.84}
+@media(max-width:640px){
+ .yv-search-menu{gap:10px}
+ .yv-search-menu .search-step-details{gap:9px;padding-top:10px}
+ .yv-search-menu label{font-size:.71rem}
+ .yv-filter-row{gap:7px}
+ .yv-search-menu .mode-chip{font-size:.64rem}
+}
