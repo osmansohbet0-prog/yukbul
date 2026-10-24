@@ -1,0 +1,51 @@
+import {redactForAI,turkishCities} from './listings.js';
+
+export const foldSearch=value=>String(value||'').normalize('NFKC').toLocaleLowerCase('tr').replace(/ı/g,'i').normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
+const CATEGORY_TERMS={operator:['operator','is ariyorum','is arayan'],basket:['sepetli','platform'],lift:['nakliyat asansoru','yuk asansoru','esya asansoru'],tow:['cekici','kurtarici','yol yardim'],machine:['is makinesi','forklift','kepce','ekskavator','beko','loder'],crane:['vinc','hiyap','hiyab','tonaj']};
+const STOP=new Set('ariyorum ariyor bakiyorum lazim istiyorum olan ilan ilani ilanlari bana icin hangi nedir midir ve ile bir en yakin var mi mu bu da de daha goster bul lutfen hizmet kiralama fiyat fiyatli ucuz uygun'.split(' '));
+const contains=(text,term)=>(' '+text+' ').includes(' '+term+' ');
+const categoryOf=text=>Object.entries(CATEGORY_TERMS).find(([,terms])=>terms.some(term=>contains(text,term)))?.[0]||'';
+const cityOf=text=>turkishCities.find(city=>{const name=foldSearch(city);return contains(text,name)||['da','de','ta','te','dan','den','tan','ten'].some(suffix=>contains(text,name+suffix))})||'';
+export function cleanAssistantHistory(value){
+ return(Array.isArray(value)?value:[]).slice(-4).filter(x=>x&&x.role==='user'&&typeof x.content==='string').map(x=>({role:'user',content:redactForAI(x.content).slice(0,600)}));
+}
+export function searchIntent(question,history=[]){
+ const current=foldSearch(question),previous=history.map(x=>foldSearch(x.content)).reverse();
+ const category=categoryOf(current)||previous.map(categoryOf).find(Boolean)||'';
+ const city=cityOf(current)||previous.map(cityOf).find(Boolean)||'';
+ const tonnage=text=>{const m=text.match(/\b(\d{1,4})\s*ton(?:luk)?\b/);return m?Number(m[1]):null};
+ const tons=tonnage(current)??(category===categoryOf(previous[0]||'')&&!cityOf(current)?tonnage(previous[0]||''):null);
+ return{category,city,tons,cheapest:/\b(ucuz|ekonomik)\b|fiyata gore/.test(current),terms:current.split(' ').filter(x=>x.length>2&&!STOP.has(x))};
+}
+export function rankAssistantListings(items,intent){
+ const eligible=items.filter(x=>(!intent.category||x.category===intent.category)&&(!intent.city||foldSearch(x.city)===foldSearch(intent.city)));
+ const comparable=intent.cheapest&&eligible.length>0&&eligible.every(x=>x.price_amount>0&&x.price_unit&&x.price_unit===eligible[0].price_unit);
+ return eligible.map(item=>{
+  const title=foldSearch(item.title),body=foldSearch(item.description),place=foldSearch(item.city+' '+item.district);
+  const capacities=[...foldSearch(item.title+' '+item.description).matchAll(/\b(\d{1,4})\s*ton(?:luk)?\b/g)].map(x=>Number(x[1]));
+  if(intent.tons!=null&&!capacities.includes(intent.tons))return null;
+  const score=intent.terms.reduce((n,t)=>n+(contains(title,t)?4:contains(place,t)?3:contains(body,t)?1:0),0);
+  return{item,score};
+ }).filter(Boolean).sort((a,b)=>{
+  // Price comparisons are only valid when the quoted units are the same.
+  if(comparable)return a.item.price_amount-b.item.price_amount||b.score-a.score;
+  return b.score-a.score||Number(b.item.created_at||0)-Number(a.item.created_at||0);
+ }).slice(0,5).map(({item:x})=>({id:x.id,title:redactForAI(String(x.title||'')).slice(0,120),category:x.category,city:x.city,district:x.district,price_amount:x.price_amount,price_unit:x.price_unit,package_tier:x.package_tier||'standard',description:redactForAI(String(x.description||'')).slice(0,280)}));
+}
+export function assistantFallback(items,intent){
+ if(!items.length)return(intent.city?intent.city+' için ':'')+(intent.tons?intent.tons+' ton kapasiteye uyan ':'')+'onaylı bir ilan bulamadım. Başka bir şehir veya ekipman türü söyleyebilirsin.';
+ return(items.length===1?'Aramana uyan bir onaylı ilan buldum.':'Aramana uyan '+items.length+' onaylı ilan buldum.')+' Aşağıdaki ilanları inceleyebilirsin. Kapasiteyi, fiyat birimini ve müsaitliği ilan sahibiyle teyit et.';
+}
+export function siteHelp(question){
+ const text=foldSearch(question);
+ if(/nedir|ne ise yarar|farki|nasil sec/.test(text)){
+  const kind=categoryOf(text),guides={crane:'Vinç, yük kaldırma ve konumlandırma işlerinde kullanılır. Seçim için yükün ağırlığı, kaldırma yüksekliği, çalışma mesafesi ve zemin koşulları gerekir. İlandaki tonaj tek başına yeterli değildir; uygunluğu yetkili operatörün yük tablosuyla doğrulaması gerekir.',basket:'Sepetli platform, personelin yüksekte çalışması için kullanılır. Çalışma yüksekliği, yatay erişim, platform kapasitesi ve zemin koşullarını ilan sahibine bildir. İşe uygunluk ve güvenli kullanım yetkili ekip tarafından değerlendirilmelidir.',tow:'Oto kurtarıcı ve çekici hizmetinde araç türü, yaklaşık ağırlığı, aracın durumu ve alınacağı konum önemlidir. Hizmet kapsamını, ulaşım süresini ve toplam ücreti hizmet sağlayıcıyla teyit et.',lift:'Nakliyat asansörü eşya ve yük taşımada kullanılır. Kat/yükseklik, kurulum alanı, yük ölçüleri ve taşıma kapasitesini ilan sahibiyle görüş. İnsan taşımaya uygun olduğunu varsayma.',machine:'İş makinesi seçiminde yapılacak iş, zemin, alan ölçüleri ve gereken erişim/kapasite belirleyicidir. Forklift, kepçe ve ekskavatör farklı işler içindir; işi anlatırsan şehir ve ekipman türüne göre ilan aramana yardım edebilirim.',operator:'Operatör ilanları iş arayan kişilerin ilanlarıdır. Deneyim, kullanılan ekipman ve gerekli belgeler işveren tarafından doğrulanmalıdır. YükUsta belge veya yetkinlik doğrulaması yapmaz.'};
+  if(guides[kind])return guides[kind];
+ }
+ if(/fotograf|gorsel|resim/.test(text)&&/yukle|ekle|boyut|kac|gozuk|gorun|bozuk/.test(text))return'İlanına JPEG, PNG veya WebP biçiminde en fazla 3 fotoğraf ekleyebilirsin. İlan formu fotoğrafları otomatik küçültür. Fotoğraflar ilan onaylanıp yayına alındığında herkese görünür. Sorun devam ederse bu sohbetin destek bölümünden bildir.';
+ if(/ilan/.test(text)&&/nasil.*(ver|ekle|olustur)|nasil.*yayinla|ilan vermek/.test(text))return'Üye girişi yapıp “İlan ver” bölümünü aç. Kategori, il ve ilçe seç; açıklama, iletişim ve fotoğrafları ekleyip gönder. İlan güvenlik kontrolünden ve yönetici incelemesinden sonra yayımlanır. Operatör iş arayışı ilanında fiyat girilmez.';
+ if(/ilan/.test(text)&&/onay|bekli|yayinlanm|yayinlanmad/.test(text))return'Yeni ilanlar yönetici onayı bekler. YükUsta metin, fotoğraf ve tekrar ilan belirtilerini inceler; şüpheli bulguları yöneticiye gösterir. Son kararı yönetici verir. Kendi ilanının durumunu üye panelinden görebilirsin.';
+ if(/^(merhaba|selam|iyi gunler|ne yapabilirsin|yardim)$/.test(text))return'Merhaba, ben YükUsta. Şehir, ekipman ve kapasiteye göre yayındaki ilanları bulmana yardımcı olurum. Örneğin “Ankara’da 50 ton vinç arıyorum” yazabilirsin. İlan verme ve fotoğraf yükleme sorularını da yanıtlayabilirim.';
+ return'';
+}
+
