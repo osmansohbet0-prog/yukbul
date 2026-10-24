@@ -1,6 +1,6 @@
 import {digest,randomId,json,fail} from './member.js';
 import {readAiModeration} from './ai-settings.js';
-export const categories=['crane','tow','basket','machine','lift','operator'];
+export const categories=['crane','tow','basket','machine','lift','manlift','operator'];
 export const turkishCities=["Adana","Adıyaman","Afyonkarahisar","Ağrı","Aksaray","Amasya","Ankara","Antalya","Ardahan","Artvin","Aydın","Balıkesir","Bartın","Batman","Bayburt","Bilecik","Bingöl","Bitlis","Bolu","Burdur","Bursa","Çanakkale","Çankırı","Çorum","Denizli","Diyarbakır","Düzce","Edirne","Elazığ","Erzincan","Erzurum","Eskişehir","Gaziantep","Giresun","Gümüşhane","Hakkari","Hatay","Iğdır","Isparta","İstanbul","İzmir","Kahramanmaraş","Karabük","Karaman","Kars","Kastamonu","Kayseri","Kilis","Kırıkkale","Kırklareli","Kırşehir","Kocaeli","Konya","Kütahya","Malatya","Manisa","Mardin","Mersin","Muğla","Muş","Nevşehir","Niğde","Ordu","Osmaniye","Rize","Sakarya","Samsun","Siirt","Sinop","Sivas","Şanlıurfa","Şırnak","Tekirdağ","Tokat","Trabzon","Tunceli","Uşak","Van","Yalova","Yozgat","Zonguldak"];
 export function redactForAI(value){return String(value||'').replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi,'[e-posta gizlendi]').replace(/(?:https?:\/\/|www\.)[^\s<]+/gi,'[bağlantı gizlendi]').replace(/(?:\+?90[\s-]?)?(?:0?[2-5]\d{2})[\s().-]?\d{3}[\s.-]?\d{2}[\s.-]?\d{2}/g,'[telefon gizlendi]')}
 export function normalizeText(v){return String(v||'').normalize('NFKC').toLocaleLowerCase('tr').replace(/\s+/g,' ').trim()}
@@ -38,7 +38,11 @@ export async function publicItems(db,params={}){
    kurtarici:['tow'],
    cekici:['tow'],
    sepetli:['basket'],
-   platform:['basket'],
+   platform:['basket','manlift'],
+   manlift:['manlift'],
+   makasli:['manlift'],
+   dikey:['manlift'],
+   eklemli:['manlift'],
    forklift:['machine'],
    kepce:['machine'],
    operator:['operator'],

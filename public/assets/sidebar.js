@@ -8,6 +8,7 @@
     ['crane', 'Vinç', '/kategori/vinc/', '⚒'],
     ['tow', 'Oto kurtarıcı', '/kategori/oto-kurtarici/', '↗'],
     ['basket', 'Sepetli platform', '/kategori/sepetli-platform/', '▱'],
+    ['manlift', 'Manlift', '/kategori/manlift/', '↟'],
     ['machine', 'İş makineleri', '/kategori/is-makinesi/', '⚙'],
     ['lift', 'Nakliyat asansörü', '/kategori/nakliyat-asansoru/', '⇧'],
     ['operator', 'Operatör iş ilanı', '/kategori/operator-is-ilanlari/', '♧']
@@ -23,7 +24,7 @@
   const searchControls = path === '/' ?
     '<button type="button" id="search-menu-toggle" class="yv-navitem yv-search-toggle" aria-expanded="false" aria-controls="search-menu"><span class="yv-icon" aria-hidden="true">⌕</span><span>Ara ve filtrele</span></button>' +
     '<div id="search-menu" class="yv-search-menu" hidden>' +
-      '<div class="search-menu-stage"><span class="search-step-number">01</span><label for="category-filter">Önce kategorini seç<select id="category-filter" required><option value="" selected>Kategori seç</option><option value="all">Tüm kategoriler</option><option value="crane">Vinç</option><option value="tow">Oto kurtarıcı</option><option value="basket">Sepetli platform</option><option value="machine">İş makinesi</option><option value="lift">Nakliyat asansörü</option><option value="operator">Operatör iş ilanı</option></select></label></div>' +
+      '<div class="search-menu-stage"><span class="search-step-number">01</span><label for="category-filter">Önce kategorini seç<select id="category-filter" required><option value="" selected>Kategori seç</option><option value="all">Tüm kategoriler</option><option value="crane">Vinç</option><option value="tow">Oto kurtarıcı</option><option value="basket">Sepetli platform</option><option value="manlift">Manlift</option><option value="machine">İş makinesi</option><option value="lift">Nakliyat asansörü</option><option value="operator">Operatör iş ilanı</option></select></label></div>' +
       '<div id="search-step-details" class="search-step-details" hidden>' +
         '<label for="q">Aradığın ilan<input id="q" type="search" placeholder="Örn. Gebze kiralık vinç" maxlength="100"></label>' +
         '<label for="city-filter">Şehir veya ilçe<input id="city-filter" list="city-options" placeholder="Tüm şehirler"></label>' +

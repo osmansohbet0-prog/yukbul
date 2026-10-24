@@ -20,6 +20,9 @@ test('Turkish spelling, city suffixes and specific equipment categories are unde
  assert.equal(searchIntent("IZMIR'de sepetli vinc ariyorum").city,'İzmir');
  assert.equal(searchIntent('Ankarada nakliyat asansörü').category,'lift');
  assert.equal(searchIntent('Ankarada nakliyat asansörü').city,'Ankara');
+ assert.equal(searchIntent('Konya manlift kiralama').category,'manlift');
+ assert.equal(searchIntent('Makaslı platform kiralama').category,'manlift');
+ assert.match(siteHelp('Manlift nedir?'),/çalışma yüksekliği/);
  assert.equal(searchIntent('Divan kiralama').city,'');
 });
 test('follow-up questions retain category and city without trusting assistant or system history',()=>{
