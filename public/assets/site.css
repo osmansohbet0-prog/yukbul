@@ -159,3 +159,24 @@
   .listing-home .home-market .filters select,.listing-home .home-market .filters input{font-size:.74rem;padding:9px}
   .listing-home .home-market .filters .reset-btn{grid-column:1/-1;width:100%}
 }
+
+/* Keep YükUsta compact and make its support form scrollable on small screens. */
+#yukusta-open{padding:11px 16px;font-size:.92rem}
+#yukusta-panel{width:min(360px,calc(100vw - 20px));height:min(520px,calc(100dvh - 96px));bottom:58px}
+#yukusta-panel>header{padding:12px 14px}
+#yukusta-panel>header b{font-size:.96rem}
+#yukusta-chat{min-height:0;overscroll-behavior:contain}
+#yukusta-support{flex:0 0 auto;max-height:42%;overflow-y:auto;overscroll-behavior:contain}
+#yukusta-support[open]{flex:0 0 44%;min-height:140px;max-height:50%;padding:9px 12px}
+#yukusta-support summary{position:sticky;top:0;z-index:1;background:#fff;padding:4px 0}
+#yukusta-support form{padding-top:8px}
+#yukusta-support input,#yukusta-support textarea{width:100%;min-width:0}
+#yukusta-support textarea{min-height:76px;max-height:22vh}
+@media(max-width:520px){
+  #yukusta-widget{right:10px;bottom:10px}
+  #yukusta-open{padding:10px 14px;font-size:.86rem}
+  #yukusta-panel{right:0;bottom:54px;width:min(350px,calc(100vw - 20px));height:min(500px,calc(100dvh - 80px));max-height:calc(100dvh - 80px);border-radius:15px}
+  #yukusta-panel>header{padding:10px 12px}
+  .yukusta-tools{max-height:78px;overflow-y:auto}
+  #yukusta-support[open]{flex-basis:46%;min-height:128px;max-height:52%}
+}
