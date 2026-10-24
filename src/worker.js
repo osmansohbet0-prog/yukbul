@@ -10,6 +10,7 @@ import * as r6 from "../functions/api/admin-reports.js";
 import * as r7 from "../functions/api/admin-session.js";
 import * as r8 from "../functions/api/admin-settings.js";
 import * as r9 from "../functions/api/admin-users.js";
+import * as r28 from "../functions/api/admin-ai.js";
 import * as r10 from "../functions/api/ai/suggest.js";
 import * as r11 from "../functions/api/auth/login.js";
 import * as r12 from "../functions/api/auth/logout.js";
@@ -41,6 +42,7 @@ const ROUTES = [
   { path: '/api/admin-session', params: [], handlers: r7 },
   { path: '/api/admin-settings', params: [], handlers: r8 },
   { path: '/api/admin-users', params: [], handlers: r9 },
+  { path: '/api/admin-ai', params: [], handlers: r28 },
   { path: '/api/ai/suggest', params: [], handlers: r10 },
   { path: '/api/auth/login', params: [], handlers: r11 },
   { path: '/api/auth/google', params: [], handlers: r27 },
