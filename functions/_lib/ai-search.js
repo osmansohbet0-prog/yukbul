@@ -14,11 +14,11 @@ const DISTRICT_CITY={
 };
 const districtOf=text=>Object.keys(DISTRICT_CITY).find(name=>contains(text,name)||['da','de','ta','te','dan','den','tan','ten'].some(suffix=>contains(text,name+suffix)))||'';
 const feeUnitOf=text=>{
- if(/\\b(saatlik|saat basi|saat)\\b/.test(text))return'saatlik';
- if(/\\b(gunluk|gun basi)\\b/.test(text))return'gunluk';
- if(/\\b(aylik|ay)\\b/.test(text))return'aylik';
- if(/\\b(is basi|sefer basi|seferlik|sefer)\\b/.test(text))return'is_basi';
- if(/\\b(teklif|fiyat sor)\\b/.test(text))return'teklif';
+ if(/\b(saatlik|saat basi|saat)\b/.test(text))return'saatlik';
+ if(/\b(gunluk|gun basi)\b/.test(text))return'gunluk';
+ if(/\b(aylik|ay)\b/.test(text))return'aylik';
+ if(/\b(is basi|sefer basi|seferlik|sefer)\b/.test(text))return'is_basi';
+ if(/\b(teklif|fiyat sor)\b/.test(text))return'teklif';
  return'';
 };
 export const canonicalUnit=value=>{
@@ -31,7 +31,7 @@ export const canonicalUnit=value=>{
  return text;
 };
 const budgetAmount=raw=>{
- const match=String(raw||'').match(/(?:₺\\s*(\\d[\\d., ]{0,15})|(\\d[\\d., ]{0,15})\\s*(?:₺|tl|lira)\\b)/i);
+ const match=String(raw||'').match(/(?:₺\s*(\d[\d., ]{0,15})|(\d[\d., ]{0,15})\s*(?:₺|tl|lira)\b)/i);
  if(!match)return null;
  const amount=Number((match[1]||match[2]).replace(/[^0-9]/g,''));
  return Number.isSafeInteger(amount)&&amount>0?amount:null;
@@ -42,20 +42,20 @@ export function searchIntent(question,history=[]){
  const district=currentDistrict||(currentCity?'':priorDistrict);
  const city=currentCity||(district?DISTRICT_CITY[district]:previous.map(cityOf).find(Boolean))||'';
  const currentCategory=categoryOf(current),priorCategory=previous.map(categoryOf).find(Boolean)||'',category=currentCategory||priorCategory;
- const tonnage=text=>{const m=text.match(/\\b(\\d{1,4})\\s*ton(?:luk)?\\b/);return m?Number(m[1]):null};
+ const tonnage=text=>{const m=text.match(/\b(\d{1,4})\s*ton(?:luk)?\b/);return m?Number(m[1]):null};
  const priorTons=previous.map(tonnage).find(value=>value!=null),tons=tonnage(current)??(!currentCategory||currentCategory===priorCategory?priorTons:null);
  const unit=feeUnitOf(current)||previous.map(feeUnitOf).find(Boolean)||'';
- const amount=budgetAmount(question),budgetRequested=/\\b(en fazla|altinda|gecmesin|butce|butcem|ust limit|kadar)\\b/.test(current);
+ const amount=budgetAmount(question),budgetRequested=/\b(en fazla|altinda|gecmesin|butce|butcem|ust limit|kadar)\b/.test(current);
  const maxPrice=amount&&budgetRequested?amount:null;
- const terms=current.split(' ').filter(x=>x.length>2&&!STOP.has(x)&&!/^\\d+$/.test(x)&&!['saatlik','gunluk','aylik','seferlik','teklif','tl','lira'].includes(x));
- return{category,city,district,tons,unit,maxPrice,cheapest:/\\b(ucuz|ekonomik)\\b|fiyata gore/.test(current),terms};
+ const terms=current.split(' ').filter(x=>x.length>2&&!STOP.has(x)&&!/^\d+$/.test(x)&&!['saatlik','gunluk','aylik','seferlik','teklif','tl','lira'].includes(x));
+ return{category,city,district,tons,unit,maxPrice,cheapest:/\b(ucuz|ekonomik)\b|fiyata gore/.test(current),terms};
 }
 export function rankAssistantListings(items,intent){
  const eligible=items.filter(x=>(!intent.category||x.category===intent.category)&&(!intent.city||foldSearch(x.city)===foldSearch(intent.city))&&(!intent.district||foldSearch(x.district)===foldSearch(intent.district))&&(!intent.unit||canonicalUnit(x.price_unit)===intent.unit)&&(!intent.maxPrice||(Number(x.price_amount)>0&&Number(x.price_amount)<=intent.maxPrice)));
  const comparable=intent.cheapest&&eligible.length>0&&eligible.every(x=>x.price_amount>0&&x.price_unit&&canonicalUnit(x.price_unit)===canonicalUnit(eligible[0].price_unit));
  return eligible.map(item=>{
   const title=foldSearch(item.title),body=foldSearch(item.description),place=foldSearch(item.city+' '+item.district);
-  const capacities=[...foldSearch(item.title+' '+item.description).matchAll(/\\b(\\d{1,4})\\s*ton(?:luk)?\\b/g)].map(x=>Number(x[1]));
+  const capacities=[...foldSearch(item.title+' '+item.description).matchAll(/\b(\d{1,4})\s*ton(?:luk)?\b/g)].map(x=>Number(x[1]));
   if(intent.tons!=null&&!capacities.includes(intent.tons))return null;
   const score=intent.terms.reduce((n,t)=>n+(contains(title,t)?4:contains(place,t)?3:contains(body,t)?1:0),0);
   return{item,score};
