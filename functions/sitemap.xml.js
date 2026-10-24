@@ -5,7 +5,7 @@ const xml=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 export async function onRequestGet({env}){
   if(!env.DB)return new Response('Sitemap geçici olarak oluşturulamıyor.',{status:503,headers:{'cache-control':'no-store','retry-after':'300'}});
   try{
-    const {results=[]}=await env.DB.prepare("SELECT id,title,category,city,updated_at FROM listings WHERE status='approved' AND (category='operator' OR trial_expires_at>unixepoch() OR paid_until>unixepoch()) ORDER BY updated_at DESC LIMIT 45000").all();
+    const {results=[]}=await env.DB.prepare("SELECT id,title,category,city,updated_at FROM listings WHERE status='approved' AND (category='operator' OR EXISTS(SELECT 1 FROM users u WHERE u.id=listings.user_id AND u.role='admin') OR trial_expires_at>unixepoch() OR paid_until>unixepoch()) ORDER BY updated_at DESC LIMIT 45000").all();
     const today=new Date().toISOString().slice(0,10);
     const urls=new Map([['/',today],['/iletisim/',today],['/gizlilik/',today]]);
     for(const item of results){
