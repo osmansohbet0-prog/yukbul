@@ -55,7 +55,7 @@
         '<div class="listing-modes" role="group" aria-label="İlan modeli"><button class="mode-chip active" type="button" data-listing-mode="all">Tümü</button><button class="mode-chip" type="button" data-listing-mode="rental">Kiralık</button><button class="mode-chip" type="button" data-listing-mode="job">İş başı</button></div>' +
         '<div class="yv-filter-actions"><button id="apply-search" class="button" type="button">Filtrele <span aria-hidden="true">→</span></button><button id="reset-filters" class="reset-btn" type="button">Temizle</button></div>' +
       '</div></div>' +
-    '</div><div class="yv-menu-divider"></div>';
+    '</div><div class="yv-menu-divider"></div>' +
     '<div class="yv-menu-group"><div class="yv-menu-heading"><p class="yv-menu-label">Kategoriler</p>' +
     '<a href="/#ilanlar">Hepsi</a></div>' +
     row('Tüm ilanlar', '/#ilanlar', '⌕', allActive) +
