@@ -12,6 +12,9 @@ import * as r8 from "../functions/api/admin-settings.js";
 import * as r9 from "../functions/api/admin-users.js";
 import * as r28 from "../functions/api/admin-ai.js";
 import * as r29 from "../functions/api/ai/assistant.js";
+import * as r30 from "../functions/api/ai/support.js";
+import * as r31 from "../functions/api/admin-ai-suggestions.js";
+import { runImprovementReview } from "../functions/_lib/ai-improvements.js";
 import * as r10 from "../functions/api/ai/suggest.js";
 import * as r11 from "../functions/api/auth/login.js";
 import * as r12 from "../functions/api/auth/logout.js";
@@ -44,7 +47,9 @@ const ROUTES = [
   { path: '/api/admin-settings', params: [], handlers: r8 },
   { path: '/api/admin-users', params: [], handlers: r9 },
   { path: '/api/admin-ai', params: [], handlers: r28 },
+  { path: '/api/admin-ai-suggestions', params: [], handlers: r31 },
   { path: '/api/ai/assistant', params: [], handlers: r29 },
+  { path: '/api/ai/support', params: [], handlers: r30 },
   { path: '/api/ai/suggest', params: [], handlers: r10 },
   { path: '/api/auth/login', params: [], handlers: r11 },
   { path: '/api/auth/google', params: [], handlers: r27 },
@@ -83,6 +88,7 @@ function secure(response, request, isApi = false) {
 }
 
 export default {
+  async scheduled(controller, env, ctx) { ctx.waitUntil(runImprovementReview(env).catch(error=>console.error('[ai-improvements]',JSON.stringify({event:'scheduled_review_failed',name:error?.name||'Error'})))); },
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const host = (request.headers.get("host") || url.hostname).toLowerCase();

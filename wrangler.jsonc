@@ -18,6 +18,8 @@
     }
   ],
   "ai": { "binding": "AI" },
+  "send_email": [{ "name": "EMAIL" }],
+  "triggers": { "crons": ["0 4 * * 1"] },
   "vars": {
     "AI_ENABLED": "true",
     "TURNSTILE_SITE_KEY": "0x4AAAAAAFix_9Aae1ng9JT8"
