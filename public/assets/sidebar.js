@@ -12,8 +12,8 @@
     ['lift', 'Nakliyat asansörü', '/kategori/nakliyat-asansoru/', '⇧'],
     ['operator', 'Operatör iş ilanı', '/kategori/operator-is-ilanlari/', '♧']
   ];
-  const path = location.pathname.replace(/\\/+$/, '') || '/';
-  const matched = categories.find(([, , href]) => href.replace(/\\/+$/, '') === path);
+  const path = location.pathname.replace(/\/+$/, '') || '/';
+  const matched = categories.find(([, , href]) => href.replace(/\/+$/, '') === path);
   const allActive = path === '/' || path.startsWith('/sehir/') || path.startsWith('/ilan/');
   const row = (label, href, icon, active = false) =>
     '<a class="yv-navitem' + (active ? ' is-active' : '') + '" href="' + href + '"' +
