@@ -1,12 +1,13 @@
 import {fail,json,isAllowedOrigin,readJson,randomId} from '../../_lib/core.js';
 import {limited} from '../../_lib/member.js';
+import {SUPPORT_RATE_LIMIT_ACTION} from '../../_lib/ai-policy.js';
 import {redactForAI} from '../../_lib/listings.js';
 const escapeHtml=value=>String(value||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export async function onRequestPost({request,env}){
  if(!isAllowedOrigin(request))return fail('İstek kaynağı doğrulanamadı.',403);
  if(!env.DB)return fail('Talep şu an kaydedilemiyor.',503);
  try{
-  if(await limited(env,request,'ai-support',3,3600))return fail('Kısa sürede çok fazla talep gönderildi. Daha sonra tekrar dene.',429);
+  if(await limited(env,request,SUPPORT_RATE_LIMIT_ACTION,3,3600))return fail('Kısa sürede çok fazla talep gönderildi. Daha sonra tekrar dene.',429);
   const d=await readJson(request,6000),message=String(d.message||'').trim(),consent=d.consent===true;
   if(message.length<8||message.length>3000)return fail('Talebin 8–3000 karakter arasında olmalı.');
   const id=randomId(16),summary=redactForAI(message).slice(0,3000),name=consent?redactForAI(String(d.name||'').trim()).slice(0,100):null,contact=consent?String(d.contact||'').trim().slice(0,254):null;

@@ -2,7 +2,7 @@ import {fail,json,isAllowedOrigin,readJson,randomId} from '../../_lib/core.js';
 import {limited} from '../../_lib/member.js';
 import {publicItems,redactForAI,turkishCities} from '../../_lib/listings.js';
 import {readAiModeration} from '../../_lib/ai-settings.js';
-import {AI_LIMITS,aiConversationId,classifyAssistantRequest,validateAssistantOutput} from '../../_lib/ai-policy.js';
+import {AI_RATE_LIMIT_ACTION,AI_LIMITS,aiConversationId,classifyAssistantRequest,validateAssistantOutput} from '../../_lib/ai-policy.js';
 const CATEGORY_TERMS={crane:['vinç','vinc','mobil vinç','hiyap','tonaj'],tow:['çekici','oto kurtarıcı','oto kurtarici','yol yardım'],basket:['sepetli platform','sepetli vinç'],machine:['iş makinesi','forklift','kepçe','kepce'],lift:['nakliyat asansörü','yük asansörü'],operator:['operatör','iş arıyor','iş ariyor']};
 const STOP_WORDS=new Set(['arıyorum','arıyor','bakıyorum','bakiyorum','lazım','lazim','istiyorum','var','olan','ilan','ilanı','ilanlari','ilanları','bana','için','icin','hangi','nedir','midir','mi','mı','ve','ile','bir','en','yakın','yakin'].map(x=>x.normalize('NFKC').toLocaleLowerCase('tr').replace(/ı/g,'i')));
 const normalize=s=>String(s||'').normalize('NFKC').toLocaleLowerCase('tr').replace(/ı/g,'i').replace(/[^\p{L}\p{N}\s]/gu,' ').replace(/\s+/g,' ').trim();
@@ -14,7 +14,7 @@ export async function onRequestPost({request,env}){
  const data=await readJson(request,4096),question=String(data.message||'').trim(),conversation=aiConversationId(data.conversation_id);
  if(question.length<4||question.length>AI_LIMITS.maxQuestionLength)return fail('Mesajın 4–600 karakter arasında olmalı.');
  try{
-  if(await limited(env,request,'ai-assistant',AI_LIMITS.perIpCalls,AI_LIMITS.perIpWindowSeconds))return fail('YükUsta’ya kısa sürede çok fazla mesaj gönderildi. 15 dakika sonra tekrar dene.',429);
+  if(await limited(env,request,AI_RATE_LIMIT_ACTION,AI_LIMITS.perIpCalls,AI_LIMITS.perIpWindowSeconds))return fail('YükUsta’ya kısa sürede çok fazla mesaj gönderildi. 15 dakika sonra tekrar dene.',429);
   const daily=await env.DB.prepare("SELECT COUNT(*) AS n FROM ai_audit WHERE action='assistant.request' AND created_at>=unixepoch('now','start of day')").first();
   if(Number(daily?.n||0)>=AI_LIMITS.dailyCalls)return fail('Şu an yanıt veremiyorum; şikayet ve talebini bırakabilirsin.',429);
   await audit(env,'visitor','assistant.request','started',{conversation_id:conversation});
