@@ -51,5 +51,7 @@ $('#yukusta-form').addEventListener('submit',async e=>{
  finally{clearTimeout(timeout);button.disabled=false;button.textContent='Gönder';input.focus()}
 });
 $('#yukusta-support-form').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget,status=$('#yukusta-support-status'),button=f.querySelector('button[type=submit]');button.disabled=true;status.textContent='Talebin kaydediliyor…';try{const response=await fetch('/api/ai/support',{method:'POST',headers:{'content-type':'application/json','accept':'application/json'},body:JSON.stringify({message:f.elements.message.value,name:f.elements.name.value,contact:f.elements.contact.value,consent:f.elements.consent.checked})});const data=await response.json();if(!response.ok)throw Error(data.error||'Talep gönderilemedi.');status.textContent=data.message;f.reset()}catch(error){status.textContent=error.message||'Talep gönderilemedi.'}finally{button.disabled=false}});
+function openShortcutFromHash(){if(location.pathname!=='/')return;if(location.hash==='#search-menu-toggle'){searchMenu.hidden=false;searchToggle.setAttribute('aria-expanded','true');updateSearchStep();$('#category-filter').focus()}else if(location.hash==='#yukusta-support'){yukustaPanel.hidden=false;yukustaOpen.setAttribute('aria-expanded','true');const support=$('#yukusta-support');support.open=true;support.querySelector('summary').focus()}}
+window.addEventListener('hashchange',openShortcutFromHash);openShortcutFromHash();
 
 
