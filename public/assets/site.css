@@ -180,3 +180,27 @@
   .yukusta-tools{max-height:78px;overflow-y:auto}
   #yukusta-support[open]{flex-basis:32%;min-height:120px;max-height:46%}
 }
+
+/* Listing cards use a clear orange edge; premium ads receive a stronger outline. */
+.listing-card{border:1.5px solid var(--orange)}
+.listing-card.premium-card{border:2px solid var(--orange);box-shadow:0 0 0 2px #f6a13b2b}
+.listing-card:hover{border-color:#e98711}
+.seo-list .seo-listing-card{display:grid;grid-template-columns:minmax(150px,220px) minmax(0,1fr);gap:0;margin:14px 0;padding:0;border:1.5px solid var(--orange);overflow:hidden}
+.seo-list .seo-listing-card.premium-card{border:2px solid var(--orange)}
+.seo-listing-photo{height:auto;min-height:176px;padding:8px}
+.seo-listing-photo img{display:block;width:100%;height:100%;min-height:158px;object-fit:cover;border-radius:7px}
+.seo-list-photo-placeholder{display:grid;place-items:center;width:100%;height:100%;min-height:158px;color:var(--muted);font-size:.76rem;text-align:center}
+.seo-listing-card .card-body{min-width:0}
+.seo-listing-card h2{font-size:1.12rem;margin:10px 0 6px}
+.seo-listing-card .description{min-height:0}
+@media(max-width:640px){
+  .seo-list .seo-listing-card{grid-template-columns:minmax(100px,34%) minmax(0,1fr);margin:10px 0}
+  .seo-listing-photo{min-height:132px;padding:5px}
+  .seo-listing-photo img,.seo-list-photo-placeholder{min-height:120px}
+  .seo-listing-card .card-body{padding:11px}
+  .seo-listing-card h2{font-size:.98rem}
+  .seo-listing-card .card-meta{font-size:.55rem;flex-wrap:wrap}
+  .seo-listing-card .description{font-size:.72rem;margin-bottom:8px}
+  .seo-listing-card .place{font-size:.68rem;padding:7px 0}
+  .seo-listing-card .price{font-size:.92rem}
+}
