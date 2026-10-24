@@ -239,3 +239,6 @@
 .admin-photo-link small{overflow-wrap:anywhere}
 .listing-admin-row>.admin-photo-gallery{flex-basis:100%}
 @media(max-width:600px){.admin-photo-gallery{gap:8px}.admin-photo-link{max-width:calc(50% - 4px)}.admin-photo-link img{width:145px;height:109px}}
+
+/* Keep the YükVinç mark legible in the compact mobile header. */
+body>header .brand{gap:10px;flex-shrink:0;letter-spacing:-.035em}body>header .brand img{width:48px;height:48px;object-fit:contain;flex:0 0 48px}body>header .brand span{margin-left:0;font-weight:750}@media(max-width:680px){body>header .brand{gap:8px;font-size:1.3rem}body>header .brand img{width:40px;height:40px;flex-basis:40px}}
