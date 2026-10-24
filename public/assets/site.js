@@ -16,10 +16,32 @@ $('#q').addEventListener('input',scheduleLoad);$('#city-filter').addEventListene
 $('#compare-toggle').addEventListener('click',()=>{const rows=items.filter(x=>selected.has(x.id)&&x.price_amount!=null),el=$('#comparison');if(rows.length<2){$('#result-caption').textContent='Fiyat karşılaştırması için fiyatı olan en az 2 ilan seç.';return}el.innerHTML=`<div class="compare-head"><h3>Fiyat ve ilan karşılaştırması</h3><button type="button" id="close-compare">Kapat ×</button></div><div class="compare-table">${rows.map(x=>`<div class="compare-col"><b>${esc(x.title)}</b><span>${esc(x.city)} · ${esc(x.district)}</span><strong>${new Intl.NumberFormat('tr-TR').format(x.price_amount)} ₺</strong><span>/ ${esc(x.price_unit||'')}</span><p>${esc(x.description)}</p><a href="/ilan/${encodeURIComponent(x.id)}/${listingSlug(x.title)}/">İlanı gör →</a></div>`).join('')}</div><p class="fine">Fiyat ve müsaitlik ilan sahibinden teyit edilmelidir.</p>`;el.hidden=false;$('#close-compare').addEventListener('click',()=>el.hidden=true);el.scrollIntoView({behavior:'smooth',block:'center'})});
 const query=new URLSearchParams(location.search);if(query.get('q'))$('#q').value=query.get('q').slice(0,100);if(query.get('city'))$('#city-filter').value=query.get('city').slice(0,80);if(['crane','tow','basket','machine','lift','operator'].includes(query.get('category'))){$('#category-filter').value=query.get('category');active=query.get('category')}applySiteSettings();load();
 
+let yukustaConversationId='',yukustaHistory=[];
 const yukustaPanel=$('#yukusta-panel'),yukustaOpen=$('#yukusta-open'),yukustaChat=$('#yukusta-chat');
 function yukustaLine(text,kind='assistant'){const p=document.createElement('p');p.className='yukusta-message '+kind;p.textContent=text;yukustaChat.append(p);yukustaChat.scrollTop=yukustaChat.scrollHeight;return p}
 function yukustaResults(listings){if(!listings?.length)return;const wrap=document.createElement('div');wrap.className='yukusta-results';wrap.innerHTML=listings.slice(0,5).map(x=>`<a href="/ilan/${encodeURIComponent(x.id)}/${listingSlug(x.title)}/"><b>${esc(x.title)}</b><span>${esc(x.city)} · ${esc(x.district)}</span><small>${x.price_amount==null?'Fiyat için iletişime geç':new Intl.NumberFormat('tr-TR').format(x.price_amount)+' ₺'+(x.price_unit?' / '+esc(x.price_unit):'')}</small>${x.package_tier==='premium'?'<em class="featured-badge">Premium · Öne Çıkan</em>':x.package_tier==='featured'?'<em class="featured-badge">Öne Çıkan</em>':''}</a>`).join('');yukustaChat.append(wrap);yukustaChat.scrollTop=yukustaChat.scrollHeight}
 yukustaOpen.addEventListener('click',()=>{yukustaPanel.hidden=false;yukustaOpen.setAttribute('aria-expanded','true');$('#yukusta-input').focus()});$('#yukusta-close').addEventListener('click',()=>{yukustaPanel.hidden=true;yukustaOpen.setAttribute('aria-expanded','false');yukustaOpen.focus()});
-$('#yukusta-form').addEventListener('submit',async e=>{e.preventDefault();const form=e.currentTarget,input=form.elements.message,button=form.querySelector('button[type=submit]'),message=input.value.trim();if(!message)return;yukustaLine(message,'user');input.value='';button.disabled=true;button.textContent='Yanıtlıyor…';const pending=yukustaLine('İlanlara bakıyorum…');try{const response=await fetch('/api/ai/assistant',{method:'POST',headers:{'content-type':'application/json','accept':'application/json'},body:JSON.stringify({message,conversation_id:yukustaConversationId})});const data=await response.json();pending.remove();if(!response.ok)throw Error(data.error||'Yanıt alınamadı.');yukustaLine(data.answer);yukustaResults(data.listings)}catch(error){pending.remove();yukustaLine(error.message||'Şu an yanıt veremiyorum. İlanları filtrelerden arayabilirsin.')}finally{button.disabled=false;button.textContent='Gönder';input.focus()}});
-
+const yukustaTools=document.createElement('div');yukustaTools.className='yukusta-results';
+for(const text of ['Vinç arıyorum','İlan nasıl verilir?','Fotoğraf nasıl yüklenir?','Yeni sohbet']){
+ const quick=document.createElement('button');quick.type='button';quick.className='reset-btn';quick.textContent=text;
+ quick.addEventListener('click',()=>{if($('#yukusta-form button[type=submit]').disabled)return;if(text==='Yeni sohbet'){yukustaConversationId='';yukustaHistory=[];yukustaChat.replaceChildren();yukustaLine('Yeni bir sohbete başladık. Hangi şehirde ne arıyorsun?')}else{$('#yukusta-input').value=text;$('#yukusta-form').requestSubmit()}});
+ yukustaTools.append(quick);
+}
+yukustaChat.before(yukustaTools);yukustaChat.setAttribute('aria-live','polite');
+$('#yukusta-form').addEventListener('submit',async e=>{
+ e.preventDefault();const form=e.currentTarget,input=form.elements.message,button=form.querySelector('button[type=submit]'),message=input.value.trim();
+ if(!message||button.disabled)return;
+ yukustaLine(message,'user');input.value='';button.disabled=true;button.textContent='Yanıtlıyor…';
+ const pending=yukustaLine('İlanlara bakıyorum…'),controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),25000);
+ try{
+  const response=await fetch('/api/ai/assistant',{method:'POST',headers:{'content-type':'application/json','accept':'application/json'},signal:controller.signal,body:JSON.stringify({message,conversation_id:yukustaConversationId,history:yukustaHistory})});
+  const data=await response.json();if(!response.ok)throw Error(data.error||'Yanıt alınamadı.');
+  yukustaConversationId=data.conversation_id||yukustaConversationId;
+  if(!data.support)yukustaHistory=[...yukustaHistory,{role:'user',content:message.slice(0,600)}].slice(-4);
+  pending.remove();yukustaLine(data.answer);yukustaResults(data.listings);
+ }catch(error){pending.remove();yukustaLine(error.name==='AbortError'?'Yanıt gecikti. Tekrar deneyebilir veya ilan filtrelerini kullanabilirsin.':error.message||'Şu an yanıt veremiyorum. İlanları filtrelerden arayabilirsin.')}
+ finally{clearTimeout(timeout);button.disabled=false;button.textContent='Gönder';input.focus()}
+});
 $('#yukusta-support-form').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget,status=$('#yukusta-support-status'),button=f.querySelector('button[type=submit]');button.disabled=true;status.textContent='Talebin kaydediliyor…';try{const response=await fetch('/api/ai/support',{method:'POST',headers:{'content-type':'application/json','accept':'application/json'},body:JSON.stringify({message:f.elements.message.value,name:f.elements.name.value,contact:f.elements.contact.value,consent:f.elements.consent.checked})});const data=await response.json();if(!response.ok)throw Error(data.error||'Talep gönderilemedi.');status.textContent=data.message;f.reset()}catch(error){status.textContent=error.message||'Talep gönderilemedi.'}finally{button.disabled=false}});
+
+
