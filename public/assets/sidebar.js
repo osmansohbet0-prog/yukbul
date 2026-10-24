@@ -58,7 +58,7 @@
   shell.className = 'yv-shell wrap';
   const nav = header.querySelector('.nav') || header;
   nav.prepend(toggle);
-  nav.insertAdjacentElement('afterend', shell);
+  header.insertAdjacentElement('afterend', shell);
   shell.append(sidebar, main);
   main.classList.remove('wrap');
   document.body.append(backdrop);
