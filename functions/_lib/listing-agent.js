@@ -1,3 +1,4 @@
+import {reviewListingInBackground} from './listings.js';
 import {readAiModeration} from './ai-settings.js';
 import {notifyListingPublished} from './notifications.js';
 
@@ -25,12 +26,15 @@ async function getPriceComparison(db,listing){
 export async function processListingAgent(env){
   const db=env.DB;if(!db||env.AI_ENABLED!=='true'||!env.AI)return{skipped:true,reason:'ai_unavailable'};
   const config=await readAiModeration(db);
-  if(!config.enabled||!config.auto_publish||!config.image_review)return{skipped:true,reason:'disabled'};
-  const cutoff=now()-30*60,{results=[]}=await db.prepare("SELECT l.id,l.user_id,l.title,l.category,l.city,l.district,l.price_amount,l.price_unit,l.created_at FROM listings l JOIN users u ON u.id=l.user_id WHERE l.status='pending' AND l.created_at<=? AND u.role<>'admin' ORDER BY l.created_at ASC LIMIT 20").bind(cutoff).all();
+  if(!config.enabled)return{skipped:true,reason:'disabled'};
+  const {results:unreviewed=[]}=await db.prepare("SELECT l.* FROM listings l WHERE l.status='pending' AND l.created_at>unixepoch()-86400 AND NOT EXISTS(SELECT 1 FROM admin_activity a WHERE a.entity_id=l.id AND a.action IN ('ai.listing.review_completed','ai.listing.image_review_failed') AND a.created_at>=l.updated_at) AND NOT EXISTS(SELECT 1 FROM admin_activity a WHERE a.entity_id=l.id AND a.action='ai.listing.review_started' AND a.created_at>unixepoch()-600) AND (SELECT COUNT(*) FROM admin_activity a WHERE a.entity_id=l.id AND a.action='ai.listing.review_started')<3 ORDER BY l.created_at ASC LIMIT 2").all();
+  for(const item of unreviewed)await reviewListingInBackground(env,item.id,item.user_id,item);
+  if(!config.auto_publish||!config.image_review)return{skipped:true,reason:'auto_publish_disabled',reviewed:unreviewed.length};
+  const cutoff=now()-30*60,{results=[]}=await db.prepare("SELECT l.id,l.user_id,l.title,l.category,l.city,l.district,l.price_amount,l.price_unit,l.created_at,l.updated_at FROM listings l JOIN users u ON u.id=l.user_id WHERE l.status='pending' AND l.created_at<=? AND u.role<>'admin' ORDER BY l.created_at ASC LIMIT 20").bind(cutoff).all();
   let published=0,held=0;
   for(const listing of results)try{
     const review=await db.prepare("SELECT action,metadata_json,created_at FROM admin_activity WHERE entity_type='listing' AND entity_id=? AND action IN ('ai.listing.review_completed','ai.listing.image_review_failed','ai.listing.review_failed','ai.listing.flagged','ai.listing.duplicate_flagged','listing.duplicate_signal_flagged') ORDER BY created_at DESC LIMIT 1").bind(listing.id).first();
-    if(!review||review.created_at<listing.created_at||review.action!=='ai.listing.review_completed'){
+    if(!review||review.created_at<Math.max(listing.created_at,listing.updated_at||listing.created_at)||review.action!=='ai.listing.review_completed'){
       held++;await holdOnce(db,listing.id,'YükUsta incelemesi tamamlanmadı veya görsel denetimi başarısız oldu; yönetici incelemesi bekleniyor.');continue;
     }
     let meta={};try{meta=JSON.parse(review.metadata_json||'{}')}catch{}
