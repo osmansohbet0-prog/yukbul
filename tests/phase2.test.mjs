@@ -22,6 +22,8 @@ test('passwords are salted and verify without storing plaintext',async()=>{
  assert.equal(first.includes('OrnekGucluSifre123!'),false);
 });
 
+test('legacy 100000-iteration password hashes remain valid during gradual upgrade',async()=>{assert.equal(await verifyPassword('OrnekGucluSifre123!','pbkdf2$100000$CnbnZIXNSWfYS20FRZ_yYg$ronHS2dF9qk6Wcx2bac-zt7h310-bVpO1swMYnmDZ1I'),true)});
+
 test('settings write blocks cross-origin requests and unauthenticated writes',async()=>{
  const env={DB:{prepare(){throw new Error('should not query before auth/origin validation')}}};
  const evil=new Request('https://yukvinc.com.tr/api/admin-settings',{method:'PUT',headers:{Origin:'https://evil.example','Content-Type':'application/json'},body:'{}'});
