@@ -30,3 +30,28 @@
 .card-art{overflow:hidden}.card-art img{display:block;width:100%;height:100%;object-fit:cover;border-radius:7px}.card-art>svg{display:block;width:78%;height:130px;flex:none}
 
 .yukusta-tools{display:flex;flex-wrap:wrap;gap:5px;padding:8px 12px;border-bottom:1px solid var(--line);flex:none}.yukusta-tools button{flex:1 1 45%;height:30px;padding:4px 6px;font-size:.7rem}#yukusta-chat{min-height:90px}#yukusta-panel>header,#yukusta-form{flex-shrink:0}
+
+/* Site-wide account and listing navigation */
+.yv-shell.wrap{display:grid;grid-template-columns:260px minmax(0,1fr);gap:25px;align-items:start;margin:28px auto 60px}
+.yv-sidebar{position:sticky;top:112px;align-self:start;background:var(--white);border:1px solid var(--line);border-radius:16px;padding:17px;min-width:0}
+.yv-menu-label{font-size:.64rem;letter-spacing:.14em;color:#788489;font-weight:800;text-transform:uppercase;margin:0 4px 9px}
+.yv-menu-heading{display:flex;align-items:center;justify-content:space-between;margin:18px 4px 8px}
+.yv-menu-heading .yv-menu-label{margin:0}
+.yv-menu-heading>a{font-size:.7rem;color:var(--muted);text-decoration:none}
+.yv-navitem{min-height:43px;border-radius:10px;display:flex;align-items:center;gap:11px;padding:8px 11px;color:var(--ink);font-size:.85rem;text-decoration:none;font-weight:650;margin:2px 0;transition:background .15s,color .15s}
+.yv-navitem:hover{background:#f5f6f4}
+.yv-navitem.is-active{background:#fff3e4;color:#804600}
+.yv-icon{width:20px;flex:none;text-align:center;font-size:1.05rem;color:#66757a}
+.yv-navitem.is-active .yv-icon{color:#d7831c}
+.yv-menu-divider{height:1px;background:var(--line);margin:14px 0}
+.yv-account-card{margin-top:18px;padding:14px;background:#f7f8f5;border-radius:12px}
+.yv-account-card strong,.yv-account-card span{display:block}
+.yv-account-card strong{font-size:.8rem;margin-bottom:5px}
+.yv-account-card span{color:var(--muted);font-size:.73rem;line-height:1.45}
+.yv-account-card>a{display:block;text-align:center;margin-top:11px;padding:8px;border:1px solid var(--line);border-radius:9px;background:#fff;text-decoration:none;color:var(--ink);font-weight:750;font-size:.75rem}
+.yv-menu-toggle{display:none}
+.yv-shell>.site-main{min-width:0;width:100%;max-width:none;margin:0;padding-block:0}
+.yv-shell>.site-main.narrow,.yv-shell>.site-main.account-wrap{max-width:none}
+.yv-shell>.site-main>.wrap,.yv-shell>.site-main>section>.wrap{width:100%;max-width:none;margin-inline:0}
+@media(max-width:900px){.yv-shell.wrap{grid-template-columns:220px minmax(0,1fr);gap:16px;width:calc(100% - 36px)}.yv-sidebar{padding:13px}}
+@media(max-width:640px){.yv-shell.wrap{display:block;width:calc(100% - 26px);margin:12px auto 42px}.yv-sidebar{position:static;top:auto;margin:0 0 16px}.yv-menu-toggle.wrap{display:flex;width:calc(100% - 26px);max-width:none;min-height:43px;align-items:center;gap:9px;margin:12px auto 0;padding:9px 13px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font-weight:750;text-align:left}.yv-shell>.site-main>.wrap,.yv-shell>.site-main>section>.wrap{width:100%}}

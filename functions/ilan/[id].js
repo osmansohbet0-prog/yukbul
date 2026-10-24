@@ -115,7 +115,7 @@ export async function onRequestGet({ params, env }) {
       '<details><summary>Şikayet et</summary><form id="report-form">' +
       '<label>Şikayet sebebi<textarea name="reason" minlength="5" maxlength="300" required></textarea></label>' +
       '<button class="reset-btn" type="submit">Yöneticiye bildir</button><p id="report-status" role="status"></p>' +
-      '</form></details></main><script src="/assets/detail.js" defer></script></body></html>';
+      '</form></details></main><script src="/assets/detail.js" defer></script><script src="/assets/sidebar.js" defer></script></body></html>';
 
     return new Response(html, {
       headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=60', 'x-content-type-options': 'nosniff' }
