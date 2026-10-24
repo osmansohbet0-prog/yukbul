@@ -1,4 +1,9 @@
 User-agent: *
 Allow: /
-Sitemap: https://yukvinc.com.tr/sitemap.xml
+Allow: /api/listing-photo/
 Disallow: /api/
+Disallow: /admin/
+Disallow: /giris/
+Disallow: /hesabim/
+Disallow: /yonetici-kurulum/
+Sitemap: https://yukvinc.com.tr/sitemap.xml

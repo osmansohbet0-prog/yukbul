@@ -33,6 +33,7 @@ export async function onRequestGet({ env }) {
     const urls = new Map([
       ['/', { lastmod: today }],
       ['/iletisim/', { lastmod: today }],
+      ['/hakkimizda/', { lastmod: '2026-10-25' }],
       ['/gizlilik/', { lastmod: today }]
     ]);
 

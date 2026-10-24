@@ -1,3 +1,4 @@
+import { renderHome } from "../functions/_lib/home-render.js";
 // Former Pages handlers are bundled and dispatched through this single Workers entry.
 import * as health from "../functions/api/saglik.js";
 import * as r0 from "../functions/api/admin-activity.js";
@@ -75,7 +76,7 @@ const ROUTES = [
 ];
 
 const API_NOT_FOUND = () => Response.json({ error: 'Uç nokta bulunamadı.' }, { status: 404 });
-const CSP = "default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://accounts.google.com 'sha256-89sM6Taoo7ugLs+JhEzm00yywDPn/XkiBZmVytoqgbY='; frame-src https://challenges.cloudflare.com https://accounts.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.gstatic.com; connect-src 'self' https://challenges.cloudflare.com https://accounts.google.com; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests";
+const CSP = "default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://accounts.google.com https://www.googletagmanager.com 'sha256-89sM6Taoo7ugLs+JhEzm00yywDPn/XkiBZmVytoqgbY='; frame-src https://challenges.cloudflare.com https://accounts.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.gstatic.com https://*.google-analytics.com; connect-src 'self' https://challenges.cloudflare.com https://accounts.google.com https://*.google-analytics.com https://www.googletagmanager.com; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests";
 
 function secure(response, request, isApi = false) {
   const headers = new Headers(response.headers);
@@ -86,8 +87,13 @@ function secure(response, request, isApi = false) {
   headers.set('content-security-policy', CSP);
   if (new URL(request.url).protocol === 'https:') headers.set('strict-transport-security', 'max-age=31536000');
   const path = new URL(request.url).pathname;
-  if (isApi || /^\/(?:admin|giris|ilan-ver|hesabim|yonetici-kurulum)(?:\/|$)/.test(path)) headers.set('x-robots-tag', 'noindex, nofollow');
-  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+  const publicPhoto = /^\/api\/listing-photo\//.test(path) && /public/.test(headers.get('cache-control') || '');
+  if ((isApi && !publicPhoto) || /^\/(?:admin|giris|ilan-ver|hesabim|yonetici-kurulum)(?:\/|$)/.test(path)) headers.set('x-robots-tag', 'noindex, nofollow');
+  let result = new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+  if (response.status === 200 && /text\/html/i.test(headers.get('content-type') || '') && !/^\/(?:admin|giris|ilan-ver|hesabim|yonetici-kurulum)(?:\/|$)/.test(path)) {
+    result = new HTMLRewriter().on('head', { element(el) { el.append('<link rel="stylesheet" href="/assets/analytics.css"><script src="/assets/analytics.js" defer></script>', { html: true }); } }).transform(result);
+  }
+  return result;
 }
 
 export default {
@@ -125,6 +131,7 @@ export default {
       return secure(response, request, pathname.startsWith('/api/'));
     }
     if (pathname === "/api" || pathname.startsWith("/api/")) return secure(API_NOT_FOUND(), request, true);
-    return secure(await env.ASSETS.fetch(request), request);
+    const assetResponse = await env.ASSETS.fetch(request);
+    return secure(pathname === "/" && request.method === "GET" ? await renderHome(assetResponse, env) : assetResponse, request);
   },
 };
