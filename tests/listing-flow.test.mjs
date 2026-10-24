@@ -15,6 +15,10 @@ const listing=overrides=>({
   city:'Konya',district:'Meram',address:'',price_amount:5000,price_unit:'günlük',
   contact_phone:'05451234567',...overrides
 });
+
+test('manlift listings are accepted as rental equipment',()=>{
+  assert.equal(validateListing(listing({category:'manlift',title:'Manlift kiralama',description:'Konya Meram makaslı manlift kiralama hizmeti.'})),null);
+});
 class FakeD1{
   prepare(sql){
     const stmt={sql,args:[],bind(...args){this.args=args;return this},async first(){
