@@ -65,7 +65,7 @@ export function rankAssistantListings(items,intent){
  }).slice(0,5).map(({item:x})=>({id:x.id,title:redactForAI(String(x.title||'')).slice(0,120),category:x.category,city:x.city,district:x.district,price_amount:x.price_amount,price_unit:x.price_unit,package_tier:x.package_tier||'standard',description:redactForAI(String(x.description||'')).slice(0,280)}));
 }
 export function assistantFallback(items,intent){
- if(!items.length)return(intent.city?intent.city+' için ':'')+(intent.tons?intent.tons+' ton kapasiteye uyan ':'')+'onaylı bir ilan bulamadım. Başka bir şehir veya ekipman türü söyleyebilirsin.';
+ if(!items.length){const criteria=[intent.district,intent.city,intent.tons?intent.tons+' ton':'',intent.unit==='is_basi'?'iş başı':intent.unit==='saatlik'?'saatlik':intent.unit==='gunluk'?'günlük':intent.unit==='aylik'?'aylık':'',intent.maxPrice?new Intl.NumberFormat('tr-TR').format(intent.maxPrice)+' ₺ üst sınır':''].filter(Boolean);return(criteria.length?criteria.join(' · ')+' ölçütlerinde ':'')+'onaylı ilan bulamadım. Şehir, ücret türü veya bütçeyi değiştirerek tekrar deneyebilirsin.';}
  return(items.length===1?'Aramana uyan bir onaylı ilan buldum.':'Aramana uyan '+items.length+' onaylı ilan buldum.')+' Aşağıdaki ilanları inceleyebilirsin. Kapasiteyi, fiyat birimini ve müsaitliği ilan sahibiyle teyit et.';
 }
 export function siteHelp(question){
