@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {validateListing,validatePhotoPayloads,isNearDuplicate,redactForAI,photoHashDistance,detectDuplicateSignals,findDuplicateSignals} from '../functions/_lib/listings.js';
+import {validateListing,validatePhotoPayloads,isNearDuplicate,redactForAI,photoHashDistance,detectDuplicateSignals,findDuplicateSignals,aiReview,publicItems} from '../functions/_lib/listings.js';
+import {onRequestPost as onAdminListingPost} from '../functions/api/admin-listings.js';
 import {onRequestPost} from '../functions/api/listings/index.js';
 import {onRequestPatch,onRequestDelete} from '../functions/api/listings/[id].js';
 import {listingFailure} from '../functions/_lib/listing-errors.js';
@@ -45,6 +46,10 @@ test('operator job follows the UI: phone is optional but validated when supplied
   assert.equal(validateListing(listing({category:'operator',listing_type:'operator_job',price_amount:null,contact_phone:''})),null);
   assert.match(validateListing(listing({category:'operator',listing_type:'operator_job',price_amount:null,contact_phone:'abc'})),/telefon/);
 });
+test('public listing query keeps admin listings visible without an expiry',async()=>{let sql='';const db={prepare(query){sql=query;return{bind(){return this},async all(){return{results:[]}}}}};await publicItems(db);assert.match(sql,/u\.role='admin'/);assert.match(sql,/l\.trial_expires_at>unixepoch\(\)/)});
+test('AI moderation sends stored listing photos to the YükVinç vision model',async()=>{const calls=[];const db={prepare(query){return{bind(){return this},async run(){return{meta:{changes:1}}},async all(){return{results:query.includes('SELECT mime_type,image_blob')?[{mime_type:'image/webp',image_blob:new Uint8Array([82,73,70,70,0,0,0,0,87,69,66,80])}]:[]}}}}};const env={AI_ENABLED:'true',AI:{async run(model,input){calls.push({model,input});return model.includes('moondream')?{answer:'Vinç fotoğrafı.'}:{response:'{"duplicate":false,"suspicious":false,"reason":""}'}}}};const result=await aiReview(env,db,'member-1',listing(),'listing_123456');assert.equal(result.reviewed,true);assert.equal(result.images_reviewed,1);assert.equal(calls[0].model,'@cf/moondream/moondream3.1-9B-A2B');assert.match(calls[0].input.image,/^data:image\/webp;base64,/);assert.deepEqual(JSON.parse(calls[1].input.messages[1].content).image_observations,['Vinç fotoğrafı.'])});
+test('admin-created listings are written without any expiry column',async()=>{const sql=[];const db={prepare(query){sql.push(query);return{args:[],bind(...args){this.args=args;return this},async first(){return query.includes('admin_sessions')?{id:'admin-1',email:'admin@example.test',role:'admin'}:null},async run(){return{meta:{changes:1}}}}}};const fields=listing();const request=new Request('https://yukvinc.com.tr/api/admin-listings',{method:'POST',headers:{origin:'https://yukvinc.com.tr','content-type':'application/json',cookie:'__Host-yv_admin=admin-session'},body:JSON.stringify({fields,photos:[]})});const response=await onAdminListingPost({request,env:{DB:db}});assert.equal(response.status,201);const insert=sql.find(query=>query.startsWith('INSERT INTO listings'));assert.ok(insert);assert.doesNotMatch(insert,/trial_expires_at/)});
+
 test('duplicate heuristic and AI redaction work without passing contact details through',()=>{
   assert.equal(isNearDuplicate(listing(),listing({title:'50 ton mobil vinç kiralama'})),true);
   assert.equal(redactForAI('Ara 0545 123 45 67 veya test@example.com https://example.test'),'Ara [telefon gizlendi] veya [e-posta gizlendi] [bağlantı gizlendi]');
