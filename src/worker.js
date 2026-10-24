@@ -1,3 +1,4 @@
+import { renderHome } from "../functions/_lib/home-render.js";
 // Former Pages handlers are bundled and dispatched through this single Workers entry.
 import * as health from "../functions/api/saglik.js";
 import * as r0 from "../functions/api/admin-activity.js";
@@ -130,6 +131,7 @@ export default {
       return secure(response, request, pathname.startsWith('/api/'));
     }
     if (pathname === "/api" || pathname.startsWith("/api/")) return secure(API_NOT_FOUND(), request, true);
-    return secure(await env.ASSETS.fetch(request), request);
+    const assetResponse = await env.ASSETS.fetch(request);
+    return secure(pathname === "/" && request.method === "GET" ? await renderHome(assetResponse, env) : assetResponse, request);
   },
 };
