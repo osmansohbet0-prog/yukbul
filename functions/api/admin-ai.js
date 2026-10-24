@@ -7,11 +7,18 @@ async function getStats(db){
  let recent=[],feedback=[];
  try{const{results=[]}=await db.prepare("SELECT action,entity_id,metadata_json,created_at FROM admin_activity WHERE action LIKE 'ai.listing.%' ORDER BY created_at DESC LIMIT 12").all();recent=results}catch{}
  try{const{results=[]}=await db.prepare("SELECT l.title,l.category,json_extract(a.metadata_json,'$.to') AS decision,a.created_at FROM admin_activity a JOIN listings l ON l.id=a.entity_id WHERE a.action='listing.status.update' AND a.entity_type='listing' AND json_extract(a.metadata_json,'$.to') IN ('approved','rejected') ORDER BY a.created_at DESC LIMIT 8").all();feedback=results}catch{}
- return{stats,recent,feedback}
+ const health={requests_7d:0,answers_7d:0,errors_7d:0,fallbacks_7d:0,average_response_ms:null,unanswered_7d:0,image_failures_7d:0};
+ try{
+  const row=await db.prepare("SELECT SUM(CASE WHEN action='assistant.request' THEN 1 ELSE 0 END) AS requests,SUM(CASE WHEN action='assistant.response' AND outcome='completed' THEN 1 ELSE 0 END) AS answers,SUM(CASE WHEN action='assistant.response' AND outcome='failed' THEN 1 ELSE 0 END) AS errors,SUM(CASE WHEN action='assistant.model' AND outcome='failed' THEN 1 ELSE 0 END) AS fallbacks,AVG(CASE WHEN action='assistant.response' AND outcome='completed' THEN json_extract(metadata_json,'$.duration_ms') END) AS latency FROM ai_audit WHERE created_at>=unixepoch()-604800").first();
+  health.requests_7d=Number(row?.requests||0);health.answers_7d=Number(row?.answers||0);health.errors_7d=Number(row?.errors||0);health.fallbacks_7d=Number(row?.fallbacks||0);health.average_response_ms=row?.latency==null?null:Math.round(Number(row.latency));
+  const unanswered=await db.prepare("SELECT COUNT(*) AS n FROM ai_conversations WHERE outcome='unanswered' AND created_at>=unixepoch()-604800").first();health.unanswered_7d=Number(unanswered?.n||0);
+  const images=await db.prepare("SELECT COUNT(*) AS n FROM admin_activity WHERE action='ai.listing.image_review_failed' AND created_at>=unixepoch()-604800").first();health.image_failures_7d=Number(images?.n||0);
+ }catch{}
+ return{stats,recent,feedback,health}
 }
 export async function onRequestGet(context){
  const auth=await requireAdmin(context);if(auth.response)return auth.response;
- try{const config=await readAiModeration(context.env.DB),extra=await getStats(context.env.DB);return json({config,stats:extra.stats,recent:extra.recent,feedback:extra.feedback,models:{name:'YükUsta',text:'@cf/meta/llama-3.3-70b-instruct-fp8-fast',image:'@cf/moondream/moondream3.1-9B-A2B'}})}catch{return fail('Yapay zekâ bilgileri alınamadı.',503)}
+ try{const config=await readAiModeration(context.env.DB),extra=await getStats(context.env.DB);return json({config,stats:extra.stats,health:{...extra.health,model_available:context.env.AI_ENABLED==='true'&&!!context.env.AI},recent:extra.recent,feedback:extra.feedback,models:{name:'YükUsta',text:'@cf/meta/llama-3.3-70b-instruct-fp8-fast',image:'@cf/moondream/moondream3.1-9B-A2B'}})}catch{return fail('Yapay zekâ bilgileri alınamadı.',503)}
 }
 export async function onRequestPatch(context){
  const auth=await requireAdmin(context);if(auth.response)return auth.response;
@@ -35,3 +42,5 @@ export async function onRequestPost(context){
   return json({suggestion,publish_automatically:false});
  }catch(error){console.error('[admin-ai]',JSON.stringify({event:'seo_suggestion_failed',name:error?.name||'Error'}));return fail('SEO önerisi üretilemedi. Biraz sonra tekrar deneyin.',503)}
 }
+
+
