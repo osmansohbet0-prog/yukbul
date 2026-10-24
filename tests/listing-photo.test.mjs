@@ -23,3 +23,10 @@ test('listing photo route respects the byte offset of a D1 binary view',async()=
  assert.equal(response.status,200);
  assert.deepEqual(new Uint8Array(await response.arrayBuffer()),expected);
 });
+
+test('listing photo route converts D1 BLOB byte arrays',async()=>{
+ const expected=Uint8Array.from([82,73,70,70,1,2,3,4]);
+ const response=await onRequestGet(context(Array.from(expected)));
+ assert.equal(response.status,200);
+ assert.deepEqual(new Uint8Array(await response.arrayBuffer()),expected);
+});
