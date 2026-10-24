@@ -17,7 +17,7 @@ const feeUnitOf=text=>{
  if(/\\b(saatlik|saat basi|saat)\\b/.test(text))return'saatlik';
  if(/\\b(gunluk|gun basi)\\b/.test(text))return'gunluk';
  if(/\\b(aylik|ay)\\b/.test(text))return'aylik';
- if(/\\b(is basi|sefer basi|seferlik)\\b/.test(text))return'is_basi';
+ if(/\\b(is basi|sefer basi|seferlik|sefer)\\b/.test(text))return'is_basi';
  if(/\\b(teklif|fiyat sor)\\b/.test(text))return'teklif';
  return'';
 };
@@ -38,11 +38,12 @@ const budgetAmount=raw=>{
 };
 export function searchIntent(question,history=[]){
  const current=foldSearch(question),previous=history.map(x=>foldSearch(x.content)).reverse();
- const currentDistrict=districtOf(current),district=currentDistrict||previous.map(districtOf).find(Boolean)||'';
- const currentCity=cityOf(current),city=currentCity|| (district?DISTRICT_CITY[district]:previous.map(cityOf).find(Boolean))||'';
- const category=categoryOf(current)||previous.map(categoryOf).find(Boolean)||'';
+ const currentDistrict=districtOf(current),currentCity=cityOf(current),priorDistrict=previous.map(districtOf).find(Boolean)||'';
+ const district=currentDistrict||(currentCity?'':priorDistrict);
+ const city=currentCity||(district?DISTRICT_CITY[district]:previous.map(cityOf).find(Boolean))||'';
+ const currentCategory=categoryOf(current),priorCategory=previous.map(categoryOf).find(Boolean)||'',category=currentCategory||priorCategory;
  const tonnage=text=>{const m=text.match(/\\b(\\d{1,4})\\s*ton(?:luk)?\\b/);return m?Number(m[1]):null};
- const tons=tonnage(current)??(category===categoryOf(previous[0]||'')&&!cityOf(current)&&!districtOf(current)?tonnage(previous[0]||''):null);
+ const priorTons=previous.map(tonnage).find(value=>value!=null),tons=tonnage(current)??(!currentCategory||currentCategory===priorCategory?priorTons:null);
  const unit=feeUnitOf(current)||previous.map(feeUnitOf).find(Boolean)||'';
  const amount=budgetAmount(question),budgetRequested=/\\b(en fazla|altinda|gecmesin|butce|butcem|ust limit|kadar)\\b/.test(current);
  const maxPrice=amount&&budgetRequested?amount:null;
