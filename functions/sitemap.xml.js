@@ -50,6 +50,7 @@ export async function onRequestGet({ env }) {
         crane: 'vinc',
         tow: 'oto-kurtarici',
         basket: 'sepetli-platform',
+        manlift: 'manlift',
         machine: 'is-makinesi',
         lift: 'nakliyat-asansoru',
         operator: 'operator-is-ilanlari'
