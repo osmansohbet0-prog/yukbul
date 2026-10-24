@@ -69,7 +69,7 @@ export async function onRequestPost(context){
       return listingFailure(error,request,'photo-save',400);
     }
 
-    const review=reviewListingInBackground(env,id,auth.member.id,item);
+    const review=env.DB.prepare("INSERT INTO admin_activity(actor_user_id,action,entity_type,entity_id,metadata_json) VALUES(NULL,'ai.listing.review_queued','listing',?,'{}')").bind(id).run();
     const notification=notifyListingSubmitted(env,{id,title:item.title,city:item.city,category:item.category});
     if(context.ctx?.waitUntil){context.ctx.waitUntil(review);context.ctx.waitUntil(notification)}else await Promise.all([review,notification]);
     return json({ok:true,id,status,message:status==='flagged'?'İlan şüpheli içerik nedeniyle yönetici incelemesine alındı.':'İlanın yönetici onayından sonra yayınlanacak.'},201);
