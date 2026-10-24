@@ -74,7 +74,7 @@ const ROUTES = [
 ];
 
 const API_NOT_FOUND = () => Response.json({ error: 'Uç nokta bulunamadı.' }, { status: 404 });
-const CSP = "default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://accounts.google.com 'sha256-cuGDcrjM3cwUHCANhsm/i8vSNyU8cJb1acONQuNkTEQ='; frame-src https://challenges.cloudflare.com https://accounts.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.gstatic.com; connect-src 'self' https://challenges.cloudflare.com https://accounts.google.com; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests";
+const CSP = "default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://accounts.google.com 'sha256-89sM6Taoo7ugLs+JhEzm00yywDPn/XkiBZmVytoqgbY='; frame-src https://challenges.cloudflare.com https://accounts.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.gstatic.com; connect-src 'self' https://challenges.cloudflare.com https://accounts.google.com; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests";
 
 function secure(response, request, isApi = false) {
   const headers = new Headers(response.headers);
