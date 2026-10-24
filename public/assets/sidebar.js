@@ -40,6 +40,10 @@
     row('Hesabım', '/hesabim/', '♙', path === '/hesabim' || path === '/giris') +
     row('İlanlarım', '/hesabim/#my-listings', '▤', path === '/hesabim') +
     '</div><div class="yv-menu-divider"></div>' +
+    '<div class="yv-menu-group"><p class="yv-menu-label">Hızlı erişim</p>' +
+    row('Ara ve filtrele', '/#search-menu-toggle', '⌕') +
+    row('Destek ve talep', '/#yukusta-support', '✦') +
+    '</div><div class="yv-menu-divider"></div>' +
     '<div class="yv-menu-group"><div class="yv-menu-heading"><p class="yv-menu-label">Kategoriler</p>' +
     '<a href="/#ilanlar">Hepsi</a></div>' +
     row('Tüm ilanlar', '/#ilanlar', '⌕', allActive) +
