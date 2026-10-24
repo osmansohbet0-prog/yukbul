@@ -1,3 +1,5 @@
+export const AI_RATE_LIMIT_ACTION='ai';
+export const SUPPORT_RATE_LIMIT_ACTION='report';
 export const AI_LIMITS={dailyCalls:500,perIpCalls:5,perIpWindowSeconds:900,maxQuestionLength:600,maxAnswerLength:1200};
 const fold=value=>String(value||'').normalize('NFKC').toLocaleLowerCase('tr').replace(/ı/g,'i').normalize('NFD').replace(/\p{Diacritic}/gu,'');
 const PRICE_REQUEST=/\b(fiyat|ucret|indirim|kampanya|bedava|ucretsiz|paket|premium|standart|odeme|abonelik|sozlesme)\b/;

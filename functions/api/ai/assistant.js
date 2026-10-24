@@ -2,26 +2,27 @@ import {fail,json,isAllowedOrigin,readJson,randomId} from '../../_lib/core.js';
 import {limited} from '../../_lib/member.js';
 import {publicItems,redactForAI,turkishCities} from '../../_lib/listings.js';
 import {readAiModeration} from '../../_lib/ai-settings.js';
-import {AI_LIMITS,aiConversationId,classifyAssistantRequest,validateAssistantOutput} from '../../_lib/ai-policy.js';
+import {AI_RATE_LIMIT_ACTION,AI_LIMITS,aiConversationId,classifyAssistantRequest,validateAssistantOutput} from '../../_lib/ai-policy.js';
 const CATEGORY_TERMS={crane:['vinç','vinc','mobil vinç','hiyap','tonaj'],tow:['çekici','oto kurtarıcı','oto kurtarici','yol yardım'],basket:['sepetli platform','sepetli vinç'],machine:['iş makinesi','forklift','kepçe','kepce'],lift:['nakliyat asansörü','yük asansörü'],operator:['operatör','iş arıyor','iş ariyor']};
 const STOP_WORDS=new Set(['arıyorum','arıyor','bakıyorum','bakiyorum','lazım','lazim','istiyorum','var','olan','ilan','ilanı','ilanlari','ilanları','bana','için','icin','hangi','nedir','midir','mi','mı','ve','ile','bir','en','yakın','yakin'].map(x=>x.normalize('NFKC').toLocaleLowerCase('tr').replace(/ı/g,'i')));
 const normalize=s=>String(s||'').normalize('NFKC').toLocaleLowerCase('tr').replace(/ı/g,'i').replace(/[^\p{L}\p{N}\s]/gu,' ').replace(/\s+/g,' ').trim();
 async function audit(env,actor,action,outcome,metadata){try{await env.DB.prepare('INSERT INTO ai_audit(id,actor,action,outcome,metadata_json) VALUES(?,?,?,?,?)').bind(randomId(16),actor,action,outcome,JSON.stringify(metadata||{})).run()}catch{}}
 async function saveConversation(env,id,question,answer,outcome){try{await env.DB.prepare('INSERT INTO ai_conversations(id,conversation_id,user_message_redacted,assistant_answer_redacted,outcome) VALUES(?,?,?,?,?)').bind(randomId(16),id,redactForAI(question).slice(0,600),redactForAI(answer||'').slice(0,1200),outcome).run()}catch{}}
+async function notifyAdmin(env,ticketId,summary){let status='not_configured';if(env.EMAIL&&env.SUPPORT_EMAIL_TO&&env.SUPPORT_EMAIL_FROM){try{await env.EMAIL.send({to:env.SUPPORT_EMAIL_TO,from:{email:env.SUPPORT_EMAIL_FROM,name:'YükVinç Destek'},subject:'YükVinç yönetici talebi',text:'Fiyat/paket veya admin işlemi talebi: '+summary,html:'<p>Fiyat/paket veya admin işlemi talebi:</p><p>'+summary.replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))+'</p>'});status='sent'}catch(error){status='failed';console.error('[yukusta-notice]',JSON.stringify({event:'email_failed',code:error?.code||'unknown'}))}}await env.DB.prepare('UPDATE support_tickets SET email_status=?,updated_at=unixepoch() WHERE id=?').bind(status,ticketId).run();await audit(env,'system','support.ticket.email',status,{ticket_id:ticketId});}
 export async function onRequestPost({request,env}){
  if(!isAllowedOrigin(request))return fail('İstek kaynağı doğrulanamadı.',403);
  if(!env.DB)return fail('İlan veritabanına şu an ulaşılamıyor.',503);
  const data=await readJson(request,4096),question=String(data.message||'').trim(),conversation=aiConversationId(data.conversation_id);
  if(question.length<4||question.length>AI_LIMITS.maxQuestionLength)return fail('Mesajın 4–600 karakter arasında olmalı.');
  try{
-  if(await limited(env,request,'ai-assistant',AI_LIMITS.perIpCalls,AI_LIMITS.perIpWindowSeconds))return fail('YükUsta’ya kısa sürede çok fazla mesaj gönderildi. 15 dakika sonra tekrar dene.',429);
+  if(await limited(env,request,AI_RATE_LIMIT_ACTION,AI_LIMITS.perIpCalls,AI_LIMITS.perIpWindowSeconds))return fail('YükUsta’ya kısa sürede çok fazla mesaj gönderildi. 15 dakika sonra tekrar dene.',429);
   const daily=await env.DB.prepare("SELECT COUNT(*) AS n FROM ai_audit WHERE action='assistant.request' AND created_at>=unixepoch('now','start of day')").first();
   if(Number(daily?.n||0)>=AI_LIMITS.dailyCalls)return fail('Şu an yanıt veremiyorum; şikayet ve talebini bırakabilirsin.',429);
   await audit(env,'visitor','assistant.request','started',{conversation_id:conversation});
   const kind=classifyAssistantRequest(question);
   if(kind!=='read_only'){
    const answer=validateAssistantOutput({},kind).response;
-   if(kind!=='read_only'){const ticketId=randomId(16);await env.DB.prepare('INSERT INTO support_tickets(id,source,summary_redacted,email_status) VALUES(?,?,?,?)').bind(ticketId,kind==='pricing'?'price_request':'admin_action',redactForAI(question).slice(0,600),'not_requested').run();await audit(env,'visitor','support.price_request','stored',{ticket_id:ticketId})}
+   if(kind!=='read_only'){const ticketId=randomId(16);const summary=redactForAI(question).slice(0,600);await env.DB.prepare('INSERT INTO support_tickets(id,source,summary_redacted,email_status) VALUES(?,?,?,?)').bind(ticketId,kind==='pricing'?'price_request':'admin_action',summary,'not_configured').run();await audit(env,'visitor','support.price_request','stored',{ticket_id:ticketId});await notifyAdmin(env,ticketId,summary)}
    await saveConversation(env,conversation,question,answer,kind==='pricing'?'pricing':'support');await audit(env,'visitor','assistant.policy',kind,{conversation_id:conversation});
    return json({name:'YükUsta',answer,listings:[],support:true,conversation_id:conversation})
   }
