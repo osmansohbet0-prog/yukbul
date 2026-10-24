@@ -15,6 +15,7 @@ import * as r29 from "../functions/api/ai/assistant.js";
 import * as r30 from "../functions/api/ai/support.js";
 import * as r31 from "../functions/api/admin-ai-suggestions.js";
 import { runImprovementReview } from "../functions/_lib/ai-improvements.js";
+import { processListingAgent } from "../functions/_lib/listing-agent.js";
 import * as r32 from "../functions/api/admin-usage.js";
 import * as r10 from "../functions/api/ai/suggest.js";
 import * as r11 from "../functions/api/auth/login.js";
@@ -90,7 +91,13 @@ function secure(response, request, isApi = false) {
 }
 
 export default {
-  async scheduled(controller, env, ctx) { ctx.waitUntil(runImprovementReview(env).catch(async error=>{try{await env.DB.prepare('INSERT INTO ai_audit(id,actor,action,outcome,metadata_json) VALUES(?,?,?,?,?)').bind(crypto.randomUUID().replaceAll('-',''),'system','improvement.review','failed',JSON.stringify({name:error?.name||'Error'})).run()}catch{}console.error('[ai-improvements]',JSON.stringify({event:'scheduled_review_failed',name:error?.name||'Error'}))})); },
+  async scheduled(controller, env, ctx) {
+    if(controller.cron==='* * * * *'){
+      ctx.waitUntil(processListingAgent(env).catch(error=>console.error('[listing-agent]',JSON.stringify({event:'scheduled_failed',name:error?.name||'Error'}))));
+      return;
+    }
+    ctx.waitUntil(runImprovementReview(env).catch(async error=>{try{await env.DB.prepare('INSERT INTO ai_audit(id,actor,action,outcome,metadata_json) VALUES(?,?,?,?,?)').bind(crypto.randomUUID().replaceAll('-',''),'system','improvement.review','failed',JSON.stringify({name:error?.name||'Error'})).run()}catch{}console.error('[ai-improvements]',JSON.stringify({event:'scheduled_review_failed',name:error?.name||'Error'}))}));
+  },
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const host = (request.headers.get("host") || url.hostname).toLowerCase();
