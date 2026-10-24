@@ -48,9 +48,10 @@ export async function onRequestGet({ params, env }) {
     const photoUrl = item.photo_id
       ? 'https://yukvinc.com.tr/api/listing-photo/' + encodeURIComponent(item.photo_id) + '?v=2'
       : '';
+    const priceUnit = item.price_unit === 'sefer' ? 'iş başı' : item.price_unit || '';
     const price = item.price_amount == null
-      ? 'Fiyat için ilan sahibine danış'
-      : new Intl.NumberFormat('tr-TR').format(item.price_amount) + ' TL ' + (item.price_unit || '');
+      ? 'Ücret için ilan sahibine danış'
+      : new Intl.NumberFormat('tr-TR').format(item.price_amount) + ' ₺' + (priceUnit ? ' / ' + priceUnit : '');
     const type = item.listing_type === 'operator_job' ? 'İş arayan operatör' : 'Ekipman kiralama';
     const cityUrl = item.city
       ? 'https://yukvinc.com.tr/sehir/' + encodeURIComponent(slugify(item.city)) + '/'
