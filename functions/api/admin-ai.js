@@ -11,7 +11,7 @@ async function getStats(db){
 }
 export async function onRequestGet(context){
  const auth=await requireAdmin(context);if(auth.response)return auth.response;
- try{const config=await readAiModeration(context.env.DB),extra=await getStats(context.env.DB);return json({config,stats:extra.stats,recent:extra.recent,feedback:extra.feedback,models:{text:'@cf/meta/llama-3.2-3b-instruct',image:'@cf/moondream/moondream3.1-9B-A2B'}})}catch{return fail('Yapay zekâ bilgileri alınamadı.',503)}
+ try{const config=await readAiModeration(context.env.DB),extra=await getStats(context.env.DB);return json({config,stats:extra.stats,recent:extra.recent,feedback:extra.feedback,models:{name:'YükUsta',text:'@cf/meta/llama-3.3-70b-instruct-fp8-fast',image:'@cf/moondream/moondream3.1-9B-A2B'}})}catch{return fail('Yapay zekâ bilgileri alınamadı.',503)}
 }
 export async function onRequestPatch(context){
  const auth=await requireAdmin(context);if(auth.response)return auth.response;
@@ -26,7 +26,7 @@ export async function onRequestPost(context){
   const settings=await context.env.DB.prepare("SELECT value_json FROM site_settings WHERE setting_key='public_site'").first();
   let current={};try{current=JSON.parse(settings?.value_json||'{}')}catch{}
   const prompt={brand:'YükVinç',site:'Türkiye’de vinç, oto kurtarıcı, iş makinesi, sepetli platform, nakliyat asansörü ve operatör ilan pazaryeri',current_title:String(current.seo_title||'').slice(0,70),current_description:String(current.seo_description||'').slice(0,180)};
-  const output=await context.env.AI.run('@cf/meta/llama-3.2-3b-instruct',{messages:[{role:'system',content:'YükVinç için Türkçe arama snippet önerileri yaz. Marka adını başlıkta doğal ve başta kullan. Arama sıralaması, iş hacmi, sertifika veya doğrulanmamış yerel adres iddiası üretme. Başlık en fazla 70 karakter, açıklama 40-180 karakter olsun. Yalnızca JSON döndür: {"title":"","description":"","notes":[]}.'},{role:'user',content:JSON.stringify(prompt)}],max_tokens:220,temperature:0.2});
+  const output=await context.env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast',{messages:[{role:'system',content:'YükUsta olarak YükVinç için Türkçe arama snippet önerileri yaz. Marka adını başlıkta doğal ve başta kullan. Arama sıralaması, iş hacmi, sertifika veya doğrulanmamış yerel adres iddiası üretme. Başlık en fazla 70 karakter, açıklama 40-180 karakter olsun. Yalnızca JSON döndür: {"title":"","description":"","notes":[]}.'},{role:'user',content:JSON.stringify(prompt)}],max_tokens:220,temperature:0.2});
   let raw=typeof output.response==='string'?output.response:JSON.stringify(output.response||output);raw=raw.trim();const fence=String.fromCharCode(96).repeat(3);if(raw.startsWith(fence)){raw=raw.slice(raw.indexOf('\n')+1);if(raw.endsWith(fence))raw=raw.slice(0,-3).trim()};const parsed=JSON.parse(raw);
   const clean=v=>String(v||'').replace(/<[^>]*>/g,'').replace(/[\\u0000-\\u001f]/g,' ').trim();
   const suggestion={title:clean(parsed.title).slice(0,70),description:clean(parsed.description).slice(0,180),notes:Array.isArray(parsed.notes)?parsed.notes.slice(0,3).map(x=>clean(x).slice(0,180)):[]};
