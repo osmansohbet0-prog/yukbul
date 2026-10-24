@@ -2,7 +2,7 @@ export const COOKIE = '__Host-yv_admin';
 export const SESSION_SECONDS = 30 * 60;
 export const ADMIN_EMAIL = 'osmansohbet0@gmail.com';
 const encoder = new TextEncoder();
-const PASSWORD_ITERATIONS = 100000;
+const PASSWORD_ITERATIONS = 210000;
 const ALLOWED_ORIGINS = new Set(['https://yukvinc.com.tr', 'https://www.yukvinc.com.tr']);
 const DEFAULT_SITE = {
   brand_name: 'YükVinç', logo_path: '/assets/mark.svg', primary_color: '#172d35', accent_color: '#f6a13b',
@@ -42,10 +42,10 @@ export async function hashPassword(password) {
 }
 function fromB64(s) { const x=s.replace(/-/g,'+').replace(/_/g,'/'); const raw=atob(x+'='.repeat((4-x.length%4)%4)); return Uint8Array.from(raw,c=>c.charCodeAt(0)); }
 export async function verifyPassword(password, stored) {
-  const parts=String(stored||'').split('$'); if(parts.length!==4||parts[0]!=='pbkdf2'||Number(parts[1])!==PASSWORD_ITERATIONS)return false;
+  const parts=String(stored||'').split('$'),iterations=Number(parts[1]); if(parts.length!==4||parts[0]!=='pbkdf2'||![100000,PASSWORD_ITERATIONS].includes(iterations))return false;
   const salt=fromB64(parts[2]),expected=fromB64(parts[3]);
   const key=await crypto.subtle.importKey('raw',encoder.encode(password),'PBKDF2',false,['deriveBits']);
-  const actual=new Uint8Array(await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt,iterations:PASSWORD_ITERATIONS},key,256));
+  const actual=new Uint8Array(await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt,iterations},key,256));
   let mismatch=actual.length^expected.length; for(let i=0;i<Math.max(actual.length,expected.length);i++)mismatch|=(actual[i]||0)^(expected[i]||0);
   return mismatch===0;
 }

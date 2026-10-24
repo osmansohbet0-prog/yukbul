@@ -26,5 +26,20 @@
     { "pattern": "yukvinc.com.tr", "custom_domain": true },
     { "pattern": "www.yukvinc.com.tr", "custom_domain": true }
   ],
-  "workers_dev": false
+  "workers_dev": false,
+  "previews": {
+    "vars": {
+      "AI_ENABLED": "false",
+      "TURNSTILE_SITE_KEY": "0x4AAAAAAFix_9Aae1ng9JT8"
+    },
+    "d1_databases": [
+      {
+        "binding": "DB",
+        "database_name": "yukvinc-preview",
+        "database_id": "fa5c7fc3-e0eb-4fb9-813d-0c696a05cff5",
+        "migrations_dir": "migrations"
+      }
+    ],
+    "ai": { "binding": "AI" }
+  }
 }
