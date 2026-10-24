@@ -75,3 +75,20 @@
 .listing-home .home-market .results-head{padding-top:14px}
 @media(max-width:1320px){.listing-home .home-market .filters{grid-template-columns:repeat(3,minmax(0,1fr))}.listing-home .home-market .search-field{grid-column:span 2}}
 @media(max-width:640px){.listing-home .nav{min-height:66px}.listing-home .home-market{padding:17px 14px 38px}.listing-home .home-market .filters{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:13px}.listing-home .home-market .search-field{grid-column:span 2}.listing-home .home-market .reset-btn{grid-column:span 2}.listing-home .listing-heading h1{font-size:2rem}.listing-home .listing-heading p{font-size:.86rem}.listing-home .quick-cats{gap:6px}.listing-home .quick-cats .category{padding:7px 10px;font-size:.74rem}}
+
+/* Mobile account and category menu drawer */
+.yv-menu-backdrop[hidden]{display:none!important}
+.yv-menu-close{display:none}
+@media(max-width:640px){
+  .yv-menu-toggle{display:flex;flex:none;align-items:center;justify-content:center;gap:8px;width:auto;max-width:none;min-height:40px;margin:0;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);font-size:.78rem;font-weight:750;line-height:1}
+  .yv-menu-icon{display:grid;gap:4px;width:17px}
+  .yv-menu-icon i{display:block;width:100%;height:2px;border-radius:2px;background:currentColor}
+  .yv-sidebar{position:fixed;left:0;top:0;bottom:0;z-index:51;width:min(84vw,320px);height:100vh;height:100dvh;max-height:100dvh;overflow-y:auto;overscroll-behavior:contain;transform:translateX(-105%);transition:transform .24s ease;align-self:auto;margin:0;padding:18px 16px 28px;border:0;border-radius:0 16px 16px 0;box-shadow:0 16px 44px #10262d33}
+  .yv-sidebar.is-open{transform:translateX(0)}
+  .yv-menu-close{display:grid;place-items:center;width:38px;height:38px;margin:0 0 15px auto;border:1px solid var(--line);border-radius:50%;background:#fff;color:var(--ink);font-size:1.5rem;line-height:1}
+  .yv-menu-backdrop{position:fixed;inset:0;z-index:50;border:0;padding:0;background:rgba(13,30,36,.48);backdrop-filter:blur(2px)}
+  .yv-shell.wrap{display:block;width:calc(100% - 26px);margin:12px auto 42px}
+  .yv-shell>.site-main>.wrap,.yv-shell>.site-main>section>.wrap{width:100%}
+  body.yv-menu-open{overflow:hidden}
+}
+@media(prefers-reduced-motion:reduce){.yv-sidebar{transition:none}}
