@@ -45,10 +45,10 @@ export function searchIntent(question,history=[]){
  const tonnage=text=>{const m=text.match(/\b(\d{1,4})\s*ton(?:luk)?\b/);return m?Number(m[1]):null};
  const priorTons=previous.map(tonnage).find(value=>value!=null),tons=tonnage(current)??(!currentCategory||currentCategory===priorCategory?priorTons:null);
  const unit=feeUnitOf(current)||previous.map(feeUnitOf).find(Boolean)||'';
- const amount=budgetAmount(question),budgetRequested=/\b(en fazla|altinda|gecmesin|butce|butcem|ust limit|kadar)\b/.test(current);
- const maxPrice=amount&&budgetRequested?amount:null;
+ const amount=budgetAmount(question),budgetRequested=/\b(en fazla|altinda|gecmesin|butce|butcem|ust limit|kadar)\b/.test(current),priorBudget=previous.map(budgetAmount).find(value=>value!=null);
+ const maxPrice=amount&&budgetRequested?amount:(!budgetRequested?priorBudget:null);
  const terms=current.split(' ').filter(x=>x.length>2&&!STOP.has(x)&&!/^\d+$/.test(x)&&!['saatlik','gunluk','aylik','seferlik','teklif','tl','lira'].includes(x));
- return{category,city,district,tons,unit,maxPrice,cheapest:/\b(ucuz|ekonomik)\b|fiyata gore/.test(current),terms};
+ return{category,city,district,tons,unit,maxPrice,cheapest:/\b(ucuz|ekonomik)\b|fiyata gore/.test(current)||previous.some(text=>/\b(ucuz|ekonomik)\b|fiyata gore/.test(text)),terms};
 }
 export function rankAssistantListings(items,intent){
  const eligible=items.filter(x=>(!intent.category||x.category===intent.category)&&(!intent.city||foldSearch(x.city)===foldSearch(intent.city))&&(!intent.district||foldSearch(x.district)===foldSearch(intent.district))&&(!intent.unit||canonicalUnit(x.price_unit)===intent.unit)&&(!intent.maxPrice||(Number(x.price_amount)>0&&Number(x.price_amount)<=intent.maxPrice)));
