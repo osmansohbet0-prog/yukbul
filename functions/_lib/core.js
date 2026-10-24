@@ -1,6 +1,5 @@
 export const COOKIE = '__Host-yv_admin';
 export const SESSION_SECONDS = 30 * 60;
-export const ADMIN_EMAIL = 'osmansohbet0@gmail.com';
 const encoder = new TextEncoder();
 const PASSWORD_ITERATIONS = 210000;
 const ALLOWED_ORIGINS = new Set(['https://yukvinc.com.tr', 'https://www.yukvinc.com.tr']);
@@ -57,9 +56,10 @@ export function cookieValue(request) {
 export function setCookie(token, maxAge=SESSION_SECONDS) { return `${COOKIE}=${encodeURIComponent(token)}; Path=/; Max-Age=${maxAge}; HttpOnly; Secure; SameSite=Strict`; }
 export function clearCookie() { return `${COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict`; }
 export async function currentAdmin(request, env) {
+  const adminEmail=String(env.ADMIN_EMAIL||'').trim().toLowerCase(); if(!adminEmail)return null;
   const token=cookieValue(request); if(!token)return null;
   const tokenHash=await digest(token);
-  const row=await env.DB.prepare(`SELECT u.id,u.email,u.role FROM admin_sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>? AND u.active=1 AND u.role='admin' AND u.email_norm=?`).bind(tokenHash,Math.floor(Date.now()/1000),ADMIN_EMAIL).first();
+  const row=await env.DB.prepare(`SELECT u.id,u.email,u.role FROM admin_sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>? AND u.active=1 AND u.role='admin' AND u.email_norm=?`).bind(tokenHash,Math.floor(Date.now()/1000),adminEmail).first();
   return row||null;
 }
 export async function requireAdmin(context) {
@@ -107,3 +107,4 @@ export function cleanSiteSettings(input) {
   return {brand_name:input.brand_name.trim(),logo_path:input.logo_path.trim(),primary_color:input.primary_color.toLowerCase(),accent_color:input.accent_color.toLowerCase(),font_family:input.font_family,seo_title:input.seo_title.trim(),seo_description:input.seo_description.trim(),contact_email:String(input.contact_email||'').trim(),contact_phone:String(input.contact_phone||'').trim(),contact_address:String(input.contact_address||'').trim(),headline:input.headline.trim(),introduction:input.introduction.trim(),hero_image:input.hero_image.trim(),about_title:input.about_title.trim(),about_text:input.about_text.trim(),faq:input.faq.map(x=>({question:x.question.trim(),answer:x.answer.trim()})),section_order:input.section_order,sections:Object.fromEntries(['ilanlar','nasil','about','faq','closing'].map(k=>[k,input.sections[k]]))};
 }
 export {DEFAULT_SITE, digest};
+
