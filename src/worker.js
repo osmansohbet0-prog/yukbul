@@ -90,7 +90,7 @@ function secure(response, request, isApi = false) {
 }
 
 export default {
-  async scheduled(controller, env, ctx) { ctx.waitUntil(runImprovementReview(env).catch(error=>console.error('[ai-improvements]',JSON.stringify({event:'scheduled_review_failed',name:error?.name||'Error'})))); },
+  async scheduled(controller, env, ctx) { ctx.waitUntil(runImprovementReview(env).catch(async error=>{try{await env.DB.prepare('INSERT INTO ai_audit(id,actor,action,outcome,metadata_json) VALUES(?,?,?,?,?)').bind(crypto.randomUUID().replaceAll('-',''),'system','improvement.review','failed',JSON.stringify({name:error?.name||'Error'})).run()}catch{}console.error('[ai-improvements]',JSON.stringify({event:'scheduled_review_failed',name:error?.name||'Error'}))})); },
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const host = (request.headers.get("host") || url.hostname).toLowerCase();
