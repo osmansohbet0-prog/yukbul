@@ -18,7 +18,7 @@ export async function onRequestPost(context){
     const quota=await env.DB.prepare('UPDATE ai_usage SET count=count+1 WHERE user_id=? AND usage_date=? AND count<2').bind(auth.member.id,usageDate).run();
     if(!quota.meta?.changes)return fail('Bugünkü ücretsiz öneri hakkı tamamlandı.',429);
     reserved=true;
-    const result=await env.AI.run('@cf/meta/llama-3.2-3b-instruct',{messages:[
+    const result=await env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast',{messages:[
       {role:'system',content:'Türkçe ilan editörüsün. Kullanıcının kısa notunu yalnızca verilen bilgilere bağlı kalarak düzenle. Uydurma özellik, fiyat, hizmet bölgesi veya iletişim bilgisi ekleme. JSON döndür: title, description, category. category yalnızca crane,tow,basket,machine,lift,operator olabilir. En fazla 120 karakter başlık, 1200 karakter açıklama.'},
       {role:'user',content:redactForAI(note)}
     ],max_tokens:420,temperature:0.2});

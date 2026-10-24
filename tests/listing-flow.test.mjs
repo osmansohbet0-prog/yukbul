@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {validateListing,validatePhotoPayloads,isNearDuplicate,redactForAI,photoHashDistance,detectDuplicateSignals,findDuplicateSignals,aiReview,publicItems} from '../functions/_lib/listings.js';
 import {readAiModeration,cleanAiModeration} from '../functions/_lib/ai-settings.js';
 import {onRequestGet as sitemapGet} from '../functions/sitemap.xml.js';
+import {onRequestPost as onYukustaPost} from '../functions/api/ai/assistant.js';
 import {onRequestPost as onAdminListingPost} from '../functions/api/admin-listings.js';
 import {onRequestPost} from '../functions/api/listings/index.js';
 import {onRequestPatch,onRequestDelete} from '../functions/api/listings/[id].js';
@@ -123,3 +124,13 @@ test('AI review failure never blocks publishing a newly submitted listing to mod
   assert.equal(response.status,201);
   await Promise.all(ctx.waiting);
 });
+
+test('YükUsta answers from approved listings and redacts personal data before inference',async()=>{
+ let model='',payload='';
+ const db={prepare(query){return{args:[],bind(...args){this.args=args;return this},async first(){if(query.includes('site_settings'))return{value_json:'{"enabled":true,"image_review":true,"sensitivity":"balanced"}'};if(query.includes('COUNT(*) n'))return{n:0};return null},async all(){return{results:[{id:'approved_12345678',listing_type:'equipment',category:'crane',title:'Konya mobil vinç kiralama',description:'Konya ve Meram bölgesinde mobil vinç hizmeti.',city:'Konya',district:'Meram',price_amount:5000,price_unit:'günlük',created_at:1792840000,photo_id:null}]}},async run(){return{meta:{changes:1}}}}}};
+ const request=new Request('https://yukvinc.com.tr/api/ai/assistant',{method:'POST',headers:{origin:'https://yukvinc.com.tr','content-type':'application/json','CF-Connecting-IP':'203.0.113.10'},body:JSON.stringify({message:'Konya’da mobil vinç, ara 0545 123 45 67'})});
+ const response=await onYukustaPost({request,env:{DB:db,AI_ENABLED:'true',AI:{async run(name,input){model=name;payload=input.messages[1].content;return{response:'Konya’da bir onaylı vinç ilanı buldum. Fiyatı ve müsaitliği ilan sahibinden teyit et.'}}}}});
+ const data=await response.json();assert.equal(response.status,200);assert.equal(data.name,'YükUsta');assert.equal(model,'@cf/meta/llama-3.3-70b-instruct-fp8-fast');assert.doesNotMatch(payload,/0545/);assert.match(payload,/telefon gizlendi/);assert.equal(data.listings[0].id,'approved_12345678');assert.doesNotMatch(JSON.stringify(data.listings),/contact_phone|0545/);
+});
+
+test('YükUsta rejects cross-origin requests before calling AI',async()=>{let called=false;const request=new Request('https://yukvinc.com.tr/api/ai/assistant',{method:'POST',headers:{origin:'https://bad.example','content-type':'application/json'},body:JSON.stringify({message:'Konya’da vinç arıyorum'})});const response=await onYukustaPost({request,env:{DB:{},AI_ENABLED:'true',AI:{async run(){called=true}}}});assert.equal(response.status,403);assert.equal(called,false)});
