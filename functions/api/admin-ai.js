@@ -1,6 +1,6 @@
 import {fail,json,requireAdmin,readJson,audit} from '../_lib/core.js';
 import {readAiModeration,cleanAiModeration} from '../_lib/ai-settings.js';
-import {redactForAI} from '../_lib/listings.js';
+import {redactForAI,reviewListingInBackground} from '../_lib/listings.js';
 async function getStats(db){
  const stats={reviews_7d:0,flagged_7d:0,approved_7d:0,rejected_7d:0};
  try{const row=await db.prepare("SELECT COALESCE(SUM(count),0) AS n FROM ai_usage WHERE usage_date>=date('now','-6 days')").first();stats.reviews_7d=Number(row?.n||0)}catch{}
@@ -19,7 +19,7 @@ async function getStats(db){
 }
 export async function onRequestGet(context){
  const auth=await requireAdmin(context);if(auth.response)return auth.response;
- try{const config=await readAiModeration(context.env.DB),extra=await getStats(context.env.DB);return json({config,stats:extra.stats,health:{...extra.health,model_available:context.env.AI_ENABLED==='true'&&!!context.env.AI},recent:extra.recent,feedback:extra.feedback,models:{name:'YükUsta',text:'@cf/meta/llama-3.3-70b-instruct-fp8-fast',image:'@cf/moondream/moondream3.1-9B-A2B'}})}catch{return fail('Yapay zekâ bilgileri alınamadı.',503)}
+ try{const config=await readAiModeration(context.env.DB),extra=await getStats(context.env.DB);return json({config,stats:extra.stats,health:{...extra.health,model_available:context.env.AI_ENABLED==='true'&&!!context.env.AI},recent:extra.recent,feedback:extra.feedback,models:{name:'YükUsta',text:'@cf/meta/llama-3.3-70b-instruct-fp8-fast',image:'Moondream → LLaVA görsel yedeği',classification:'Microsoft ResNet-50'}})}catch{return fail('Yapay zekâ bilgileri alınamadı.',503)}
 }
 export async function onRequestPatch(context){
  const auth=await requireAdmin(context);if(auth.response)return auth.response;
@@ -28,9 +28,17 @@ export async function onRequestPatch(context){
 export async function onRequestPost(context){
  const auth=await requireAdmin(context);if(auth.response)return auth.response;
  try{
-  const body=await readJson(context.request,4096);if(!['seo_suggestion','rejection_suggestion'].includes(body.action))return fail('İstek türü geçersiz.');
+  const body=await readJson(context.request,4096);if(!['seo_suggestion','rejection_suggestion','review_listing'].includes(body.action))return fail('İstek türü geçersiz.');
   if(body.action==='rejection_suggestion'&&!(await readAiModeration(context.env.DB)).enabled)return fail('YükUsta yönetici tarafından durdurulmuş.',503);
   if(context.env.AI_ENABLED!=='true'||!context.env.AI)return fail('Yapay zekâ hizmeti şu anda kullanılamıyor.',503);
+  if(body.action==='review_listing'){
+   if(!(await readAiModeration(context.env.DB)).enabled)return fail('YükUsta yönetici tarafından durdurulmuş.',503);
+   const id=String(body.listing_id||'');if(!/^[A-Za-z0-9_-]{8,80}$/.test(id))return fail('İlan kimliği geçersiz.');
+   const item=await context.env.DB.prepare("SELECT * FROM listings WHERE id=? AND status IN ('pending','flagged')").bind(id).first();if(!item)return fail('Yalnızca bekleyen veya şüpheli ilanlar tekrar incelenebilir.',400);
+   const recent=await context.env.DB.prepare("SELECT id FROM admin_activity WHERE entity_id=? AND action='ai.listing.review_started' AND created_at>unixepoch()-90 LIMIT 1").bind(id).first();if(recent)return fail('Bu ilan zaten inceleniyor. Biraz sonra yenileyin.',429);
+   const task=reviewListingInBackground(context.env,item.id,item.user_id,item);
+   const result=await task;return json({ok:true,result});
+  }
   const today=new Date().toISOString().slice(0,10);await context.env.DB.prepare('INSERT OR IGNORE INTO ai_usage(user_id,usage_date,count) VALUES(?,?,0)').bind(auth.admin.id,today).run();const quota=await context.env.DB.prepare('UPDATE ai_usage SET count=count+1 WHERE user_id=? AND usage_date=? AND count<5').bind(auth.admin.id,today).run();if(!quota.meta?.changes)return fail('Yapay zekâ günlük kullanım sınırına ulaştı.',429);
 
   if(body.action==='rejection_suggestion'){
