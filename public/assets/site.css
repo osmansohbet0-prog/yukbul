@@ -177,6 +177,6 @@
   #yukusta-open{padding:10px 14px;font-size:.86rem}
   #yukusta-panel{right:0;bottom:54px;width:min(350px,calc(100vw - 20px));height:min(500px,calc(100dvh - 80px));max-height:calc(100dvh - 80px);border-radius:15px}
   #yukusta-panel>header{padding:10px 12px}
-  #yukusta-tools{max-height:78px;overflow-y:auto}
+  .yukusta-tools{max-height:78px;overflow-y:auto}
   #yukusta-support[open]{flex-basis:46%;min-height:128px;max-height:52%}
 }
