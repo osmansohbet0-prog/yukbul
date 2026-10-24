@@ -1,6 +1,7 @@
 import {json,readMemberJson,requireMember,randomId,limited} from '../../_lib/member.js';
 import {validateListing,contentHash,moderation,savePhotos,validatePhotoPayloads,reviewListingInBackground,findNearDuplicate,publicItems} from '../../_lib/listings.js';
 import {listingError,listingFailure} from '../../_lib/listing-errors.js';
+import {notifyListingSubmitted} from '../../_lib/notifications.js';
 
 export async function onRequestGet({request,env}){
   if(!env.DB)return listingError('DB_BINDING_MISSING',request,503);
@@ -69,7 +70,8 @@ export async function onRequestPost(context){
     }
 
     const review=reviewListingInBackground(env,id,auth.member.id,item);
-    if(context.ctx?.waitUntil)context.ctx.waitUntil(review);else await review;
+    const notification=notifyListingSubmitted(env,{id,title:item.title,city:item.city,category:item.category});
+    if(context.ctx?.waitUntil){context.ctx.waitUntil(review);context.ctx.waitUntil(notification)}else await Promise.all([review,notification]);
     return json({ok:true,id,status,message:status==='flagged'?'İlan şüpheli içerik nedeniyle yönetici incelemesine alındı.':'İlanın yönetici onayından sonra yayınlanacak.'},201);
   }catch(error){
     const status=/UNIQUE constraint/i.test(String(error?.message))?409:500;
