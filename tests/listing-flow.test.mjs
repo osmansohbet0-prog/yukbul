@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {validateListing,validatePhotoPayloads,isNearDuplicate,redactForAI} from '../functions/_lib/listings.js';
+import {validateListing,validatePhotoPayloads,isNearDuplicate,redactForAI,photoHashDistance,detectDuplicateSignals,findDuplicateSignals} from '../functions/_lib/listings.js';
 import {onRequestPost} from '../functions/api/listings/index.js';
 import {onRequestPatch,onRequestDelete} from '../functions/api/listings/[id].js';
 import {listingFailure} from '../functions/_lib/listing-errors.js';
@@ -49,6 +49,11 @@ test('duplicate heuristic and AI redaction work without passing contact details 
   assert.equal(isNearDuplicate(listing(),listing({title:'50 ton mobil vinç kiralama'})),true);
   assert.equal(redactForAI('Ara 0545 123 45 67 veya test@example.com https://example.test'),'Ara [telefon gizlendi] veya [e-posta gizlendi] [bağlantı gizlendi]');
 });
+
+test('same company name and photo hash place a matching listing in admin review',()=>{const item=listing({business_name:'Vinç AŞ',visual_hashes:['0000000000000000']});const old={id:'older-12345678',category:'crane',city:'Konya',district:'Meram',business_name:' vinç aş ',title:'Başka başlık',description:'Farklı bir açıklama',visual_hash:'ffffffffffffffff'};assert.equal(photoHashDistance('0000000000000000','0000000000000001'),1);const signal=detectDuplicateSignals(item,[old]);assert.equal(signal.id,old.id);assert.match(signal.reason,/aynı firma adı/);assert.equal(detectDuplicateSignals(listing({business_name:'Farklı Firma'}),[old]),null)});
+test('near-identical photo fingerprint flags a repeated listing even without a company name',()=>{const item=listing({business_name:'',visual_hashes:['0000000000000000']});const old={id:'older-12345678',category:'crane',city:'Konya',district:'Meram',business_name:null,title:'Başka ilan',visual_hash:'0000000000000003'};assert.equal(photoHashDistance(item.visual_hashes[0],old.visual_hash),2);assert.match(detectDuplicateSignals(item,[old]).reason,/fotoğraf/)});
+
+test('background duplicate scan loads the submitted photo fingerprint from storage',async()=>{const sql=[];const db={prepare(query){sql.push(query);return{bind(){return this},async all(){if(query.includes('SELECT l.id,l.category'))return{results:[{id:'old-12345678',category:'crane',city:'Konya',district:'Meram',business_name:null,title:'Benzer fotoğraflı ilan',visual_hash:'0000000000000003'}]};if(query.includes('SELECT visual_hash FROM listing_photos'))return{results:[{visual_hash:'0000000000000000'}]};return{results:[]}}}}};const signal=await findDuplicateSignals(db,'new-12345678',listing({business_name:''}));assert.equal(signal.id,'old-12345678');assert.match(signal.reason,/fotoğraf/);assert.equal(sql.length,2)});
 test('photo validation rejects oversized data and unsupported MIME types',()=>{
   const bytes=new Uint8Array(1_800_001);
   const b64=Buffer.from(bytes).toString('base64');

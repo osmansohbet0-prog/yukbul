@@ -1,0 +1,22 @@
+name: Repository checks
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [gelistirme, main]
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test listing and API flows
+        run: npm test
+      - name: Check JavaScript syntax
+        run: find functions src public/assets -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Validate Wrangler config
+        run: npx --yes wrangler@4.152.0 deploy --dry-run --outdir /tmp/yukbul-worker

@@ -59,3 +59,15 @@
 - Birleştirme otomatik inceleme tarafından reddedildi: kullanıcı şartı olan yeşil GitHub status/check doğrulanamıyor. Main korunuyor; kontrolü atlatma girişimi yapılmayacak. PR ve geliştirme dalı GitHub'da yayınlanmış durumda.
 - Canlı D1 hatası düzeltildi ve yazma/temizleme probe'u doğrulandı. Gerçek kullanıcıyla canlı fotoğraf yükleme testi yapılmadı; üretim hesabı/oturumu kullanılmadı. İstemci ve API akışına ait 10 otomatik test önceki aşamada geçti.
 - Sonraki adım: Cloudflare Preview URL'lerini Worker Settings > Domains & Routes > Version URLs üzerinden açarsan Preview uçtan uca test edilebilir. Açılmadan kod değişikliğinin main'e alınması, kullanıcının yeşil GitHub check koşuluna uymuyor.
+
+
+## 2026-10-24 — Firma/fotoğraf tekrar denetimi ve bağlı ilçe seçimi
+- İlan verme sihirbazına isteğe bağlı firma/işletme adı eklendi; ilçe alanı artık il seçilmeden kapalı ve seçilen ile ait ilçeleri gösteriyor. 81 il / 973 ilçe verisi uygulama içinde paketlendi. Kaynak: Open Admin Data (CC BY 4.0), kaynak dosyada belirtiliyor.
+- Fotoğraflar sıkıştırılmadan önce tarayıcıda görsel parmak izi oluşturuyor; yeni migration 0007_listing_duplicate_signals.sql firma adı ve fotoğraf izi alanlarını ekliyor.
+- Arka plan incelemesi aynı il/kategori/firma adı veya yakın görsel parmak izi eşleşmesini AI kotasından bağımsız tespit edip ilanı silmeden flagged yapıyor ve yönetici hareketlerine gerekçe bırakıyor. AI metin denetimi aynı kalıyor; AI hata/kota durumunda ilan kaydı kesilmiyor.
+- Üretim D1 migrationı ve canlı yayın henüz yapılmadı. PR kontrolleri ve Cloudflare preview build sonucu bekleniyor.
+
+
+## 2026-10-24T09:09:06.273Z — Ön kontrol tamamlandı
+- Yerel doğrulama: ilan akışı ve API testleri 13/13 geçti; değiştirilen tarayıcı ve Worker JavaScript dosyalarının sözdizimi kontrolü geçti.
+- D1 migration ve Cloudflare preview/prod yayın kontrolü sıradaki adımlar; GitHub Actions iş akışı dal güncellemesiyle çalıştırılacak.
