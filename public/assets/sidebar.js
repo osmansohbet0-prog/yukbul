@@ -41,9 +41,21 @@
     row('İlanlarım', '/hesabim/#my-listings', '▤', path === '/hesabim') +
     '</div><div class="yv-menu-divider"></div>' +
     '<div class="yv-menu-group"><p class="yv-menu-label">Hızlı erişim</p>' +
-    row('Ara ve filtrele', '/#search-menu-toggle', '⌕') +
+    '<button type="button" id="search-menu-toggle" class="yv-navitem yv-search-toggle" aria-expanded="false" aria-controls="search-menu"><span class="yv-icon" aria-hidden="true">⌕</span><span>Ara ve filtrele</span></button>' +
     row('Destek ve talep', '/#yukusta-support', '✦') +
-    '</div><div class="yv-menu-divider"></div>' +
+    '<div id="search-menu" class="yv-search-menu" hidden>' +
+      '<div class="search-menu-stage"><span class="search-step-number">01</span><label for="category-filter">Önce kategorini seç<select id="category-filter" required><option value="" selected>Kategori seç</option><option value="all">Tüm kategoriler</option><option value="crane">Vinç</option><option value="tow">Oto kurtarıcı</option><option value="basket">Sepetli platform</option><option value="machine">İş makinesi</option><option value="lift">Nakliyat asansörü</option><option value="operator">Operatör iş ilanı</option></select></label></div>' +
+      '<div id="search-step-details" class="search-step-details" hidden>' +
+        '<label for="q">Aradığın ilan<input id="q" type="search" placeholder="Örn. Gebze kiralık vinç" maxlength="100"></label>' +
+        '<label for="city-filter">Şehir veya ilçe<input id="city-filter" list="city-options" placeholder="Tüm şehirler"></label>' +
+        '<datalist id="city-options"><option>Konya</option><option>İstanbul</option><option>Ankara</option><option>İzmir</option><option>Bursa</option><option>Antalya</option></datalist>' +
+        '<div class="yv-filter-row"><label for="price-unit-filter">Ücret türü<select id="price-unit-filter"><option value="all">Tüm ücretler</option><option value="saatlik">Saatlik</option><option value="is_basi">İş başı</option><option value="günlük">Günlük</option><option value="aylık">Aylık</option><option value="teklif">Teklif alınır</option></select></label>' +
+          '<label for="max-price">En yüksek ücret<input id="max-price" type="number" min="0" placeholder="Fark etmez"></label></div>' +
+        '<label for="sort">Sırala<select id="sort"><option value="recommended">Önerilen</option><option value="price-asc">Ücret: düşükten yükseğe</option><option value="price-desc">Ücret: yüksekten düşüğe</option><option value="newest">En yeni</option></select></label>' +
+        '<div class="listing-modes" role="group" aria-label="İlan modeli"><button class="mode-chip active" type="button" data-listing-mode="all">Tümü</button><button class="mode-chip" type="button" data-listing-mode="rental">Kiralık</button><button class="mode-chip" type="button" data-listing-mode="job">İş başı</button></div>' +
+        '<div class="yv-filter-actions"><button id="apply-search" class="button" type="button">Filtrele <span aria-hidden="true">→</span></button><button id="reset-filters" class="reset-btn" type="button">Temizle</button></div>' +
+      '</div></div>' +
+    '</div><div class="yv-menu-divider"></div>';
     '<div class="yv-menu-group"><div class="yv-menu-heading"><p class="yv-menu-label">Kategoriler</p>' +
     '<a href="/#ilanlar">Hepsi</a></div>' +
     row('Tüm ilanlar', '/#ilanlar', '⌕', allActive) +
@@ -118,4 +130,14 @@
   sidebar.querySelectorAll('a').forEach(link => link.addEventListener('click', () => closeMenu(false)));
   mobile.addEventListener('change', syncViewport);
   syncViewport();
+  const openSearchShortcut = () => {
+    if (location.pathname !== '/' || location.hash !== '#search-menu-toggle') return;
+    if (mobile.matches && toggle.getAttribute('aria-expanded') !== 'true') openMenu();
+    const panel = document.getElementById('search-menu');
+    const button = document.getElementById('search-menu-toggle');
+    if (panel) panel.hidden = false;
+    if (button) button.setAttribute('aria-expanded', 'true');
+  };
+  openSearchShortcut();
+  window.addEventListener('hashchange', openSearchShortcut);
 })();
