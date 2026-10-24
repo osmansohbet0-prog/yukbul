@@ -132,3 +132,30 @@
   .listing-home .card-body h3{font-size:.8rem}
   .listing-home .description{font-size:.62rem}
 }
+
+/* Step-by-step homepage search */
+.listing-home .listing-heading{align-items:center;gap:16px}
+.search-menu-toggle{flex:none;min-height:44px;padding:10px 16px;border:1px solid var(--ink);border-radius:9px;background:var(--ink);color:#fff;font:inherit;font-size:.84rem;font-weight:750}
+.search-menu-toggle:hover{background:#27444c}
+.search-menu{display:grid;grid-template-columns:minmax(220px,.8fr) minmax(280px,1.2fr);gap:16px;align-items:end;padding:16px;margin:-4px 0 16px;border:1px solid var(--line);border-radius:13px;background:#fff}
+.search-menu[hidden],.search-step-details[hidden]{display:none!important}
+.search-menu-stage{display:flex;align-items:flex-start;gap:12px}
+.search-step-number{display:grid;place-items:center;flex:none;width:32px;height:32px;border-radius:50%;background:#fff1d9;color:#86510e;font-size:.76rem;font-weight:850}
+.search-menu-stage label,.search-step-details label{display:block;flex:1;margin:0;font-size:.78rem;font-weight:750}
+.search-menu-stage select,.search-step-details input{margin-top:7px}
+.search-step-details{display:flex;align-items:end;gap:10px}
+.search-step-details .button{min-height:43px;white-space:nowrap}
+.listing-home .home-market .filters{grid-template-columns:1fr 1.25fr 1fr 1fr auto}
+.listing-home .listing-modes{margin-top:14px}
+@media(max-width:640px){
+  .listing-home .listing-heading{align-items:stretch;flex-direction:column;gap:12px}
+  .search-menu-toggle{width:100%;min-height:42px;font-size:.78rem}
+  .search-menu{grid-template-columns:1fr;gap:12px;padding:13px;margin:0 0 12px}
+  .search-menu-stage label,.search-step-details label{font-size:.73rem}
+  .search-step-details{align-items:stretch;flex-direction:column;gap:8px}
+  .search-step-details .button{min-height:41px;justify-content:center;width:100%}
+  .listing-home .home-market .filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .listing-home .home-market .filters>label{min-width:0}
+  .listing-home .home-market .filters select,.listing-home .home-market .filters input{font-size:.74rem;padding:9px}
+  .listing-home .home-market .filters .reset-btn{grid-column:1/-1;width:100%}
+}
