@@ -29,7 +29,7 @@ export async function publicItems(db,params={}){
  }
  const q=String(params.q||'').trim().slice(0,80);
  if(q){
-  const terms=(q.toLocaleLowerCase('tr').match(/[\\p{L}\\p{N}]+/gu)||[]).slice(0,8);
+  const terms=(q.toLocaleLowerCase('tr').match(/[\p{L}\p{N}]+/gu)||[]).slice(0,8);
   const stopWords=new Set(['de','da','ve','ile','icin','için','bir','en','uygun']);
   const rentalWords=new Set(['kiralik','kiralama','kirala','kiralikci','kira']);
   const categories={
@@ -44,7 +44,7 @@ export async function publicItems(db,params={}){
    operator:['operator'],
    operatör:['operator']
   };
-  const normalize=word=>word.toLocaleLowerCase('tr').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/ı/g,'i');
+  const normalize=word=>word.toLocaleLowerCase('tr').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i');
   const rental=terms.some(word=>rentalWords.has(normalize(word))||normalize(word).startsWith('kiral'));
   if(rental)sql+=" AND l.listing_type='equipment' AND (l.price_unit IS NULL OR l.price_unit NOT IN ('iş başı','is_basi','sefer','sefer başı','sefer basi'))";
   const searchable=terms.filter(word=>!stopWords.has(normalize(word))&&!rentalWords.has(normalize(word))&&!normalize(word).startsWith('kiral'));
@@ -59,9 +59,6 @@ export async function publicItems(db,params={}){
    const categoryMatches=categories[key]||[];
    if(categoryMatches.length)matches.push('l.category IN ('+categoryMatches.map(()=>'?').join(',')+')');
    if(!matches.length)continue;
-   if(key==='vinc'&&word.toLocaleLowerCase('tr')==='vinç'){
-    matches.push('l.category IN (?,?)');args.push('crane','basket');
-   }
    sql+=' AND ('+matches.join(' OR ')+')';
   }
  }
