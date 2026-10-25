@@ -1,3 +1,4 @@
+import {reviewByRules,saveRuleReview} from '../../_lib/moderation.js';
 import {json,readMemberJson,requireMember,randomId,limited} from '../../_lib/member.js';
 import {validateListing,contentHash,moderation,savePhotos,validatePhotoPayloads,reviewListingInBackground,findNearDuplicate,publicItems} from '../../_lib/listings.js';
 import {listingError,listingFailure} from '../../_lib/listing-errors.js';
@@ -58,7 +59,7 @@ export async function onRequestPost(context){
     const quota=await env.DB.prepare('UPDATE daily_listing_limits SET count=count+1 WHERE user_id=? AND usage_date=? AND count<5').bind(auth.member.id,date).run();
     if(!quota.meta?.changes)return listingError('RATE_LIMIT',request,429);
 
-    const flags=moderation(item),status=flags.length?'flagged':'pending',id=randomId(16);
+    const rules=await reviewByRules(env.DB,item,auth.member.id),flags=rules.reasons.map(r=>r.reason),status=rules.flagged?'flagged':'pending',id=randomId(16); 
     const insert=await env.DB.prepare('INSERT INTO listings(id,user_id,listing_type,category,title,description,city,district,address,price_amount,price_unit,contact_phone,business_name,status,moderation_note,content_hash) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
       .bind(id,auth.member.id,kind,item.category,item.title.trim(),item.description.trim(),item.city.trim(),item.district.trim(),String(item.address||'').trim()||null,item.price_amount,item.price_amount==null?null:String(item.price_unit||'').trim()||null,String(item.contact_phone||'').trim()||null,String(item.business_name||'').trim()||null,status,flags.length?flags.join(' · '):null,hash).run();
     if(!insert.meta?.changes)return listingError('UNKNOWN',request,500);
@@ -69,10 +70,11 @@ export async function onRequestPost(context){
       return listingFailure(error,request,'photo-save',400);
     }
 
+    await saveRuleReview(env.DB,id,rules);
     const review=env.DB.prepare("INSERT INTO admin_activity(actor_user_id,action,entity_type,entity_id,metadata_json) VALUES(NULL,'ai.listing.review_queued','listing',?,'{}')").bind(id).run();
     const notification=notifyListingSubmitted(env,{id,title:item.title,city:item.city,category:item.category});
     if(context.ctx?.waitUntil){context.ctx.waitUntil(review);context.ctx.waitUntil(notification)}else await Promise.all([review,notification]);
-    return json({ok:true,id,status,message:status==='flagged'?'İlan şüpheli içerik nedeniyle yönetici incelemesine alındı.':'İlanın yönetici onayından sonra yayınlanacak.'},201);
+    return json({ok:true,id,status,price_warning:rules.comparison.warning,message:'İlanın incelemeye alındı; yönetici değerlendirmesinden sonra dönüş yapılacak.'},201);
   }catch(error){
     const status=/UNIQUE constraint/i.test(String(error?.message))?409:500;
     return listingFailure(error,request,'listing-create',status);

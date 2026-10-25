@@ -8,6 +8,9 @@ export async function runImprovementReview(env){
  await env.DB.prepare("DELETE FROM ai_audit WHERE created_at<unixepoch()-15552000").run();
  await env.DB.prepare("UPDATE support_tickets SET contact_name=NULL,contact_details=NULL,updated_at=unixepoch() WHERE created_at<unixepoch()-15552000 AND (contact_name IS NOT NULL OR contact_details IS NOT NULL)").run();
  await env.DB.prepare("DELETE FROM support_tickets WHERE created_at<unixepoch()-15552000").run();
+ await env.DB.prepare("DELETE FROM listing_reviews WHERE created_at<unixepoch()-7776000").run();
+ await env.DB.prepare("DELETE FROM listing_appeals WHERE created_at<unixepoch()-15552000").run();
+ await env.DB.prepare("DELETE FROM moderation_feedback WHERE created_at<unixepoch()-15552000").run();
  if(env.AI_ENABLED!=='true'||!env.AI)return{skipped:true,reason:'ai_unavailable'};
  const config=await readAiModeration(env.DB);if(!config.enabled)return{skipped:true,reason:'disabled_by_admin'};
  const usage=await env.DB.prepare("SELECT COUNT(*) AS n FROM ai_audit WHERE created_at>=unixepoch('now','start of day') AND (action LIKE 'assistant.%' OR action='improvement.review')").first();if(Number(usage?.n||0)>=500)return{skipped:true,reason:'daily_quota'};
