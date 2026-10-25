@@ -20,8 +20,9 @@ export function replyCommand(payload){
 }
 export async function sendGmail(call,from,to,body,draftId){
  if(!/^[^\s@<>\r\n]+@[^\s@<>\r\n]+\.[^\s@<>\r\n]+$/.test(to)||!/^[-a-zA-Z0-9._+]+@gmail\.com$/.test(from))throw Error('Gmail gönderici/alıcı adresi geçersiz.');
- const subject='=?UTF-8?B?'+encodeB64('YükVinç firma kaydınız hakkında').replace(/-/g,'+').replace(/_/g,'/')+'?=';
+ const title64=encodeB64('YükVinç firma kaydınız hakkında').replace(/-/g,'+').replace(/_/g,'/');
+ const subject='=?UTF-8?B?'+title64+'='.repeat((4-title64.length%4)%4)+'?=';
  const encoded=encodeB64(body).replace(/-/g,'+').replace(/_/g,'/');const padded=encoded+'='.repeat((4-encoded.length%4)%4);
- const mail=`From: ${from}\r\nTo: ${to}\r\nSubject: ${subject}\r\nMessage-ID: <${draftId}@yukvinc.com.tr>\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n${padded}`;
+ const mail=`From: ${from}\r\nTo: ${to}\r\nSubject: ${subject}\r\nMessage-ID: <${draftId}@yukvinc.com.tr>\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n${padded.match(/.{1,76}/g).join('\r\n')}`;
  return call('messages/send',{method:'POST',body:JSON.stringify({raw:encodeB64(mail)})});
 }
