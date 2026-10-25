@@ -49,7 +49,7 @@ async function compress(file){
   }
   if(!blob||blob.size>MAX_COMPRESSED_PHOTO_BYTES)throw Error('Fotoğraf 1,8 MB sınırının altına sıkıştırılamadı. JPG, PNG veya WebP fotoğraf seçip tekrar dene.');
   const data=await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=()=>no(Error('Fotoğraf okunamadı.'));r.readAsDataURL(blob)});
-  const thumb=document.createElement('canvas');thumb.width=8;thumb.height=8;const thumbCtx=thumb.getContext('2d',{willReadFrequently:true});thumbCtx.drawImage(img,0,0,8,8);const px=thumbCtx.getImageData(0,0,8,8).data,luma=[];for(let i=0;i<64;i++)luma.push(.299*px[i*4]+.587*px[i*4+1]+.114*px[i*4+2]);const average=luma.reduce((a,b)=>a+b,0)/64;const bits=luma.map(value=>value>=average?'1':'0').join('');const visual_hash=BigInt('0b'+bits).toString(16).padStart(16,'0');return{mime_type:blob.type,data,visual_hash}
+  const thumb=document.createElement('canvas');thumb.width=8;thumb.height=8;const thumbCtx=thumb.getContext('2d',{willReadFrequently:true});thumbCtx.drawImage(img,0,0,8,8);const px=thumbCtx.getImageData(0,0,8,8).data,luma=[];for(let i=0;i<64;i++)luma.push(.299*px[i*4]+.587*px[i*4+1]+.114*px[i*4+2]);const average=luma.reduce((a,b)=>a+b,0)/64;const bits=luma.map(value=>value>=average?'1':'0').join('');const visual_hash=BigInt('0b'+bits).toString(16).padStart(16,'0');return{mime_type:blob.type,data,visual_hash,thumbnail:await listingThumbnail(img)}
  }finally{img.close?.()}
 }
 const photoInput=form.elements.photos,dropzone=$('#photo-dropzone');
@@ -89,3 +89,11 @@ for(const field of ['price_amount','price_unit','city','category','title'])form.
 form.elements.price_unit.addEventListener('change',()=>{const call=form.elements.price_unit.value==='arayiniz';form.elements.price_amount.closest('label').hidden=call;if(call)form.elements.price_amount.value=''});
 
 form.elements.category.addEventListener('change',()=>{if(form.elements.category.value==='mobile_tire')form.elements.price_unit.value='sefer'});
+
+async function listingThumbnail(image){
+ const c=document.createElement('canvas'),ratio=Math.min(1,480/Math.max(image.width,image.height));
+ c.width=Math.max(1,Math.round(image.width*ratio));c.height=Math.max(1,Math.round(image.height*ratio));
+ c.getContext('2d').drawImage(image,0,0,c.width,c.height);
+ const data=c.toDataURL('image/webp',.72),mime_type=data.startsWith('data:image/webp;')?'image/webp':'image/png';
+ return data.length<180000?{data,mime_type}:null;
+}
