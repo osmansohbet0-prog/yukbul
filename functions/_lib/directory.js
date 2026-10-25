@@ -17,7 +17,7 @@ export function cleanDirectory(d,x){
 }
 export function basicDirectoryFields(x,d,photos=[],tier='standard'){
  if(d.source==='owner')return x;
- if(photos?.length||tier!=='standard')throw Error('Kamuya açık firma kayıtlarında fotoğraf ve öne çıkarma kullanılamaz.');
+ if(tier!=='standard')throw Error('Kamuya açık firma kayıtları öne çıkarılamaz.');
  if(!String(x.business_name||'').trim())throw Error('Firma adı gerekli.');
  return{...x,title:String(x.business_name).trim()+' · '+SERVICE_LABELS[x.category],description:`${x.city} / ${x.district} bölgesinde ${SERVICE_LABELS[x.category]||'ekipman'} hizmeti için firma iletişim kaydı.`,address:'',price_amount:null,price_unit:'arayiniz'};
 }

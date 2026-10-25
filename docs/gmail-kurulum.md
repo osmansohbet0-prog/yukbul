@@ -55,7 +55,7 @@ Mevcut secretları silmeyin. Değerler arayüz/API cevabında gösterilmez. Kuru
 
 ## 7. Firma kaydı ve ilk mesaj ekranı
 
-1. **İlanlar → İlan oluştur**: il/ilçe önerisini seçin, firma adı/telefon/hizmet girin. Kaynak türünü seçin. Fotoğraf/logo kopyalamayın. İlçe koordinatı yaklaşık merkezdir; kesin konumu kontrol etmeden doğrulama kutusunu işaretlemeyin.
+1. **İlanlar → İlan oluştur**: il/ilçe önerisini seçin, firma adı/telefon/hizmet girin. Kaynak türünü seçin. Kendi fotoğrafınızı veya kullanım izniniz olan görseli yükleyebilirsiniz; başka sitelerden fotoğraf/logo kopyalamayın. İlçe koordinatı yaklaşık merkezdir; kesin konumu kontrol etmeden doğrulama kutusunu işaretlemeyin.
 2. **Firma kayıtları ve ölçüm** listesinden **İletişim kaydını düzenle** ile varsa firmaya ait gerçek e-postayı ekleyin.
 3. **İlan sahibini bilgilendir**: bağlantısız taslağı inceleyin. Ücret/onay, gönderen, 3 iş günü ve ret cümlelerini koruyun.
 4. İYS kontrolünü yaptıktan sonra onay kutusunu işaretleyin. **Onayla ve e-posta gönder** her mesaj için ayrı insan kararıdır.
