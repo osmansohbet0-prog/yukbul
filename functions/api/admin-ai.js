@@ -8,7 +8,7 @@ async function getStats(db){
  try{const{results=[]}=await db.prepare("SELECT status,COUNT(*) AS n FROM listings WHERE created_at>=unixepoch()-604800 GROUP BY status").all();for(const row of results){if(row.status==='flagged')stats.flagged_7d=Number(row.n||0);if(row.status==='approved')stats.approved_7d=Number(row.n||0);if(row.status==='rejected')stats.rejected_7d=Number(row.n||0)}}catch{}
  let recent=[],feedback=[];
  try{const{results=[]}=await db.prepare("SELECT action,entity_id,metadata_json,created_at FROM admin_activity WHERE action LIKE 'ai.listing.%' ORDER BY created_at DESC LIMIT 12").all();recent=results}catch{}
- try{const{results=[]}=await db.prepare("SELECT l.title,l.category,json_extract(a.metadata_json,'$.to') AS decision,a.created_at FROM admin_activity a JOIN listings l ON l.id=a.entity_id WHERE a.action='listing.status.update' AND a.entity_type='listing' AND json_extract(a.metadata_json,'$.to') IN ('approved','rejected') ORDER BY a.created_at DESC LIMIT 8").all();feedback=results}catch{}
+ try{const{results=[]}=await db.prepare("SELECT l.title,COALESCE(l.category_detail,l.category) AS category,json_extract(a.metadata_json,'$.to') AS decision,a.created_at FROM admin_activity a JOIN listings l ON l.id=a.entity_id WHERE a.action='listing.status.update' AND a.entity_type='listing' AND json_extract(a.metadata_json,'$.to') IN ('approved','rejected') ORDER BY a.created_at DESC LIMIT 8").all();feedback=results}catch{}
  const health={requests_7d:0,answers_7d:0,errors_7d:0,fallbacks_7d:0,average_response_ms:null,unanswered_7d:0,image_failures_7d:0};
  try{
   const row=await db.prepare("SELECT SUM(CASE WHEN action='assistant.request' THEN 1 ELSE 0 END) AS requests,SUM(CASE WHEN action='assistant.response' AND outcome='completed' THEN 1 ELSE 0 END) AS answers,SUM(CASE WHEN action='assistant.response' AND outcome='failed' THEN 1 ELSE 0 END) AS errors,SUM(CASE WHEN action='assistant.model' AND outcome='failed' THEN 1 ELSE 0 END) AS fallbacks,AVG(CASE WHEN action='assistant.response' AND outcome='completed' THEN json_extract(metadata_json,'$.duration_ms') END) AS latency FROM ai_audit WHERE created_at>=unixepoch()-604800").first();
@@ -37,7 +37,7 @@ export async function onRequestPost(context){
    const id=String(body.listing_id||'');if(!/^[A-Za-z0-9_-]{8,80}$/.test(id))return fail('İlan kimliği geçersiz.');
    const item=await context.env.DB.prepare("SELECT * FROM listings WHERE id=? AND status IN ('pending','flagged')").bind(id).first();if(!item)return fail('Yalnızca bekleyen veya şüpheli ilanlar tekrar incelenebilir.',400);
    const recent=await context.env.DB.prepare("SELECT id FROM admin_activity WHERE entity_id=? AND action='ai.listing.review_started' AND created_at>unixepoch()-90 LIMIT 1").bind(id).first();if(recent)return fail('Bu ilan zaten inceleniyor. Biraz sonra yenileyin.',429);
-   const task=reviewListingInBackground(context.env,item.id,item.user_id,item);
+   const task=reviewListingInBackground(context.env,item.id,item.user_id,{...item,category:item.category_detail||item.category});
    const result=await task;return json({ok:true,result});
   }
   const today=new Date().toISOString().slice(0,10);await context.env.DB.prepare('INSERT OR IGNORE INTO ai_usage(user_id,usage_date,count) VALUES(?,?,0)').bind(auth.admin.id,today).run();const quota=await context.env.DB.prepare('UPDATE ai_usage SET count=count+1 WHERE user_id=? AND usage_date=? AND count<5').bind(auth.admin.id,today).run();if(!quota.meta?.changes)return fail('Yapay zekâ günlük kullanım sınırına ulaştı.',429);
@@ -45,7 +45,7 @@ export async function onRequestPost(context){
   if(body.action==='rejection_suggestion'){
    const id=String(body.listing_id||'');
    if(!/^[A-Za-z0-9_-]{8,80}$/.test(id))return fail('İlan kimliği geçersiz.');
-   const listing=await context.env.DB.prepare("SELECT id,title,description,category,moderation_note,status FROM listings WHERE id=? AND status<>'deleted'").bind(id).first();
+   const listing=await context.env.DB.prepare("SELECT id,title,description,COALESCE(category_detail,category) AS category,moderation_note,status FROM listings WHERE id=? AND status<>'deleted'").bind(id).first();
    if(!listing)return fail('İlan bulunamadı.',404);
    const {results:findings=[]}=await context.env.DB.prepare("SELECT action,metadata_json FROM admin_activity WHERE entity_type='listing' AND entity_id=? AND action IN ('ai.listing.flagged','ai.listing.duplicate_flagged','ai.listing.price_flagged','listing.duplicate_signal_flagged','ai.listing.image_review_failed') ORDER BY created_at DESC LIMIT 5").bind(id).all();
    const evidence=findings.map(row=>{try{return {action:row.action,reason:redactForAI(JSON.parse(row.metadata_json||'{}').reason||'')}}catch{return null}}).filter(Boolean);

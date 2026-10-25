@@ -26,3 +26,8 @@ test('emergency intent returns 112 before any model or admin mutation',async()=>
  const request=new Request('https://yukvinc.com.tr/api/ai/assistant',{method:'POST',headers:{origin:'https://yukvinc.com.tr','content-type':'application/json'},body:JSON.stringify({message:'Kaza oldu yaralanma var'})});
  const response=await onRequestPost({request,env:{DB:db,AI_ENABLED:'true',AI:{async run(){called=true}}}});const data=await response.json();assert.equal(data.mode,'emergency');assert.match(data.answer,/112/);assert.equal(called,false);assert.ok(writes.every(sql=>!sql.includes('UPDATE listings')));
 });
+test('safe answers stream as UTF-8 events with a complete final result',async()=>{
+ const db={prepare(sql){return{bind(){return this},async first(){return sql.includes('site_settings')?{value_json:'{"enabled":true}'}:{n:0}},async run(){return{meta:{changes:1}}}}}};
+ const request=new Request('https://yukvinc.com.tr/api/ai/assistant',{method:'POST',headers:{origin:'https://yukvinc.com.tr','content-type':'application/json',accept:'text/event-stream'},body:JSON.stringify({message:'Yangın var yardım edin'})});
+ const response=await onRequestPost({request,env:{DB:db,AI_ENABLED:'false'}});assert.match(response.headers.get('content-type'),/text\/event-stream/);const body=await response.text();const events=body.trim().split('\n\n').map(x=>JSON.parse(x.slice(6)));assert.ok(events.some(x=>x.type==='delta'));assert.equal(events.at(-1).data.mode,'emergency');assert.match(events.at(-1).data.answer,/112/);
+});

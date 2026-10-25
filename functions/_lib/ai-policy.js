@@ -4,8 +4,9 @@ export const AI_LIMITS={dailyCalls:500,perIpCalls:5,perIpWindowSeconds:900,maxQu
 const fold=value=>String(value||'').normalize('NFKC').toLocaleLowerCase('tr').replace(/ı/g,'i').normalize('NFD').replace(/\p{Diacritic}/gu,'');
 const PRICE_REQUEST=/\b(fiyat|ucret|indirim|kampanya|bedava|ucretsiz|paket|premium|standart|odeme|abonelik|sozlesme)\b/;
 const CRITICAL_REQUEST=/\b(onayla|reddet|sil|engelle|one cikar|paket\w* ata|yayina al)\b/;
-export function classifyAssistantRequest(value){const text=fold(String(value||'').slice(0,AI_LIMITS.maxQuestionLength));if(PRICE_REQUEST.test(text))return'pricing';if(CRITICAL_REQUEST.test(text))return'admin_action';return'read_only'}
+export function classifyAssistantRequest(value){const text=fold(String(value||'').slice(0,AI_LIMITS.maxQuestionLength));if(/\b(sikayet|dolandiricilik|sahte ilan)\b/.test(text))return'complaint';if(PRICE_REQUEST.test(text))return'pricing';if(CRITICAL_REQUEST.test(text))return'admin_action';return'read_only'}
 export function validateAssistantOutput(value,requestKind='read_only'){
+ if(requestKind==='complaint')return{ok:true,response:'Şikayetini inceleme için yöneticimize iletiyorum. Son kararı yönetici verir.'};
  if(requestKind==='pricing')return{ok:true,response:'Fiyat, indirim ve paket işlemlerini ben değiştiremiyorum. Talebini yöneticimize iletiyorum; yönetici yanıtı admin panelinden takip edebilir.'};
  if(requestKind==='admin_action')return{ok:true,response:'Bu işlem için yönetici onayı gerekiyor. Ben ilan veya hesap üzerinde değişiklik yapamam; talebini yöneticiye iletebilirim.'};
  if(!value||typeof value!=='object'||Array.isArray(value)||typeof value.response!=='string')return{ok:false,response:''};

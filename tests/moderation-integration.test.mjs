@@ -5,8 +5,9 @@ import {digest} from '../functions/_lib/member.js';
 import {onRequestPost as create} from '../functions/api/listings/index.js';
 import {onRequestPatch as edit} from '../functions/api/listings/[id].js';
 import {onRequestGet as adminQueue,onRequestPatch as moderate} from '../functions/api/admin-moderation.js';
-import {onRequestPatch as adminDecision} from '../functions/api/admin-listings.js';
+import {onRequestPatch as adminDecision,onRequestPost as adminCreate} from '../functions/api/admin-listings.js';
 import {onRequestPost as priceCheck} from '../functions/api/listings/price-check.js';
+import {publicItems} from '../functions/_lib/listings.js';
 const listing={category:'crane',listing_type:'equipment',title:'25 ton mobil vinç kiralama',description:'Konya Meram ilçesinde mobil vinç kiralama hizmeti veriyoruz.',city:'Konya',district:'Meram',price_amount:1,price_unit:'günlük',contact_phone:'05551234567'};
 async function setup(){const db=sqliteD1();db.sqlite.exec("INSERT INTO users(id,email,email_norm,role) VALUES('member_123456','member@example.test','member@example.test','member'),('admin_123456','admin@example.test','admin@example.test','admin');");
  await db.prepare('INSERT INTO user_sessions(token_hash,user_id,expires_at) VALUES(?,?,unixepoch()+3600)').bind(await digest('member-session'),'member_123456').run();await db.prepare('INSERT INTO admin_sessions(token_hash,user_id,expires_at) VALUES(?,?,unixepoch()+3600)').bind(await digest('admin-session'),'admin_123456').run();return{DB:db,ADMIN_EMAIL:'admin@example.test',AI_ENABLED:'false'};
@@ -26,4 +27,14 @@ test('real SQLite contract: low price is accepted privately, appeal and admin de
 });
 test('price checks use separate quota and do not consume listing submissions',async()=>{
  const env=await setup();try{for(let i=0;i<10;i++){const r=await priceCheck(context(env,'/api/listings/price-check',{listing}));assert.equal(r.status,200);assert.match((await r.json()).comparison.warning,/Yetersiz veri/)}assert.equal(env.DB.sqlite.prepare("SELECT COUNT(*) n FROM user_login_attempts WHERE action='listing'").get().n,0)}finally{env.DB.sqlite.close()}
+});
+test('manlift survives the legacy production constraint and is returned under its own category',async()=>{
+ const env=await setup();try{
+ const ctx=context(env,'/api/listings',{listing:{...listing,category:'manlift',title:'12 metre makaslı manlift',description:'Konya Meram ilçesinde makaslı manlift kiralama hizmeti.',price_amount:5000},privacy_ok:true,photos:[]});const r=await create(ctx);await Promise.all(ctx.waiting);assert.equal(r.status,201);const data=await r.json();
+ const stored=env.DB.sqlite.prepare('SELECT category,category_detail FROM listings WHERE id=?').get(data.id);assert.equal(stored.category,'machine');assert.equal(stored.category_detail,'manlift');
+ const approved=await adminDecision(context(env,'/api/admin-listings',{id:data.id,status:'approved',note:'Kontrol edildi.'},true,'PATCH'));assert.equal(approved.status,200);
+ const items=await publicItems(env.DB,{category:'manlift'});assert.equal(items.length,1);assert.equal(items[0].category,'manlift');assert.equal((await publicItems(env.DB,{category:'machine'})).length,0);
+ const editCtx=context(env,'/api/listings/'+data.id,{listing:{...listing,category:'manlift',title:'14 metre makaslı manlift',price_amount:6000},privacy_ok:true},false,'PATCH');assert.equal((await edit(editCtx)).status,200);await Promise.all(editCtx.waiting);assert.equal(env.DB.sqlite.prepare('SELECT category_detail FROM listings WHERE id=?').get(data.id).category_detail,'manlift');
+ const adminCtx=context(env,'/api/admin-listings',{fields:{...listing,category:'manlift',title:'18 metre eklemli manlift',price_amount:7000}},true);assert.equal((await adminCreate(adminCtx)).status,201);
+ }finally{env.DB.sqlite.close()}
 });
