@@ -1,3 +1,4 @@
+import {iconTags,categoryPaths,categoryNames} from '../_lib/discovery.js';
 const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
   '&': '&amp;',
   '<': '&lt;',
@@ -30,7 +31,7 @@ export async function onRequestGet({ params, env }) {
     });
 
     const canonical = 'https://yukvinc.com.tr/ilan/' + encodeURIComponent(id) + '/' + slugify(item.title) + '/';
-    if (!params.slug) return Response.redirect(canonical, 301);
+    if (params.slug !== slugify(item.title)) return Response.redirect(canonical, 301);
 
     const area = [item.district, item.city].filter(Boolean).join(' / ');
     const categoryLabel = {
@@ -43,7 +44,7 @@ export async function onRequestGet({ params, env }) {
       lift: 'nakliyat asansörü',
       operator: 'operatör iş ilanı'
     }[item.category] || 'ekipman ilanı';
-    const title = item.title + ' | ' + area + ' ' + categoryLabel + ' | Yük Vinç';
+    const title = item.title + ' | ' + area + ' ' + categoryLabel + ' | YükVinç';
     const descriptionText = String(item.description || '').replace(/\s+/g, ' ').trim();
     const description = (area + ' bölgesinde ' + categoryLabel + ': ' + item.title + '. ' + descriptionText).slice(0, 320);
     const url = canonical;
@@ -71,7 +72,7 @@ export async function onRequestGet({ params, env }) {
           inLanguage: 'tr-TR',
           datePublished: new Date(Number(item.created_at) * 1000).toISOString(),
           dateModified: new Date(Number(item.updated_at || item.created_at) * 1000).toISOString(),
-          isPartOf: { '@type': 'WebSite', '@id': 'https://yukvinc.com.tr/#website', name: 'Yük Vinç', url: 'https://yukvinc.com.tr/' },
+          isPartOf: { '@type': 'WebSite', '@id': 'https://yukvinc.com.tr/#website', name: 'YükVinç', url: 'https://yukvinc.com.tr/' },
           breadcrumb: { '@id': url + '#breadcrumb' },
           ...(photoUrl ? { primaryImageOfPage: { '@type': 'ImageObject', url: photoUrl, caption: item.title } } : {}),
           mainEntity: { '@type': 'Thing', name: item.title, description }
@@ -96,19 +97,21 @@ export async function onRequestGet({ params, env }) {
       ? '<img class="detail-photo" src="' + esc(photoUrl) + '" alt="' + esc(item.title + ' — ' + area) + '" loading="eager">'
       : (item.public_source&&item.public_source!=='owner'?'<div class="seo-list-photo-placeholder" aria-label="Hizmet kategori simgesi">⚙ '+esc(categoryLabel)+'</div>':'');
 
+    const categoryPath = categoryPaths[item.category];
+    const related = '<nav aria-label="İlgili ilanlar">' + (item.city ? '<a href="'+esc(cityUrl)+'">'+esc(item.city)+' ilanları</a> · ' : '') + (categoryPath ? '<a href="/kategori/'+categoryPath+'/">'+esc(categoryNames[item.category])+'</a>' : '') + '</nav>';
     const html = '<!doctype html><html lang="tr"><head>' +
-      '<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+      iconTags + '<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
       '<meta name="robots" content="index,follow,max-image-preview:large">' +
       '<title>' + esc(title) + '</title><meta name="description" content="' + esc(description) + '">' +
       '<link rel="canonical" href="' + esc(url) + '">' +
-      '<meta property="og:type" content="website"><meta property="og:site_name" content="Yük Vinç">' +
+      '<meta property="og:type" content="website"><meta property="og:site_name" content="YükVinç">' +
       '<meta property="og:title" content="' + esc(title) + '"><meta property="og:description" content="' + esc(description) + '">' +
       '<meta property="og:url" content="' + esc(url) + '">' + photoMeta +
       '<link rel="stylesheet" href="/assets/site.css">' +
       '<script type="application/ld+json">' + jsonLd + '</script></head><body>' +
-      '<header><div class="nav wrap"><a class="brand" href="/">Yük Vinç</a><a class="post-btn" href="/ilan-ver/">İlan ver</a></div></header>' +
+      '<header><div class="nav wrap"><a class="brand" href="/">YükVinç</a><a class="post-btn" href="/ilan-ver/">İlan ver</a></div></header>' +
       '<main class="wrap section narrow"><p class="eyebrow">' + esc(type) + ' · ' + esc(area) + '</p>' +
-      '<h1>' + esc(item.title) + '</h1><p class="lead">' + esc(item.description || '') + '</p>' +
+      related + '<h1>' + esc(item.title) + '</h1><p class="lead">' + esc(item.description || '') + '</p>' +
       (item.public_source&&item.public_source!=='owner'?'<p class="directory-notice">Firma bilgileri kamuya açık kaynaklardan derlenmiştir. Düzeltme veya kaldırma için iletişime geçin. <a href="/iletisim/">İletişim</a></p>':'')+'<p><strong>' + esc(price) + '</strong></p>' + photoHtml +
       (item.contact_phone && /^[+0-9 ()-]{7,20}$/.test(item.contact_phone)
         ? '<p><a class="button" data-metric="phone" href="tel:' + esc(item.contact_phone.replace(/[^+0-9]/g, '')) + '">İlan sahibini ara</a></p>'

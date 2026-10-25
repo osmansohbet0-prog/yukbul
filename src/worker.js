@@ -90,7 +90,7 @@ const ROUTES = [
 ];
 
 const API_NOT_FOUND = () => Response.json({ error: 'Uç nokta bulunamadı.' }, { status: 404 });
-const CSP = "default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://accounts.google.com https://www.googletagmanager.com 'sha256-89sM6Taoo7ugLs+JhEzm00yywDPn/XkiBZmVytoqgbY='; frame-src https://challenges.cloudflare.com https://accounts.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.gstatic.com https://*.google-analytics.com; connect-src 'self' https://challenges.cloudflare.com https://accounts.google.com https://*.google-analytics.com https://www.googletagmanager.com; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests";
+const CSP = "default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://accounts.google.com https://www.googletagmanager.com 'sha256-GeAb3cexp836W7AcgqvBwf0rBo37VG7JZBGpgEu3JtM='; frame-src https://challenges.cloudflare.com https://accounts.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.gstatic.com https://*.google-analytics.com; connect-src 'self' https://challenges.cloudflare.com https://accounts.google.com https://*.google-analytics.com https://www.googletagmanager.com; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests";
 
 function secure(response, request, isApi = false) {
   const headers = new Headers(response.headers);

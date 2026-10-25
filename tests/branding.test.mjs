@@ -6,7 +6,7 @@ test('Google brand metadata, crawlable PNG icons and CSP agree',async()=>{
  const html=await readFile(new URL('../public/index.html',import.meta.url),'utf8');
  const schemaText=html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1];
  const schema=JSON.parse(schemaText);
- for(const entity of schema['@graph']){assert.equal(entity.name,'Yük Vinç');assert.ok(entity.alternateName.includes('YükVinç'))}
+ for(const entity of schema['@graph']){assert.equal(entity.name,'YükVinç');assert.ok(entity.alternateName.includes('Yük Vinç'))}
  assert.doesNotMatch(html,/YükBul/);
  assert.match(html,/<title>YükVinç \|/);
  assert.equal((html.match(/rel="icon"/g)||[]).length,1);
