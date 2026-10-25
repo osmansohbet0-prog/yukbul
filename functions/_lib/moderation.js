@@ -32,6 +32,7 @@ function convert(amount,from,to,c){
 }
 function compatible(a,b,c){return a.category===b.category&&a.subtype===b.subtype&&a.city===b.city&&a.capacity_unit===b.capacity_unit&&(a.capacity==null?b.capacity==null:b.capacity!=null&&Math.abs(a.capacity-b.capacity)<=a.capacity*c.capacity_tolerance)}
 export function comparePrice(item,rows,config=DEFAULT_MODERATION){
+ if(item.price_unit==='arayiniz'||item.price_amount==null)return{source:'not_applicable',count:0,required:config.min_samples||5,median:null,outside:false,deviation:null,segment:segment(item),warning:'Fiyat için arayınız: fiyat karşılaştırması uygulanmaz.'};
  const c={...DEFAULT_MODERATION,...config},s=segment(item),values=[];const seen=new Set();
  for(const row of rows){if(row.id===item.id||!compatible(s,segment(row),c)||row.price_amount==null||Number(row.price_amount)<=0)continue;
   // A single prolific advertiser must not control the market reference.
@@ -49,7 +50,7 @@ export function comparePrice(item,rows,config=DEFAULT_MODERATION){
 export function assessRisk(item,comparison,account={},config=DEFAULT_MODERATION){
  const c={...DEFAULT_MODERATION,...config},text=fold(item.title+' '+item.description),reasons=[];let score=0;
  const add=(code,points,reason)=>{score+=points;reasons.push({code,points,reason})};
- const price=item.price_amount==null?null:Number(item.price_amount);
+ const price=item.price_unit==='arayiniz'||item.price_amount==null?null:Number(item.price_amount);
  if(item.category!=='operator'&&price!=null&&(price<c.min_price||price>c.max_price))add('price_absolute',40,'Ücret yapılandırılmış güvenli kontrol aralığının dışında.');
  if(comparison.median&&price!=null&&(price<comparison.median*c.low_ratio||price>comparison.median*c.high_ratio))add('price_relative',40,`Segment medyanından sapma: %${Math.round(comparison.deviation*100)}.`);
  if(comparison.source==='admin_reference'&&comparison.outside)add('price_reference',35,'Ücret yönetici referans aralığının dışında.');

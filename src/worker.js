@@ -1,3 +1,7 @@
+import * as directoryAdmin from '../functions/api/admin-directory.js';
+import * as listingMetrics from '../functions/api/admin-listing-metrics.js';
+import * as listingEvent from '../functions/api/listing-event.js';
+import {syncInbox} from '../functions/_lib/outreach.js';
 import * as nearbySearch from '../functions/api/ai/nearby.js';
 import * as moderationAdmin from '../functions/api/admin-moderation.js';
 import * as priceCheck from '../functions/api/listings/price-check.js';
@@ -41,6 +45,9 @@ import * as r25 from "../functions/sehir/[slug].js";
 import * as r26 from "../functions/sitemap.xml.js";
 
 const ROUTES = [
+ {path:'/api/admin-directory',params:[],handlers:directoryAdmin},
+ {path:'/api/admin-listing-metrics',params:[],handlers:listingMetrics},
+ {path:'/api/listing-event',params:[],handlers:listingEvent},
   {path:'/api/ai/nearby',params:[],handlers:nearbySearch},
   {path:'/api/admin-moderation',params:[],handlers:moderationAdmin},
   {path:'/api/listings/price-check',params:[],handlers:priceCheck},
@@ -105,6 +112,7 @@ function secure(response, request, isApi = false) {
 export default {
   async scheduled(controller, env, ctx) {
     if(controller.cron==='* * * * *'){
+      ctx.waitUntil(syncInbox(env).catch(()=>console.error('[outreach] inbox_sync_failed')));
       ctx.waitUntil(processListingAgent(env).catch(error=>console.error('[listing-agent]',JSON.stringify({event:'scheduled_failed',name:error?.name||'Error'}))));
       return;
     }
