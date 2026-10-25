@@ -1,3 +1,4 @@
+import {siteStyles,analyticsStyles} from '../functions/_lib/public-styles.js';
 import * as directoryAdmin from '../functions/api/admin-directory.js';
 import * as listingMetrics from '../functions/api/admin-listing-metrics.js';
 import * as listingEvent from '../functions/api/listing-event.js';
@@ -78,10 +79,10 @@ const ROUTES = [
   { path: '/api/listings/mine', params: [], handlers: r20 },
   { path: '/api/public-settings', params: [], handlers: r21 },
   { path: '/sitemap.xml', params: [], handlers: r26 },
-  { path: new RegExp("^/api/listing\-photo/([^/]+)$"), params: ['id'], handlers: r16 },
+  { path: new RegExp("^/api/listing-photo/([^/]+)$"), params: ['id'], handlers: r16 },
   { path: new RegExp("^/api/listings/([^/]+)/report$"), params: ['id'], handlers: r17 },
   { path: new RegExp("^/api/listings/([^/]+)$"), params: ['id'], handlers: r18 },
-  { path: new RegExp("^/api/site\-asset/([^/]+)$"), params: ['id'], handlers: r22 },
+  { path: new RegExp("^/api/site-asset/([^/]+)$"), params: ['id'], handlers: r22 },
   { path: new RegExp("^/ilan/([^/]+)/([^/]+)$"), params: ['id', 'slug'], handlers: r23 },
   { path: new RegExp("^/ilan/([^/]+)$"), params: ['id'], handlers: r23 },
   { path: new RegExp("^/kategori/([^/]+)$"), params: ['slug'], handlers: r24 },
@@ -104,7 +105,7 @@ function secure(response, request, isApi = false) {
   if ((isApi && !publicPhoto) || /^\/(?:admin|giris|ilan-ver|hesabim|yonetici-kurulum)(?:\/|$)/.test(path)) headers.set('x-robots-tag', 'noindex, nofollow');
   let result = new Response(response.body, { status: response.status, statusText: response.statusText, headers });
   if (response.status === 200 && /text\/html/i.test(headers.get('content-type') || '') && !/^\/(?:admin|giris|ilan-ver|hesabim|yonetici-kurulum)(?:\/|$)/.test(path)) {
-    result = new HTMLRewriter().on('head', { element(el) { el.append('<link rel="stylesheet" href="/assets/analytics.css"><script src="/assets/analytics.js" defer></script>', { html: true }); } }).transform(result);
+    result = new HTMLRewriter().on('link[rel="stylesheet"][href="/assets/site.css"]',{element(el){el.replace('<style data-site-styles>'+siteStyles+'</style>',{html:true})}}).on('head', { element(el) { el.append('<style data-analytics-styles>'+analyticsStyles+'</style><script src="/assets/analytics.js" defer></script>', { html: true }); } }).transform(result);
   }
   return result;
 }
