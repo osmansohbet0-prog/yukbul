@@ -8,13 +8,13 @@ async function verifyGoogleCredential(token,clientId){
   const parts=token.split('.');if(parts.length!==3)return null;
   let header,claims;try{header=parsePart(parts[0]);claims=parsePart(parts[1])}catch{return null}
   if(header.alg!=='RS256'||typeof header.kid!=='string')return null;
-  const keysResponse=await fetch('https://www.googleapis.com/oauth2/v3/certs',{cf:{cacheTtl:300,cacheEverything:true}});
+  const keysResponse=await fetch('https://www.googleapis.com/oauth2/v3/certs',{signal:AbortSignal.timeout(8000),cf:{cacheTtl:300,cacheEverything:true}});
   if(!keysResponse.ok)return null;
   const keys=await keysResponse.json(),jwk=keys.keys?.find(k=>k.kid===header.kid&&k.kty==='RSA'&&k.alg==='RS256');
   if(!jwk)return null;
   const key=await crypto.subtle.importKey('jwk',jwk,{name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'},false,['verify']);
   const valid=await crypto.subtle.verify({name:'RSASSA-PKCS1-v1_5'},key,decodePart(parts[2]),new TextEncoder().encode(parts[0]+'.'+parts[1]));
-  const now=Math.floor(Date.now()/1000);
+  const now=Math.floor(Date.now()/1000);if(!Number.isFinite(claims.exp)||!Number.isFinite(claims.iat))return null;
   if(!valid||!['https://accounts.google.com','accounts.google.com'].includes(claims.iss)||claims.aud!==clientId||Number(claims.exp)<=now||Number(claims.iat)>now+60||claims.email_verified!==true||typeof claims.sub!=='string'||typeof claims.email!=='string')return null;
   if(claims.azp&&claims.azp!==clientId)return null;
   return{subject:claims.sub,email:claims.email.trim().toLowerCase()};

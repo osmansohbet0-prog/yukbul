@@ -1,3 +1,4 @@
+import {maskEmail,maskPhone} from '../_lib/moderation.js';
 import {fail,json,requireAdmin,readJson,audit,randomId} from '../_lib/core.js';
 import {runImprovementReview} from '../_lib/ai-improvements.js';
 const repo='osmansohbet0-prog/yukbul';
@@ -15,7 +16,7 @@ async function proposalPullRequest(env,item){
 }
 export async function onRequestGet({request,env}){
  const admin=await requireAdmin({request,env});if(admin.response)return admin.response;
- try{const [{results:suggestions=[]},{results:tickets=[]}]=await Promise.all([env.DB.prepare('SELECT * FROM ai_improvement_suggestions ORDER BY created_at DESC LIMIT 50').all(),env.DB.prepare('SELECT id,source,summary_redacted,contact_name,contact_details,consent_email,email_status,status,created_at FROM support_tickets ORDER BY created_at DESC LIMIT 100').all()]);return json({suggestions,tickets})}catch{return fail('Yapay zekâ önerileri ve destek kayıtları alınamadı.',503)}
+ try{const [{results:suggestions=[]},{results:tickets=[]}]=await Promise.all([env.DB.prepare('SELECT * FROM ai_improvement_suggestions ORDER BY created_at DESC LIMIT 50').all(),env.DB.prepare('SELECT id,source,summary_redacted,contact_name,contact_details,consent_email,email_status,status,created_at FROM support_tickets ORDER BY created_at DESC LIMIT 100').all()]);return json({suggestions,tickets:tickets.map(row=>({...row,contact_name:row.contact_name?'[ad gizlendi]':null,contact_details:row.contact_details?row.contact_details.includes('@')?maskEmail(row.contact_details):maskPhone(row.contact_details):null}))})}catch{return fail('Yapay zekâ önerileri ve destek kayıtları alınamadı.',503)}
 }
 export async function onRequestPost({request,env}){
  const admin=await requireAdmin({request,env});if(admin.response)return admin.response;

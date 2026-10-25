@@ -1,3 +1,4 @@
+import * as nearbySearch from '../functions/api/ai/nearby.js';
 import * as moderationAdmin from '../functions/api/admin-moderation.js';
 import * as priceCheck from '../functions/api/listings/price-check.js';
 import { renderHome } from "../functions/_lib/home-render.js";
@@ -40,6 +41,7 @@ import * as r25 from "../functions/sehir/[slug].js";
 import * as r26 from "../functions/sitemap.xml.js";
 
 const ROUTES = [
+  {path:'/api/ai/nearby',params:[],handlers:nearbySearch},
   {path:'/api/admin-moderation',params:[],handlers:moderationAdmin},
   {path:'/api/listings/price-check',params:[],handlers:priceCheck},
   { path: '/api/saglik', params: [], handlers: health },
@@ -87,7 +89,7 @@ function secure(response, request, isApi = false) {
   headers.set('x-content-type-options', 'nosniff');
   headers.set('x-frame-options', 'DENY');
   headers.set('referrer-policy', 'strict-origin-when-cross-origin');
-  headers.set('permissions-policy', 'camera=(), microphone=(), geolocation=()');
+  headers.set('permissions-policy', 'camera=(), microphone=(), geolocation=(self)');
   headers.set('content-security-policy', CSP);
   if (new URL(request.url).protocol === 'https:') headers.set('strict-transport-security', 'max-age=31536000');
   const path = new URL(request.url).pathname;

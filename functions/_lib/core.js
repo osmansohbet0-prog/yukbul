@@ -23,8 +23,10 @@ export function isAllowedOrigin(request) {
 export async function readJson(request, max=32768) {
   const type = request.headers.get('content-type') || '';
   if (!type.toLowerCase().includes('application/json')) throw new Error('JSON bekleniyor.');
-  const raw = await request.text();
-  if (raw.length > max) throw new Error('İstek çok büyük.');
+  if(Number(request.headers.get('content-length')||0)>max)throw new Error('İstek çok büyük.');
+  const reader=request.body?.getReader(),parts=[];let size=0;
+  if(reader)try{while(true){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>max){await reader.cancel();throw new Error('İstek çok büyük.')}parts.push(value)}}finally{reader.releaseLock()}
+  const bytes=new Uint8Array(size);let offset=0;for(const part of parts){bytes.set(part,offset);offset+=part.byteLength}const raw=new TextDecoder().decode(bytes);
   const data = JSON.parse(raw);
   if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('Geçersiz istek.');
   return data;
@@ -51,7 +53,7 @@ export async function verifyPassword(password, stored) {
 export function cookieValue(request) {
   const cookies=request.headers.get('Cookie')||'';
   const part=cookies.split(';').map(x=>x.trim()).find(x=>x.startsWith(COOKIE+'='));
-  return part ? decodeURIComponent(part.slice(COOKIE.length+1)) : '';
+  try{return part ? decodeURIComponent(part.slice(COOKIE.length+1)) : '';}catch{return ''}
 }
 export function setCookie(token, maxAge=SESSION_SECONDS) { return `${COOKIE}=${encodeURIComponent(token)}; Path=/; Max-Age=${maxAge}; HttpOnly; Secure; SameSite=Strict`; }
 export function clearCookie() { return `${COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict`; }

@@ -20,8 +20,8 @@ export async function notifyListingSubmitted(env,listing) {
   return sendAdminEmail(env,{
     action:'listing.submitted.notification',listingId:listing.id,
     subject:'YükVinç’te yeni ilan inceleme bekliyor',
-    text:`Yeni ilan gönderildi. YükUsta arka planda metin, fotoğraf ve fiyat kontrollerini yapacak; güvenli otomatik yayın seçeneği açıksa 30 dakika sonra yeniden değerlendirecek.\n\n${title}\n${city}\n${url}`,
-    html:`<p>Yeni ilan gönderildi. YükUsta metin, fotoğraf ve fiyat kontrollerini yapacak; otomatik yayın seçeneği açıksa 30 dakika sonra yeniden değerlendirecek.</p><p><strong>${escapeHtml(title)}</strong><br>${escapeHtml(city)}</p><p><a href="${url}">İlanı incele</a></p>`
+    text:`Yeni ilan gönderildi. YükUsta arka planda metin, fotoğraf ve fiyat kontrollerini yapacak; yayın kararını yalnızca yönetici verecek.\n\n${title}\n${city}\n${url}`,
+    html:`<p>Yeni ilan gönderildi. YükUsta metin, fotoğraf ve fiyat kontrollerini yapacak; yayın kararını yalnızca yönetici verecek.</p><p><strong>${escapeHtml(title)}</strong><br>${escapeHtml(city)}</p><p><a href="${url}">İlanı incele</a></p>`
   });
 }
 
