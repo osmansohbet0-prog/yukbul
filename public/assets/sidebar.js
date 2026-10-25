@@ -79,6 +79,19 @@
   shell.className = 'yv-shell wrap';
   const nav = header.querySelector('.nav') || header;
   nav.prepend(toggle);
+  if (!nav.querySelector('a[href="/ilan-ver/"]')) {
+    const post=document.createElement('a');post.href='/ilan-ver/';post.className='yv-header-post';post.textContent='İlan ver';nav.append(post);
+  }
+  const mobileNav=document.createElement('nav');mobileNav.className='yv-mobile-nav';mobileNav.setAttribute('aria-label','Mobil hızlı erişim');
+  mobileNav.innerHTML='<a href="/"'+(path==='/'?' aria-current="page"':'')+'><span aria-hidden="true">⌂</span>İlanlar</a><button type="button" data-mobile-search><span aria-hidden="true">⌕</span>Ara / Filtrele</button><a class="yv-mobile-post" href="/ilan-ver/"><span aria-hidden="true">＋</span>İlan ver</a><a href="/hesabim/"><span aria-hidden="true">♙</span>Hesabım</a>';
+  document.body.append(mobileNav);
+  mobileNav.querySelector('[data-mobile-search]').addEventListener('click',()=>{
+    if(path!=='/'){location.href='/#search-menu-toggle';return}
+    if(toggle.getAttribute('aria-expanded')!=='true')openMenu();
+    const search=document.getElementById('search-menu'),button=document.getElementById('search-menu-toggle');
+    if(search)search.hidden=false;if(button)button.setAttribute('aria-expanded','true');
+    document.getElementById('category-filter')?.focus({preventScroll:true});
+  });
   header.insertAdjacentElement('afterend', shell);
   shell.append(sidebar, main);
   main.classList.remove('wrap');
@@ -131,6 +144,12 @@
   backdrop.addEventListener('click', () => closeMenu());
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') closeMenu();
+    if(event.key==='Tab' && mobile.matches && toggle.getAttribute('aria-expanded')==='true'){
+      const focusable=[...sidebar.querySelectorAll('a,button,input,select,textarea')].filter(el=>!el.disabled&&el.getClientRects().length);
+      const first=focusable[0],last=focusable.at(-1);
+      if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus()}
+      else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus()}
+    }
   });
   sidebar.querySelectorAll('a').forEach(link => link.addEventListener('click', () => closeMenu(false)));
   mobile.addEventListener('change', syncViewport);
