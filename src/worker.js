@@ -1,3 +1,5 @@
+import * as moderationAdmin from '../functions/api/admin-moderation.js';
+import * as priceCheck from '../functions/api/listings/price-check.js';
 import { renderHome } from "../functions/_lib/home-render.js";
 // Former Pages handlers are bundled and dispatched through this single Workers entry.
 import * as health from "../functions/api/saglik.js";
@@ -38,6 +40,8 @@ import * as r25 from "../functions/sehir/[slug].js";
 import * as r26 from "../functions/sitemap.xml.js";
 
 const ROUTES = [
+  {path:'/api/admin-moderation',params:[],handlers:moderationAdmin},
+  {path:'/api/listings/price-check',params:[],handlers:priceCheck},
   { path: '/api/saglik', params: [], handlers: health },
   { path: '/api/admin-activity', params: [], handlers: r0 },
   { path: '/api/admin-bootstrap', params: [], handlers: r1 },
