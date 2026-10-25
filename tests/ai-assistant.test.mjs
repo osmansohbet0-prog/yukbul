@@ -44,7 +44,7 @@ test('cheapest ordering is only applied to comparable price units',()=>{
  assert.equal(rankAssistantListings([expensive,hourly],searchIntent('Konya ucuz vinç'))[0].id,'expensive');
 });
 test('model failure preserves real approved listing results and records a fallback',async()=>{
- const {response,data,db}=await ask('Konya vinç arıyorum',{ai:{async run(){throw new Error('unavailable')}}});
+ const {response,data,db}=await ask('Konya vinç seçeneklerini açıkla',{ai:{async run(){throw new Error('unavailable')}}});
  assert.equal(response.status,200);assert.equal(data.mode,'fallback');assert.equal(data.listings[0].id,item.id);assert.match(data.answer,/onaylı ilan/);
  assert.ok(db.writes.some(x=>x.args?.includes('assistant.model')));
 });

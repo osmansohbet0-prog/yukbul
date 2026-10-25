@@ -10,7 +10,7 @@ export function validateAssistantOutput(value,requestKind='read_only'){
  if(requestKind==='admin_action')return{ok:true,response:'Bu işlem için yönetici onayı gerekiyor. Ben ilan veya hesap üzerinde değişiklik yapamam; talebini yöneticiye iletebilirim.'};
  if(!value||typeof value!=='object'||Array.isArray(value)||typeof value.response!=='string')return{ok:false,response:''};
  const response=value.response.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,' ').trim().slice(0,AI_LIMITS.maxAnswerLength);if(!response)return{ok:false,response:''};
- const safe=fold(response);if(/(?:sana|size) (?:indirim|ucretsiz paket|bedava paket) (?:verdim|tanimladim)|fiyati (?:degistirdim|dusurdum)|ilani (?:onayladim|reddettim|sildim)|hesabi (?:engelledim|kapattim)/.test(safe))return{ok:false,response:''};
+ const safe=fold(response);if(/\d[\d., ]*\s*(?:tl|lira|₺)|(?:ucretsiz|bedava).{0,30}(?:paket|tanimla|veriyor)|indirim.{0,30}(?:yaptim|yapacagim|tanimla|veriyorum)|(?:onay|red|silme|engelleme).{0,15}(?:islemi tamam|uygulandi)/.test(safe))return{ok:false,response:''};if(/(?:sana|size) (?:indirim|ucretsiz paket|bedava paket) (?:verdim|tanimladim)|fiyati (?:degistirdim|dusurdum)|ilani (?:onayladim|reddettim|sildim)|hesabi (?:engelledim|kapattim)/.test(safe))return{ok:false,response:''};
  return{ok:true,response};
 }
 export function aiConversationId(value){return/^[A-Za-z0-9_-]{8,80}$/.test(String(value||''))?String(value):crypto.randomUUID().replaceAll('-','')}

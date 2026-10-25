@@ -13,6 +13,7 @@ export async function onRequestPost({request,env}) {
     if(password.length<14||password.length>128)return fail('Şifre 14–128 karakter olmalı.');
     const encoded=await hashPassword(password);
     const existing=await env.DB.prepare("SELECT id FROM users WHERE role='admin' LIMIT 1").first();
+    if(existing&&env.ADMIN_RECOVERY_ENABLED!=='true')return fail('Yönetici hesabı zaten kurulu. Kurtarma yolu varsayılan olarak kapalıdır.',409);
     let id,status=201;
     if(existing){
       id=existing.id;status=200;

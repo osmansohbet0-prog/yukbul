@@ -1,6 +1,6 @@
 // Deterministic evidence only: a risk score never authorizes publication or account sanctions.
 const fold=v=>String(v||'').normalize('NFKC').toLocaleLowerCase('tr').replace(/ı/g,'i').normalize('NFD').replace(/\p{Diacritic}/gu,'');
-export const DEFAULT_MODERATION={min_samples:5,low_ratio:.4,high_ratio:4,min_price:500,max_price:1000000000,capacity_tolerance:.2,flag_score:35,hours_per_day:null,days_per_month:null,references:[]};
+export const DEFAULT_MODERATION={min_samples:5,low_ratio:.4,high_ratio:4,min_price:500,max_price:10000000,capacity_tolerance:.2,flag_score:35,hours_per_day:null,days_per_month:null,references:[]};
 export function cleanModeration(value){
  if(!value||typeof value!=='object'||Array.isArray(value))return null;
  const c={...DEFAULT_MODERATION,...value};
@@ -68,7 +68,7 @@ export function assessRisk(item,comparison,account={},config=DEFAULT_MODERATION)
  if(account.duplicate)add('duplicate',40,'Başka bir ilanda benzer fotoğraf veya metin.');
  if(account.location_mismatch)add('location_mismatch',25,'Açıklamadaki konum ile seçilen konum tutarsız olabilir.');
  if(/(?:asdf|qwer|zxcv|lorem ipsum)|(.)\1{8}/.test(text))add('random_text',35,'Başlık veya açıklamada rastgele ya da tekrarlanan metin.');
- return{score:Math.min(100,score),reasons,flagged:score>=c.flag_score,suggested_action:score>=c.flag_score?'Elle incele ve gerekirse düzeltme iste':'Yönetici onayını beklet',needs_text_analysis:score<c.flag_score&&(!comparison.median||reasons.length>0)};
+ return{score:Math.min(100,score),reasons,flagged:score>=c.flag_score,suggested_action:score>=c.flag_score?'Elle incele ve gerekirse düzeltme iste':'Yönetici onayını beklet',needs_text_analysis:score<c.flag_score&&(reasons.length>0||String(item.description||'').trim().split(/\s+/).length<8||comparison.segment?.subtype==='belirsiz')};
 }
 export async function reviewByRules(db,item,userId){
  const config=await readModeration(db);

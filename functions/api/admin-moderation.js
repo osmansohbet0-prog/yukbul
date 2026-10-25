@@ -7,7 +7,10 @@ export async function onRequestGet(context){
   const items=rows.map(({email,contact_phone,evidence_json,...r})=>{let evidence={};try{evidence=JSON.parse(evidence_json||'{}')}catch{}return{...r,owner_email:maskEmail(email),contact_phone:maskPhone(contact_phone),evidence}});
   const {results:appeals=[]}=await db.prepare("SELECT a.id,a.listing_id,a.message_redacted,a.created_at,l.title FROM listing_appeals a JOIN listings l ON l.id=a.listing_id WHERE a.status='open' ORDER BY a.created_at DESC LIMIT 50").all();
   const feedback=await db.prepare("SELECT COUNT(*) AS count FROM moderation_feedback WHERE verdict='false_positive' AND created_at>unixepoch()-2592000").first();
-  return json({config,items,appeals,threshold_suggestion:Number(feedback?.count||0)>=5?'Son 30 günde en az 5 yanlış alarm kaydı var. İlgili nedenleri inceleyip eşikleri manuel değerlendirin; otomatik değişiklik yapılmadı.':null});
+  const summary=await db.prepare("SELECT (SELECT COUNT(*) FROM listings WHERE status='pending') AS pending,(SELECT COUNT(*) FROM listings WHERE status='flagged') AS flagged,(SELECT COUNT(*) FROM listings WHERE created_at>=unixepoch('now','start of day') AND status<>'deleted') AS daily_listings,(SELECT COUNT(*) FROM users WHERE created_at>=unixepoch('now','start of day')) AS daily_users,(SELECT COUNT(*) FROM support_tickets WHERE status='open') AS open_tickets,(SELECT COALESCE(SUM(calls),0) FROM ai_model_budget WHERE day=date('now')) AS model_calls_today").first();
+  const {results:priceRows=[]}=await db.prepare("SELECT category,price_unit,price_amount FROM listings WHERE status='approved' AND price_amount>0 AND (category='operator' OR user_id IN (SELECT id FROM users WHERE role='admin') OR trial_expires_at>unixepoch() OR paid_until>unixepoch()) ORDER BY created_at DESC LIMIT 2000").all();const groups=new Map();for(const row of priceRows){const key=row.category+' / '+row.price_unit;groups.set(key,[...(groups.get(key)||[]),Number(row.price_amount)])}const medians=[...groups].map(([segment,values])=>{values.sort((a,b)=>a-b);const n=values.length,m=Math.floor(n/2);return{segment,count:n,median:n>=config.min_samples?n%2?values[m]:(values[m-1]+values[m])/2:null}});
+  const {results:recent=[]}=await db.prepare('SELECT action,entity_type,entity_id,created_at FROM admin_activity ORDER BY created_at DESC LIMIT 8').all();
+  return json({config,items,appeals,summary,medians,recent,threshold_suggestion:Number(feedback?.count||0)>=5?'Son 30 günde en az 5 yanlış alarm kaydı var. İlgili nedenleri inceleyip eşikleri manuel değerlendirin; otomatik değişiklik yapılmadı.':null});
  }catch{return fail('Denetim bilgileri alınamadı.',503)}
 }
 export async function onRequestPatch(context){
@@ -24,6 +27,9 @@ export async function onRequestPatch(context){
   }else if(d.action==='request_correction'){
    const note=String(d.note||'').trim();if(note.length<5||note.length>500)return fail('5–500 karakterlik bir düzeltme açıklaması yazın.');
    await db.prepare("UPDATE listings SET status='pending',moderation_note=?,updated_at=unixepoch() WHERE id=?").bind(note,d.id).run();
+  }else if(d.action==='set_location'){
+   if(!Number.isFinite(d.latitude)||Math.abs(d.latitude)>90||!Number.isFinite(d.longitude)||Math.abs(d.longitude)>180)return fail('Geçerli enlem ve boylam girin.');
+   await db.prepare('INSERT INTO listing_locations(listing_id,latitude,longitude,verified_by) VALUES(?,?,?,?) ON CONFLICT(listing_id) DO UPDATE SET latitude=excluded.latitude,longitude=excluded.longitude,verified_by=excluded.verified_by,updated_at=unixepoch()').bind(d.id,d.latitude,d.longitude,a.admin.id).run();
   }else if(d.action==='review_account'){
    // A review flag is evidence only, never a ban or a status change.
   }else if(d.action==='resolve_appeal'){
