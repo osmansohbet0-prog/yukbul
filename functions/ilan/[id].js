@@ -21,7 +21,7 @@ export async function onRequestGet({ params, env }) {
 
   try {
     const item = await env.DB.prepare(
-      "SELECT id,listing_type,COALESCE(category_detail,category) AS category,title,description,city,district,price_amount,price_unit,contact_phone,created_at,updated_at,(SELECT id FROM listing_photos p WHERE p.listing_id=listings.id ORDER BY sort_order LIMIT 1) photo_id FROM listings WHERE id=? AND status='approved' AND (category='operator' OR EXISTS(SELECT 1 FROM users u WHERE u.id=listings.user_id AND u.role='admin') OR trial_expires_at>unixepoch() OR paid_until>unixepoch())"
+      "SELECT id,(SELECT source FROM listing_directory directory_public WHERE directory_public.listing_id=listings.id) AS public_source,listing_type,COALESCE(category_detail,category) AS category,title,description,city,district,price_amount,price_unit,contact_phone,created_at,updated_at,(SELECT id FROM listing_photos p WHERE p.listing_id=listings.id ORDER BY sort_order LIMIT 1) photo_id FROM listings WHERE id=? AND status='approved' AND (category='operator' OR EXISTS(SELECT 1 FROM users u WHERE u.id=listings.user_id AND u.role='admin') OR trial_expires_at>unixepoch() OR paid_until>unixepoch())"
     ).bind(id).first();
 
     if (!item) return new Response('İlan bulunamadı', {
@@ -50,7 +50,7 @@ export async function onRequestGet({ params, env }) {
       ? 'https://yukvinc.com.tr/api/listing-photo/' + encodeURIComponent(item.photo_id) + '?v=2'
       : '';
     const priceUnit = item.price_unit === 'sefer' ? 'iş başı' : item.price_unit || '';
-    const price = item.price_amount == null
+    const price = item.price_unit==='arayiniz' ? 'Fiyat için arayınız' : item.price_amount == null
       ? 'Ücret için ilan sahibine danış'
       : new Intl.NumberFormat('tr-TR').format(item.price_amount) + ' ₺' + (priceUnit ? ' / ' + priceUnit : '');
     const type = item.listing_type === 'operator_job' ? 'İş arayan operatör' : 'Ekipman kiralama';
@@ -93,7 +93,7 @@ export async function onRequestGet({ params, env }) {
       : '<meta name="twitter:card" content="summary">';
     const photoHtml = photoUrl
       ? '<img class="detail-photo" src="' + esc(photoUrl) + '" alt="' + esc(item.title + ' — ' + area) + '" loading="eager">'
-      : '';
+      : (item.public_source&&item.public_source!=='owner'?'<div class="seo-list-photo-placeholder" aria-label="Hizmet kategori simgesi">⚙ '+esc(categoryLabel)+'</div>':'');
 
     const html = '<!doctype html><html lang="tr"><head>' +
       '<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
@@ -108,11 +108,11 @@ export async function onRequestGet({ params, env }) {
       '<header><div class="nav wrap"><a class="brand" href="/">Yük Vinç</a><a class="post-btn" href="/ilan-ver/">İlan ver</a></div></header>' +
       '<main class="wrap section narrow"><p class="eyebrow">' + esc(type) + ' · ' + esc(area) + '</p>' +
       '<h1>' + esc(item.title) + '</h1><p class="lead">' + esc(item.description || '') + '</p>' +
-      '<p><strong>' + esc(price) + '</strong></p>' + photoHtml +
+      (item.public_source&&item.public_source!=='owner'?'<p class="directory-notice">Firma bilgileri kamuya açık kaynaklardan derlenmiştir. Düzeltme veya kaldırma için iletişime geçin. <a href="/iletisim/">İletişim</a></p>':'')+'<p><strong>' + esc(price) + '</strong></p>' + photoHtml +
       (item.contact_phone && /^[+0-9 ()-]{7,20}$/.test(item.contact_phone)
-        ? '<p><a class="button" href="tel:' + esc(item.contact_phone.replace(/[^+0-9]/g, '')) + '">İlan sahibini ara</a></p>'
+        ? '<p><a class="button" data-metric="phone" href="tel:' + esc(item.contact_phone.replace(/[^+0-9]/g, '')) + '">İlan sahibini ara</a></p>'
         : '<p>Bu ilanda telefon paylaşılmamış.</p>') +
-      '<p>İlanın güncelliğini ve uygunluğunu ilan sahibiyle doğrulayın.</p>' +
+      (item.contact_phone?'<p><a class="button secondary" data-metric="whatsapp" rel="noopener" href="https://wa.me/'+esc(item.contact_phone.replace(/\D/g,'').replace(/^0/,'90'))+'">WhatsApp ile iletişime geç</a></p>':'')+'<p>İlanın güncelliğini ve uygunluğunu ilan sahibiyle doğrulayın.</p>' +
       '<p><a class="button secondary" href="/">Tüm ilanlara dön</a></p>' +
       '<details><summary>Şikayet et</summary><form id="report-form">' +
       '<label>Şikayet sebebi<textarea name="reason" minlength="5" maxlength="300" required></textarea></label>' +
