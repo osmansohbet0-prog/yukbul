@@ -21,7 +21,7 @@ export async function onRequestGet({ params, env }) {
 
   try {
     const item = await env.DB.prepare(
-      "SELECT id,listing_type,category,title,description,city,district,price_amount,price_unit,contact_phone,created_at,updated_at,(SELECT id FROM listing_photos p WHERE p.listing_id=listings.id ORDER BY sort_order LIMIT 1) photo_id FROM listings WHERE id=? AND status='approved' AND (category='operator' OR EXISTS(SELECT 1 FROM users u WHERE u.id=listings.user_id AND u.role='admin') OR trial_expires_at>unixepoch() OR paid_until>unixepoch())"
+      "SELECT id,listing_type,COALESCE(category_detail,category) AS category,title,description,city,district,price_amount,price_unit,contact_phone,created_at,updated_at,(SELECT id FROM listing_photos p WHERE p.listing_id=listings.id ORDER BY sort_order LIMIT 1) photo_id FROM listings WHERE id=? AND status='approved' AND (category='operator' OR EXISTS(SELECT 1 FROM users u WHERE u.id=listings.user_id AND u.role='admin') OR trial_expires_at>unixepoch() OR paid_until>unixepoch())"
     ).bind(id).first();
 
     if (!item) return new Response('İlan bulunamadı', {
@@ -38,6 +38,7 @@ export async function onRequestGet({ params, env }) {
       tow: 'oto kurtarıcı',
       basket: 'sepetli vinç',
       machine: 'iş makinesi',
+      manlift: 'manlift kiralama',
       lift: 'nakliyat asansörü',
       operator: 'operatör iş ilanı'
     }[item.category] || 'ekipman ilanı';

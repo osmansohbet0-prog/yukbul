@@ -1,3 +1,4 @@
+import {json,requireAdmin} from '../_lib/core.js';
 const TABLES={
   users:['id','email_norm','role','active'],
   user_sessions:['token_hash','user_id','expires_at'],
@@ -12,7 +13,7 @@ async function tableInfo(db,name){
   const rows=await db.prepare(`PRAGMA table_info("${name}")`).all();
   return new Set((rows.results||[]).map(row=>row.name));
 }
-export async function onRequestGet({env}){
+async function diagnostics({env}){
   const report={
     ok:true,
     database:{binding:!!env.DB,reachable:false,tables:{}},
@@ -63,4 +64,9 @@ export async function onRequestGet({env}){
     console.error('[health] diagnostic query failed',error?.name||'Error',error?.message||'unknown');
   }
   return Response.json(report,{status:200,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}});
+}
+
+export async function onRequestGet(context){
+ if(new URL(context.request.url).searchParams.get('details')==='1'){const a=await requireAdmin(context);if(a.response)return a.response;return diagnostics(context)}
+ try{if(!context.env.DB)return json({ok:false},503);await context.env.DB.prepare('SELECT 1 AS ok').first();return json({ok:true})}catch{return json({ok:false},503)}
 }

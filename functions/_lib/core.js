@@ -20,13 +20,17 @@ export function isAllowedOrigin(request) {
   const origin = request.headers.get('Origin');
   return Boolean(origin && ALLOWED_ORIGINS.has(origin));
 }
-export async function readJson(request, max=32768) {
-  const type = request.headers.get('content-type') || '';
-  if (!type.toLowerCase().includes('application/json')) throw new Error('JSON bekleniyor.');
+export async function readBoundedText(request,max){
   if(Number(request.headers.get('content-length')||0)>max)throw new Error('İstek çok büyük.');
   const reader=request.body?.getReader(),parts=[];let size=0;
   if(reader)try{while(true){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>max){await reader.cancel();throw new Error('İstek çok büyük.')}parts.push(value)}}finally{reader.releaseLock()}
   const bytes=new Uint8Array(size);let offset=0;for(const part of parts){bytes.set(part,offset);offset+=part.byteLength}const raw=new TextDecoder().decode(bytes);
+  return raw;
+}
+export async function readJson(request, max=32768) {
+  const type = request.headers.get('content-type') || '';
+  if (!type.toLowerCase().includes('application/json')) throw new Error('JSON bekleniyor.');
+  const raw=await readBoundedText(request,max);
   const data = JSON.parse(raw);
   if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('Geçersiz istek.');
   return data;

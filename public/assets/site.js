@@ -65,8 +65,14 @@ $('#yukusta-form').addEventListener('submit',async e=>{
  yukustaLine(message,'user');input.value='';button.disabled=true;button.textContent='Yanıtlıyor…';form.setAttribute('aria-busy','true');
  const turn=++yukustaTurn,pending=yukustaLine('İlanlara bakıyorum…'),controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),25000);activeYukustaRequest=controller;activeYukustaPending=pending;
  try{
-  const response=await fetch('/api/ai/assistant',{method:'POST',headers:{'content-type':'application/json','accept':'application/json'},signal:controller.signal,body:JSON.stringify({message,conversation_id:yukustaConversationId,history:yukustaHistory})});
-  const data=await response.json();if(!response.ok)throw Error(data.error||'Yanıt alınamadı.');
+  const response=await fetch('/api/ai/assistant',{method:'POST',headers:{'content-type':'application/json','accept':'text/event-stream'},signal:controller.signal,body:JSON.stringify({message,conversation_id:yukustaConversationId,history:yukustaHistory})});
+  let data;
+  if(response.headers.get('content-type')?.includes('text/event-stream')){
+   const reader=response.body.getReader(),decoder=new TextDecoder();let buffer='',answer='';
+   while(true){const chunk=await reader.read();if(chunk.done)break;buffer+=decoder.decode(chunk.value,{stream:true});let end;
+    while((end=buffer.indexOf('\n\n'))>=0){const event=buffer.slice(0,end);buffer=buffer.slice(end+2);if(!event.startsWith('data: '))continue;const part=JSON.parse(event.slice(6));if(part.type==='delta'){answer+=part.delta;if(turn===yukustaTurn)pending.textContent=answer}else if(part.type==='result')data=part.data}
+   }if(!data)throw Error('Yanıt tamamlanamadı. İlan filtrelerini kullanabilirsin.');
+  }else data=await response.json();if(!response.ok)throw Error(data.error||'Yanıt alınamadı.');
   yukustaConversationId=data.conversation_id||yukustaConversationId;
   if(!data.support)yukustaHistory=[...yukustaHistory,{role:'user',content:message.slice(0,600)}].slice(-4);
   pending.remove();activeYukustaPending=null;yukustaLine(data.answer);yukustaResults(data.listings);

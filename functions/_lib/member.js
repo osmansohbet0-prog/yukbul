@@ -1,4 +1,4 @@
-import {json,fail,randomId,digest,hashPassword,verifyPassword,isAllowedOrigin,readJson,ipHash} from './core.js';
+import {json,fail,randomId,digest,hashPassword,verifyPassword,isAllowedOrigin,readJson,readBoundedText,ipHash} from './core.js';
 
 export const MEMBER_COOKIE='__Host-yv_member';
 export const MEMBER_SECONDS=60*60*24*14;
@@ -16,8 +16,7 @@ export async function readMemberJson(request,max=20000){
  try{
   if(type.includes('application/json'))return await readJson(request,max);
   if(type.includes('application/x-www-form-urlencoded')){
-   const raw=await request.text();
-   if(raw.length>max)throw new Error('İstek çok büyük.');
+   const raw=await readBoundedText(request,max);
    const params=new URLSearchParams(raw),data={};
    for(const [key,value] of params){if(Object.prototype.hasOwnProperty.call(data,key))throw new Error('Tekrarlanan alan.');data[key]=value}
    return data;

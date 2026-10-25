@@ -2,12 +2,12 @@ const base='https://yukvinc.com.tr';
 const slugify=s=>String(s||'').toLocaleLowerCase('tr').replace(/ı/g,'i').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,80).replace(/-+$/g,'')||'ilan';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const unit=s=>s==='sefer'?'iş başı':s||'';
-const labels={crane:'Vinç kiralama',tow:'Oto kurtarıcı',basket:'Sepetli platform',machine:'İş makinesi',lift:'Nakliyat asansörü',operator:'Operatör iş ilanı'};
+const labels={crane:'Vinç kiralama',tow:'Oto kurtarıcı',basket:'Sepetli platform',machine:'İş makinesi',manlift:'Manlift',lift:'Nakliyat asansörü',operator:'Operatör iş ilanı'};
 const itemUrl=x=>`/ilan/${encodeURIComponent(x.id)}/${slugify(x.title)}/`;
 const pageSchema=(title,url,rows)=>JSON.stringify({'@context':'https://schema.org','@type':'CollectionPage',name:title,url,mainEntity:{'@type':'ItemList',numberOfItems:rows.length,itemListElement:rows.map((x,i)=>({'@type':'ListItem',position:i+1,name:x.title,url:base+itemUrl(x)}))}}).replace(/</g,'\\u003c');
 export async function onRequestGet({params,env}){
  try{
-  const{results:all=[]}=await env.DB.prepare("SELECT l.id,l.title,l.description,l.city,l.district,l.category,l.price_amount,l.price_unit,l.updated_at,l.package_tier,(SELECT id FROM listing_photos p WHERE p.listing_id=l.id ORDER BY sort_order LIMIT 1) photo_id FROM listings l WHERE l.status='approved' AND (l.category='operator' OR EXISTS(SELECT 1 FROM users u WHERE u.id=l.user_id AND u.role='admin') OR l.trial_expires_at>unixepoch() OR l.paid_until>unixepoch()) ORDER BY CASE l.package_tier WHEN 'premium' THEN 2 WHEN 'featured' THEN 1 ELSE 0 END DESC,l.updated_at DESC LIMIT 1000").all();
+  const{results:all=[]}=await env.DB.prepare("SELECT l.id,l.title,l.description,l.city,l.district,COALESCE(l.category_detail,l.category) AS category,l.price_amount,l.price_unit,l.updated_at,l.package_tier,(SELECT id FROM listing_photos p WHERE p.listing_id=l.id ORDER BY sort_order LIMIT 1) photo_id FROM listings l WHERE l.status='approved' AND (COALESCE(l.category_detail,l.category)='operator' OR EXISTS(SELECT 1 FROM users u WHERE u.id=l.user_id AND u.role='admin') OR l.trial_expires_at>unixepoch() OR l.paid_until>unixepoch()) ORDER BY CASE l.package_tier WHEN 'premium' THEN 2 WHEN 'featured' THEN 1 ELSE 0 END DESC,l.updated_at DESC LIMIT 1000").all();
   const city=all.find(x=>slugify(x.city)===params.slug)?.city;
   if(!city)return new Response('Bu şehirde henüz yayında ilan yok',{status:404});
   const rows=all.filter(x=>x.city===city),title=`${city} vinç, oto kurtarıcı ve ekipman ilanları | Yük Vinç`,desc=`${city} için kullanıcıların yayınladığı vinç, yol yardım, iş makinesi ve operatör ilanlarını keşfet. Ücret ve müsaitlik bilgilerini ilan sahibiyle doğrula.`,url=base+`/sehir/${encodeURIComponent(slugify(city))}/`;
