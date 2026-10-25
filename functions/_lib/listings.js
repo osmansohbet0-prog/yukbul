@@ -66,7 +66,7 @@ export async function publicItems(db,params={}){
     args.push(pattern,pattern,pattern,pattern);
    }
    const categoryMatches=categories[key]||[];
-   if(categoryMatches.length)matches.push('l.category IN ('+categoryMatches.map(()=>'?').join(',')+')');
+   if(categoryMatches.length){matches.push('l.category IN ('+categoryMatches.map(()=>'?').join(',')+')');args.push(...categoryMatches)}
    if(!matches.length)continue;
    sql+=' AND ('+matches.join(' OR ')+')';
   }
