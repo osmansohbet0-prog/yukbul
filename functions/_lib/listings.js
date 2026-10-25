@@ -24,8 +24,12 @@ export async function publicItems(db,params={}){
  for(const k of ['category','city']){
   const v=String(params[k]||'').trim();
   if(v&&v!=='all'){
-   sql+=k==='city'?' AND l.city LIKE ?':` AND l.${k}=?`;
-   args.push(k==='city'?`%${v.replace(/[%_]/g,'')}%`:v);
+   if(k==='city'){
+    const cleaned=v.replace(/[%_]/g,'').slice(0,80),lower=cleaned.toLocaleLowerCase('tr');
+    const title=lower[0]?.toLocaleUpperCase('tr')+lower.slice(1);
+    sql+=' AND (l.city LIKE ? OR l.district LIKE ? OR l.city LIKE ? OR l.district LIKE ?)';
+    args.push('%'+cleaned+'%','%'+cleaned+'%','%'+title+'%','%'+title+'%');
+   }else{sql+=` AND l.${k}=?`;args.push(v)}
   }
  }
  const q=String(params.q||'').trim().slice(0,80);
