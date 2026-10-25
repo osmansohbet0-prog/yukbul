@@ -10,6 +10,6 @@ export async function renderHome(response,env){
  const price=x.price_amount==null?'Ücret için iletişime geç':new Intl.NumberFormat('tr-TR').format(x.price_amount)+' ₺'+(x.price_unit?' / '+esc(x.price_unit==='sefer'?'iş başı':x.price_unit):'');
  return '<article class="listing-card seo-listing-card '+(x.package_tier==='premium'?'premium-card':'')+'"><a class="card-art seo-listing-photo" href="'+href+'">'+image+'</a><div class="card-body">'+(x.package_tier==='premium'?'<span class="featured-badge">Premium · Öne Çıkan</span>':'')+'<h2><a href="'+href+'">'+esc(x.title)+'</a></h2><p class="description">'+esc(x.description).slice(0,260)+'</p><p class="place">'+esc(x.city)+' · '+esc(x.district)+'</p><strong class="price">'+price+'</strong></div></article>';
  }).join('');
- return new HTMLRewriter().on('#listing-grid',{element(el){el.setInnerContent(cards,{html:true})}}).transform(response);
+ return new HTMLRewriter().on('#result-count',{element(el){el.setInnerContent(results.length+(results.length===24?'+':'')+' ilan')}}).on('#listing-grid',{element(el){el.setInnerContent(cards,{html:true})}}).transform(response);
  }catch(error){console.error('[home-render]',error?.name||'Error');return response}
 }
