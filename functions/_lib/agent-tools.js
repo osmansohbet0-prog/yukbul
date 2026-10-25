@@ -15,3 +15,13 @@ export function haversine(a,b){
 export function rankNearby(items,point,radius=100){
  return items.filter(x=>Number.isFinite(x.latitude)&&Number.isFinite(x.longitude)).map(x=>{const {latitude,longitude,...publicItem}=x;return{...publicItem,distance_km:Math.round(haversine(point,x)*10)/10}}).filter(x=>x.distance_km<=radius).sort((a,b)=>a.distance_km-b.distance_km);
 }
+
+export function isGroundedAnswer(answer,candidates,cityNames=[]){
+ const fold=v=>String(v||'').normalize('NFKC').toLocaleLowerCase('tr').replace(/ı/g,'i').normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+ const permittedNumbers=new Set(candidates.flatMap(x=>String(x.title||'').match(/\d+(?:[.,]\d+)?/g)||[]));
+ if((String(answer).match(/\d+(?:[.,]\d+)?/g)||[]).some(n=>!permittedNumbers.has(n)))return false;
+ const text=' '+fold(answer)+' ',places=new Set(candidates.map(x=>fold(x.city)));
+ if(cityNames.some(city=>text.includes(' '+fold(city)+' ')&&!places.has(fold(city))))return false;
+ if(/\b(musait|belgeli|sertifikali|garantili|guvenilir)\b/.test(fold(answer)))return false;
+ return true;
+}

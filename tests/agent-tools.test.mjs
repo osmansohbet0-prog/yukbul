@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {validateToolCall,haversine,rankNearby} from '../functions/_lib/agent-tools.js';
+import {validateToolCall,haversine,rankNearby,isGroundedAnswer} from '../functions/_lib/agent-tools.js';
 import {runBudgetedAI} from '../functions/_lib/ai-budget.js';
 import {validateAssistantOutput} from '../functions/_lib/ai-policy.js';
 import {onRequestPost} from '../functions/api/ai/assistant.js';
@@ -10,6 +10,10 @@ test('tools exclude every mutation and arbitrary fields',()=>{
  assert.equal(validateToolCall('listing_search',{city:'Konya',sql:'DROP TABLE listings'}),false);
  assert.equal(validateToolCall('nearby_search',{latitude:37.8,longitude:32.5}),true);
  assert.equal(validateToolCall('nearby_search',{latitude:91,longitude:32}),false);
+});
+test('invented capacities, cities and availability never pass grounding',()=>{
+ const candidates=[{title:'25 ton vinç',city:'Kocaeli'}];assert.equal(isGroundedAnswer('Kocaeli için 25 ton vinç ilanı var.',candidates,['Kocaeli','Konya']),true);
+ for(const text of ['1, 2, 5 ve 10 ton modelleri var.','Konya için 25 ton vinç buldum.','25 ton vinç müsait.','25 ton vinç sertifikalı.'])assert.equal(isGroundedAnswer(text,candidates,['Kocaeli','Konya']),false);
 });
 test('nearby ordering uses real coordinates and omits coordinates from results',()=>{
  const p={latitude:37.87,longitude:32.49};assert.equal(haversine(p,p),0);
