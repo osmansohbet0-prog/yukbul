@@ -29,12 +29,11 @@ export async function onRequestGet({ env }) {
       "SELECT id,title,COALESCE(service_category,category_detail,category) AS category,city,district,updated_at,(SELECT id FROM listing_photos p WHERE p.listing_id=listings.id ORDER BY sort_order LIMIT 1) photo_id FROM listings WHERE status='approved' AND (category='operator' OR EXISTS(SELECT 1 FROM users u WHERE u.id=listings.user_id AND u.role='admin') OR trial_expires_at>unixepoch() OR paid_until>unixepoch()) ORDER BY updated_at DESC LIMIT 45000"
     ).all();
 
-    const today = new Date().toISOString().slice(0, 10);
     const urls = new Map([
-      ['/', { lastmod: today }],
-      ['/iletisim/', { lastmod: today }],
-      ['/hakkimizda/', { lastmod: '2026-10-25' }],
-      ['/gizlilik/', { lastmod: today }]
+      ['/', {}],
+      ['/iletisim/', {}],
+      ['/hakkimizda/', {}],
+      ['/gizlilik/', {}]
     ]);
 
     for (const item of results) {
@@ -45,7 +44,7 @@ export async function onRequestGet({ env }) {
       urls.set('/ilan/' + encodeURIComponent(item.id) + '/' + slug(item.title) + '/', { lastmod: date, image });
 
       const city = slug(item.city);
-      if (item.city) urls.set('/sehir/' + encodeURIComponent(city) + '/', { lastmod: date });
+      if (item.city) urls.set('/sehir/' + encodeURIComponent(city) + '/', {});
 
       const category = {
         crane: 'vinc',
@@ -57,13 +56,13 @@ export async function onRequestGet({ env }) {
         lift: 'nakliyat-asansoru',
         operator: 'operator-is-ilanlari'
       }[item.category];
-      if (category) urls.set('/kategori/' + category + '/', { lastmod: date });
+      if (category) urls.set('/kategori/' + category + '/', {});
     }
 
     const body = '<?xml version="1.0" encoding="UTF-8"?>' +
       '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">' +
       [...urls].map(([path, entry]) =>
-        '<url><loc>' + xml(base + path) + '</loc><lastmod>' + entry.lastmod + '</lastmod>' +
+        '<url><loc>' + xml(base + path) + '</loc>' + (entry.lastmod ? '<lastmod>' + entry.lastmod + '</lastmod>' : '') +
         (entry.image ? '<image:image><image:loc>' + xml(entry.image) + '</image:loc></image:image>' : '') +
         '</url>'
       ).join('') +
