@@ -60,8 +60,8 @@ export async function onRequestPost(context){
     if(!quota.meta?.changes)return listingError('RATE_LIMIT',request,429);
 
     const rules=await reviewByRules(env.DB,item,auth.member.id),flags=rules.reasons.map(r=>r.reason),status=rules.flagged?'flagged':'pending',id=randomId(16); 
-    const insert=await env.DB.prepare('INSERT INTO listings(id,user_id,listing_type,category,category_detail,title,description,city,district,address,price_amount,price_unit,contact_phone,business_name,status,moderation_note,content_hash) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
-      .bind(id,auth.member.id,kind,item.category==='manlift'?'machine':item.category,item.category==='manlift'?'manlift':null,item.title.trim(),item.description.trim(),item.city.trim(),item.district.trim(),String(item.address||'').trim()||null,item.price_amount,item.price_unit==='arayiniz'?'arayiniz':item.price_amount==null?null:String(item.price_unit||'').trim()||null,String(item.contact_phone||'').trim()||null,String(item.business_name||'').trim()||null,status,flags.length?flags.join(' · '):null,hash).run();
+    const insert=await env.DB.prepare('INSERT INTO listings(id,user_id,listing_type,category,category_detail,service_category,title,description,city,district,address,price_amount,price_unit,contact_phone,business_name,status,moderation_note,content_hash) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
+      .bind(id,auth.member.id,kind,item.category==='mobile_tire'?'tow':item.category==='manlift'?'machine':item.category,item.category==='manlift'?'manlift':null,item.category==='mobile_tire'?'mobile_tire':null,item.title.trim(),item.description.trim(),item.city.trim(),item.district.trim(),String(item.address||'').trim()||null,item.price_amount,item.price_unit==='arayiniz'?'arayiniz':item.price_amount==null?null:String(item.price_unit||'').trim()||null,String(item.contact_phone||'').trim()||null,String(item.business_name||'').trim()||null,status,flags.length?flags.join(' · '):null,hash).run();
     if(!insert.meta?.changes)return listingError('UNKNOWN',request,500);
     try{
       await savePhotos(env.DB,id,photos);

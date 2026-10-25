@@ -20,13 +20,13 @@ export async function onRequestPost(context){
     if(!quota.meta?.changes)return fail('Bugünkü ücretsiz öneri hakkı tamamlandı.',429);
     reserved=true;
     const result=await runBudgetedAI(env,'@cf/meta/llama-3.3-70b-instruct-fp8-fast',{messages:[
-      {role:'system',content:'Türkçe ilan editörüsün. Kullanıcının kısa notunu yalnızca verilen bilgilere bağlı kalarak düzenle. Uydurma özellik, fiyat, hizmet bölgesi veya iletişim bilgisi ekleme. JSON döndür: title, description, category. category yalnızca crane,tow,basket,machine,lift,operator olabilir. En fazla 120 karakter başlık, 1200 karakter açıklama.'},
+      {role:'system',content:'Türkçe ilan editörüsün. Kullanıcının kısa notunu yalnızca verilen bilgilere bağlı kalarak düzenle. Uydurma özellik, fiyat, hizmet bölgesi veya iletişim bilgisi ekleme. JSON döndür: title, description, category. category yalnızca crane,tow,mobile_tire,basket,machine,manlift,lift,operator olabilir. En fazla 120 karakter başlık, 1200 karakter açıklama.'},
       {role:'user',content:redactForAI(note)}
     ],max_tokens:420,temperature:0.2});
     let output=typeof result.response==='string'?result.response:JSON.stringify(result.response||result);
     output=output.replace(/^\`\`\`(?:json)?\s*|\s*\`\`\`$/g,'');
     const parsed=JSON.parse(output);
-    if(typeof parsed.title!=='string'||typeof parsed.description!=='string'||!['crane','tow','basket','machine','lift','operator'].includes(parsed.category))throw new Error('Invalid AI response');
+    if(typeof parsed.title!=='string'||typeof parsed.description!=='string'||!['crane','tow','mobile_tire','basket','machine','manlift','lift','operator'].includes(parsed.category))throw new Error('Invalid AI response');
     return json({suggestion:{title:parsed.title.slice(0,120),description:parsed.description.slice(0,1200),category:parsed.category}});
   }catch(error){
     if(reserved){

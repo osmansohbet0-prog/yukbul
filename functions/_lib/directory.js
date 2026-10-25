@@ -2,7 +2,7 @@ import {resolveLocation} from '../../public/assets/location-tools.js';
 import {digest} from './member.js';
 export const SOURCES=['owner','map_no_website','low_traffic_website','promotion'];
 export const CONTACT_STATUSES=['Bilgilendirilmedi','Bilgilendirildi','Arandı','Kabul etti','Düzeltme istedi','Kaldırma talebi'];
-export const SERVICE_LABELS={crane:'vinç',tow:'çekici ve yol yardım',basket:'sepetli platform',machine:'iş makinesi',manlift:'manlift',lift:'nakliyat asansörü',operator:'operatör'};
+export const SERVICE_LABELS={crane:'vinç',mobile_tire:'mobil lastikçi ve yerinde lastik tamiri',tow:'çekici ve yol yardım',basket:'sepetli platform',machine:'iş makinesi',manlift:'manlift',lift:'nakliyat asansörü',operator:'operatör'};
 export const PUBLIC_NOTICE='Firma bilgileri kamuya açık kaynaklardan derlenmiştir. Düzeltme veya kaldırma için iletişime geçin.';
 export const PUBLIC_FILTER=alias=>`NOT EXISTS(SELECT 1 FROM listing_directory directory_hidden WHERE directory_hidden.listing_id=${alias}.id AND directory_hidden.removed_at IS NOT NULL)`;
 export function cleanDirectory(d,x){
