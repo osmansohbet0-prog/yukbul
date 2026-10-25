@@ -91,9 +91,8 @@ form.elements.price_unit.addEventListener('change',()=>{const call=form.elements
 form.elements.category.addEventListener('change',()=>{if(form.elements.category.value==='mobile_tire')form.elements.price_unit.value='sefer'});
 
 async function listingThumbnail(image){
- const c=document.createElement('canvas'),ratio=Math.min(1,480/Math.max(image.width,image.height));
- c.width=Math.max(1,Math.round(image.width*ratio));c.height=Math.max(1,Math.round(image.height*ratio));
- c.getContext('2d').drawImage(image,0,0,c.width,c.height);
- const data=c.toDataURL('image/webp',.72),mime_type=data.startsWith('data:image/webp;')?'image/webp':'image/png';
- return data.length<180000?{data,mime_type}:null;
+ for(const edge of [480,360,240]){const c=document.createElement('canvas'),ratio=Math.min(1,edge/Math.max(image.width,image.height));
+ c.width=Math.max(1,Math.round(image.width*ratio));c.height=Math.max(1,Math.round(image.height*ratio));c.getContext('2d').drawImage(image,0,0,c.width,c.height);
+ for(const quality of [.72,.55]){const data=c.toDataURL('image/webp',quality),mime_type=data.startsWith('data:image/webp;')?'image/webp':'image/png';if(data.length<20000)return{data,mime_type}}}
+ return null;
 }
