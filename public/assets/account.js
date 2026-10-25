@@ -8,7 +8,7 @@ async function load(){
   const data=await response.json();
   if(!response.ok)throw Error(data.error);
   const labels={pending:'Onay bekliyor',approved:'Yayında',rejected:'Reddedildi',flagged:'İnceleniyor'};
-  const categoryLabels={crane:'Vinç',tow:'Oto kurtarıcı',basket:'Sepetli platform',manlift:'Manlift',machine:'İş makinesi',lift:'Nakliyat asansörü',operator:'Operatör iş ilanı'};
+  const categoryLabels={crane:'Vinç',mobile_tire:'Mobil lastikçi / Yerinde lastik tamiri',tow:'Oto kurtarıcı',basket:'Sepetli platform',manlift:'Manlift',machine:'İş makinesi',lift:'Nakliyat asansörü',operator:'Operatör iş ilanı'};
   el.innerHTML=data.items.length?data.items.map(item=>{
    const expiry=Number(item.paid_until||item.trial_expires_at||0);
    const days=expiry?Math.max(0,Math.ceil((expiry*1000-Date.now())/86400000)):null;

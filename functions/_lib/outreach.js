@@ -16,7 +16,7 @@ export function validMessage(text,c){
  const withoutEmail=text.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,'');
  return !/(?:https?:|www\.|\b[a-z0-9-]+\.(?:com|net|org|tr|io|dev|co)\b|\b(?:t|wa)\.me\b)|asla ücret|garantili|garanti ediyor|kazancınızı|işinizi büyüt/iu.test(withoutEmail);
 }
-export async function loadContact(db,id){return db.prepare("SELECT l.id,l.title,l.business_name,l.contact_phone,l.city,l.district,COALESCE(l.category_detail,l.category) category,l.status,d.contact_email,d.source,d.removed_at FROM listings l LEFT JOIN listing_directory d ON d.listing_id=l.id WHERE l.id=? AND l.status<>'deleted'").bind(id).first()}
+export async function loadContact(db,id){return db.prepare("SELECT l.id,l.title,l.business_name,l.contact_phone,l.city,l.district,COALESCE(l.service_category,l.category_detail,l.category) category,l.status,d.contact_email,d.source,d.removed_at FROM listings l LEFT JOIN listing_directory d ON d.listing_id=l.id WHERE l.id=? AND l.status<>'deleted'").bind(id).first()}
 export async function assertContactable(db,x){if(!x||x.removed_at||x.status!=='approved'||!x.source||x.source==='owner')throw Error('Yalnızca yayındaki kamuya açık firma kayıtları bilgilendirilebilir.');if(await suppressed(db,x))throw Error('Firma ret/engel listesinde. Taslak ve gönderim engellendi.');}
 export async function registerRequest(env,x,kind,note,actor=null){
  if(!['RET','KALDIR','DUZELT'].includes(kind))throw Error('Talep türü geçersiz.');

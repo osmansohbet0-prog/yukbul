@@ -1,7 +1,7 @@
 import {redactForAI,turkishCities} from './listings.js';
 
 export const foldSearch=value=>String(value||'').normalize('NFKC').toLocaleLowerCase('tr').replace(/ı/g,'i').normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
-const CATEGORY_TERMS={operator:['operator','is ariyorum','is arayan'],basket:['sepetli'],manlift:['manlift','makasli','dikey platform','eklemli platform'],lift:['nakliyat asansoru','yuk asansoru','esya asansoru'],tow:['cekici','kurtarici','yol yardim'],machine:['is makinesi','forklift','kepce','ekskavator','beko','loder'],crane:['vinc','hiyap','hiyab','tonaj']};
+const CATEGORY_TERMS={mobile_tire:['lastigim patladi','lastik patladi','patlak lastik','oto lastik','mobil lastikci','lastikci','lastik tamiri','lastik tamir','lastik degisimi','lastik yol yardim','yerinde lastik'],operator:['operator','is ariyorum','is arayan'],basket:['sepetli'],manlift:['manlift','makasli','dikey platform','eklemli platform'],lift:['nakliyat asansoru','yuk asansoru','esya asansoru'],tow:['cekici','kurtarici','yol yardim'],machine:['is makinesi','forklift','kepce','ekskavator','beko','loder'],crane:['vinc','hiyap','hiyab','tonaj']};
 const STOP=new Set('ariyorum ariyor bakiyorum lazim istiyorum olan ilan ilani ilanlari bana icin hangi nedir midir ve ile bir en yakin var mi mu bu da de daha goster bul lutfen hizmet kiralama fiyat fiyatli ucuz uygun'.split(' '));
 const contains=(text,term)=>(' '+text+' ').includes(' '+term+' ');
 const categoryOf=text=>Object.entries(CATEGORY_TERMS).find(([,terms])=>terms.some(term=>contains(text,term)))?.[0]||'';

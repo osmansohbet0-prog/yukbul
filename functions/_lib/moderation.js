@@ -8,7 +8,7 @@ export function cleanModeration(value){
  if(!Number.isInteger(c.min_samples)||c.min_price>=c.max_price)return null;
  for(const [k,max] of [['hours_per_day',24],['days_per_month',31]])if(c[k]!==null&&(!Number.isFinite(c[k])||c[k]<1||c[k]>max))return null;
  if(!Array.isArray(c.references)||c.references.length>100)return null;
- for(const r of c.references)if(!r||!['crane','tow','basket','machine','lift','manlift','operator'].includes(r.category)||typeof r.city!=='string'||!r.city||r.city.length>80||!unit(r.unit)||!Number.isFinite(r.min)||!Number.isFinite(r.max)||r.min<0||r.max<=r.min||typeof r.subtype!=='string'||r.subtype.length>40||!(r.capacity==null||Number.isFinite(r.capacity)&&r.capacity>0))return null;
+ for(const r of c.references)if(!r||!['crane','tow','basket','machine','lift','manlift','mobile_tire','operator'].includes(r.category)||typeof r.city!=='string'||!r.city||r.city.length>80||!unit(r.unit)||!Number.isFinite(r.min)||!Number.isFinite(r.max)||r.min<0||r.max<=r.min||typeof r.subtype!=='string'||r.subtype.length>40||!(r.capacity==null||Number.isFinite(r.capacity)&&r.capacity>0))return null;
  return Object.fromEntries(Object.keys(DEFAULT_MODERATION).map(k=>[k,c[k]]));
 }
 export async function readModeration(db){
@@ -73,7 +73,7 @@ export function assessRisk(item,comparison,account={},config=DEFAULT_MODERATION)
 }
 export async function reviewByRules(db,item,userId){
  const config=await readModeration(db);
- const {results:rows=[]}=await db.prepare("SELECT id,user_id,COALESCE(category_detail,category) AS category,title,description,city,price_amount,price_unit FROM listings WHERE status='approved' AND COALESCE(category_detail,category)=? AND city=? AND id<>? AND (category='operator' OR user_id IN (SELECT id FROM users WHERE role='admin') OR trial_expires_at>unixepoch() OR paid_until>unixepoch()) ORDER BY created_at DESC LIMIT 500").bind(item.category,item.city,item.id||'').all();
+ const {results:rows=[]}=await db.prepare("SELECT id,user_id,COALESCE(service_category,category_detail,category) AS category,title,description,city,price_amount,price_unit FROM listings WHERE status='approved' AND COALESCE(service_category,category_detail,category)=? AND city=? AND id<>? AND (category='operator' OR user_id IN (SELECT id FROM users WHERE role='admin') OR trial_expires_at>unixepoch() OR paid_until>unixepoch()) ORDER BY created_at DESC LIMIT 500").bind(item.category,item.city,item.id||'').all();
  const account=await db.prepare("SELECT (unixepoch()-created_at)/86400.0 AS age_days,(SELECT COUNT(*) FROM listings WHERE user_id=users.id AND created_at>unixepoch()-86400) AS daily_count FROM users WHERE id=?").bind(userId).first()||{};
  const shared=await db.prepare("SELECT id FROM listings WHERE user_id<>? AND replace(replace(replace(replace(contact_phone,' ',''),'-',''),'(',''),')','')=? AND status<>'deleted' LIMIT 1").bind(userId,String(item.contact_phone||'').replace(/[ ()-]/g,'')).first();account.shared_phone=!!shared;
  const text=fold(item.title+' '+item.description);const locationMentions=[...text.matchAll(/(?:hizmet bolgesi|adres|konum)\s*[:=]\s*([a-z]+)\s*\//g)].map(m=>m[1]);account.location_mismatch=locationMentions.some(city=>city!==fold(item.city));

@@ -21,7 +21,7 @@ export async function onRequestGet({ params, env }) {
 
   try {
     const item = await env.DB.prepare(
-      "SELECT id,(SELECT source FROM listing_directory directory_public WHERE directory_public.listing_id=listings.id) AS public_source,listing_type,COALESCE(category_detail,category) AS category,title,description,city,district,price_amount,price_unit,contact_phone,created_at,updated_at,(SELECT id FROM listing_photos p WHERE p.listing_id=listings.id ORDER BY sort_order LIMIT 1) photo_id FROM listings WHERE id=? AND status='approved' AND (category='operator' OR EXISTS(SELECT 1 FROM users u WHERE u.id=listings.user_id AND u.role='admin') OR trial_expires_at>unixepoch() OR paid_until>unixepoch())"
+      "SELECT id,(SELECT source FROM listing_directory directory_public WHERE directory_public.listing_id=listings.id) AS public_source,listing_type,COALESCE(service_category,category_detail,category) AS category,title,description,city,district,price_amount,price_unit,contact_phone,created_at,updated_at,(SELECT id FROM listing_photos p WHERE p.listing_id=listings.id ORDER BY sort_order LIMIT 1) photo_id FROM listings WHERE id=? AND status='approved' AND (category='operator' OR EXISTS(SELECT 1 FROM users u WHERE u.id=listings.user_id AND u.role='admin') OR trial_expires_at>unixepoch() OR paid_until>unixepoch())"
     ).bind(id).first();
 
     if (!item) return new Response('İlan bulunamadı', {
@@ -35,6 +35,7 @@ export async function onRequestGet({ params, env }) {
     const area = [item.district, item.city].filter(Boolean).join(' / ');
     const categoryLabel = {
       crane: 'kiralık vinç',
+      mobile_tire: 'mobil lastikçi ve yerinde lastik tamiri',
       tow: 'oto kurtarıcı',
       basket: 'sepetli vinç',
       machine: 'iş makinesi',
@@ -53,7 +54,7 @@ export async function onRequestGet({ params, env }) {
     const price = item.price_unit==='arayiniz' ? 'Fiyat için arayınız' : item.price_amount == null
       ? 'Ücret için ilan sahibine danış'
       : new Intl.NumberFormat('tr-TR').format(item.price_amount) + ' ₺' + (priceUnit ? ' / ' + priceUnit : '');
-    const type = item.listing_type === 'operator_job' ? 'İş arayan operatör' : 'Ekipman kiralama';
+    const type = item.category==='mobile_tire'?'Yerinde lastik tamiri hizmeti':item.listing_type === 'operator_job' ? 'İş arayan operatör' : 'Ekipman kiralama';
     const cityUrl = item.city
       ? 'https://yukvinc.com.tr/sehir/' + encodeURIComponent(slugify(item.city)) + '/'
       : 'https://yukvinc.com.tr/';
