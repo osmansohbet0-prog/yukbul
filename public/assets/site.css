@@ -379,3 +379,16 @@ body>header .brand{gap:10px;flex-shrink:0;letter-spacing:-.035em}body>header .br
 .contact-request-form button{justify-self:start;min-height:42px}
 #contact-request-status{margin:0;font-size:.84rem}
 @media(max-width:640px){.contact-request-form{padding:13px}.contact-request-form button{width:100%}}
+ /* Mobile horizontal overflow guard */
+@media(max-width:680px){
+ html,body{max-width:100%;overflow-x:clip}
+ #main,.wrap,.section,.yv-shell,.site-main,.listing-grid,.listing-card,.footer-grid,.footer-grid>div{min-width:0;max-width:100%}
+ .nav{min-width:0;max-width:100%;flex-wrap:wrap}
+ .nav>*{min-width:0}
+ .contact-actions{min-width:0;max-width:100%;flex-wrap:wrap}
+ .listing-home .home-market,.listing-home .listing-heading,.listing-home .results-head{min-width:0;max-width:100%}
+ .listing-home .listing-heading,.listing-home .results-head{flex-wrap:wrap}
+ .listing-home .listing-card>*,.listing-home .card-body>*{min-width:0;overflow-wrap:anywhere}
+ .footer-grid>div{overflow-wrap:anywhere}
+ img,video,iframe,table{max-width:100%}
+}
