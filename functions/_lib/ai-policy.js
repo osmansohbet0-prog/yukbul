@@ -2,9 +2,9 @@ export const AI_RATE_LIMIT_ACTION='ai';
 export const SUPPORT_RATE_LIMIT_ACTION='report';
 export const AI_LIMITS={dailyCalls:500,perIpCalls:5,perIpWindowSeconds:900,maxQuestionLength:600,maxAnswerLength:1200};
 const fold=value=>String(value||'').normalize('NFKC').toLocaleLowerCase('tr').replace(/ı/g,'i').normalize('NFD').replace(/\p{Diacritic}/gu,'');
-const PRICE_REQUEST=/\b(fiyat|ucret|indirim|kampanya|bedava|ucretsiz|paket|premium|standart|odeme|abonelik|sozlesme)\b/;
-const CRITICAL_REQUEST=/\b(onayla|reddet|sil|engelle|one cikar|paket\w* ata|yayina al)\b/;
-export function classifyAssistantRequest(value){const text=fold(String(value||'').slice(0,AI_LIMITS.maxQuestionLength));if(/\b(sikayet|dolandiricilik|sahte ilan)\b/.test(text))return'complaint';if(PRICE_REQUEST.test(text))return'pricing';if(CRITICAL_REQUEST.test(text))return'admin_action';return'read_only'}
+const PRICE_REQUEST=/\b(fiyat\w*|ucret\w*|indirim\w*|kampanya\w*|bedava|ucretsiz|paket\w*|premium|standart|odeme\w*|abonelik\w*|sozlesme\w*)\b/;
+const CRITICAL_REQUEST=/\b(onayla\w*|reddet\w*|sil\w*|kaldir\w*|duzelt\w*|engelle\w*|one cikar|paket\w* ata|yayina al)\b/;
+export function classifyAssistantRequest(value){const text=fold(String(value||'').slice(0,AI_LIMITS.maxQuestionLength));if(/\b(sikayet\w*|dolandiricilik|sahte ilan)\b/.test(text))return'complaint';if(CRITICAL_REQUEST.test(text))return'admin_action';if(PRICE_REQUEST.test(text))return'pricing';return'read_only'}
 export function validateAssistantOutput(value,requestKind='read_only'){
  if(requestKind==='complaint')return{ok:true,response:'Şikayetini inceleme için yöneticimize iletiyorum. Son kararı yönetici verir.'};
  if(requestKind==='pricing')return{ok:true,response:'Fiyat, indirim ve paket işlemlerini ben değiştiremiyorum. Talebini yöneticimize iletiyorum; yönetici yanıtı admin panelinden takip edebilir.'};
@@ -15,3 +15,6 @@ export function validateAssistantOutput(value,requestKind='read_only'){
  return{ok:true,response};
 }
 export function aiConversationId(value){return/^[A-Za-z0-9_-]{8,80}$/.test(String(value||''))?String(value):crypto.randomUUID().replaceAll('-','')}
+
+
+
