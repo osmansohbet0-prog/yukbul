@@ -392,3 +392,8 @@ body>header .brand{gap:10px;flex-shrink:0;letter-spacing:-.035em}body>header .br
  .footer-grid>div{overflow-wrap:anywhere}
  img,video,iframe,table{max-width:100%}
 }
+ /* Keep the mobile assistant panel anchored to the viewport, not the narrow launcher. */
+@media(max-width:640px){
+ #yukusta-widget{right:12px;bottom:calc(74px + env(safe-area-inset-bottom))}
+ #yukusta-panel{position:fixed;left:12px;right:12px;bottom:calc(124px + env(safe-area-inset-bottom));width:auto;max-width:440px;height:min(420px,calc(100dvh - 150px));max-height:calc(100dvh - 150px);margin-inline:auto;transform:none}
+}
