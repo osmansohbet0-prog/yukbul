@@ -94,7 +94,68 @@ function page() {
     'X-Frame-Options':'DENY','X-Content-Type-Options':'nosniff',
     'Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; form-action 'none'"}});
 }
+
+// Temporary staging-only publisher feed reachability check.
+// All endpoints are pinned to publisher-listed hostnames. No user-supplied URLs.
+const PROBE_IDS = [
+  'dto-sirkuler-rss',
+  'dto-haberler-rss',
+  'tobb-ihale-rss'
+];
+const PROBE_URLS = Object.freeze({
+  'dto-sirkuler-rss':'https://www.denizticaretodasi.org.tr/tr/rss/sirkuler',
+  'dto-haberler-rss':'https://www.denizticaretodasi.org.tr/tr/rss/haberler',
+  'tobb-ihale-rss':'https://ihale.tobb.org.tr/yeni/RssIhale.php'
+});
+async function readLimitedRssBody(response) {
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error('no_response_body');
+  const buffers = [];
+  let size = 0;
+  try {
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      size += chunk.value.byteLength;
+      if (size > 256000) throw new Error('feed_over_256kb');
+      buffers.push(chunk.value);
+    }
+  } finally { await reader.cancel().catch(() => {}); }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const part of buffers) { bytes.set(part, offset); offset += part.byteLength; }
+  return new TextDecoder('utf-8').decode(bytes);
+}
+async function probePublisherFeeds(env) {
+  const rows = (await env.DB.prepare("SELECT id,feed_url FROM lead_radar_sources WHERE id IN ('dto-sirkuler-rss','dto-haberler-rss','tobb-ihale-rss')").all()).results || [];
+  const results = await Promise.all(rows.map(async row => {
+    const expected = PROBE_URLS[row.id];
+    if (!expected || row.feed_url !== expected) return {id:row.id,ok:false,status:'URL mismatch'};
+    let count = 0, status = 'unknown', success = false;
+    try {
+      const res = await fetch(expected, {method:'GET',redirect:'manual',
+        signal:AbortSignal.timeout(7000),
+        headers:{Accept:'application/rss+xml,application/atom+xml,application/xml,text/xml;q=0.8'}});
+      if (res.status !== 200) throw new Error('HTTP_'+res.status);
+      if (Number(res.headers.get('content-length') || 0) > 256000) throw new Error('feed_over_256kb');
+      const body = await readLimitedRssBody(res);
+      if (!/<(?:rss\b|feed\b|rdf:RDF\b)/i.test(body.slice(0,1200))) throw new Error('not_RSS_or_Atom');
+      count = (body.match(/<(?:item|entry)(?:\s|>)/gi)||[]).length;
+      status = 'PROBE_OK RSS/XML · '+count+' entries · republish not authorized';
+      success = true;
+    } catch(e) { status = 'PROBE_FAILED '+String(e?.message||e).slice(0,140); }
+    await env.DB.prepare('UPDATE lead_radar_sources SET last_scan_status=?,last_scan_count=?,last_scan_at=?,last_success_at=CASE WHEN ? THEN unixepoch() ELSE last_success_at END,updated_at=unixepoch() WHERE id=? AND enabled=0')
+      .bind(status,count,Math.floor(Date.now()/1000),success?1:0,row.id).run();
+    return {id:row.id,ok:success,status};
+  }));
+  return results;
+}
+
 export default {
+  async scheduled(controller, env, ctx) {
+    if (!env.DB) return;
+    ctx.waitUntil(probePublisherFeeds(env));
+  },
   async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname.replace(/\/+$/, '') || '/';
