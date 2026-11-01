@@ -53,3 +53,12 @@ test('AI quota guard stops generation without a model call',async()=>{
  await assert.rejects(draftRadarLeadWithAI(env,{adminVerified:true},lead,evidence,now),/BUDGET_EXHAUSTED/);
  assert.equal(aiCalls,0);
 });
+
+test('Rejects a copied business phone in public AI description',()=>{
+ const title='Gebze için 50 ton mobil vinç kiralama';
+ const description='Örnek Kurum Gebze için 50 ton mobil vinç kiralayacaktır. Konu hakkında bilgi almak üzere 0262 325 23 05 numarası aranabilir. İşin süresi 3 aydır.';
+ const trusted=evidence+' 0262 325 23 05';
+ const r=validateModelDraft({title,description},trusted);
+ assert.equal(r.ok,false);
+ assert.equal(r.error,'AI_PHONE_SHOULD_BE_ADMIN_ONLY');
+});
