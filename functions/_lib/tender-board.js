@@ -19,6 +19,7 @@ export function withTenderBoard(worker){return {...worker,async fetch(request,en
   const cities=(await env.DB.prepare('SELECT * FROM radar_city_sources ORDER BY province_name').all()).results||[];
   const selected=cities.find(x=>Number(x.province_code)===code);
   const member=await currentMember(request,env);
+  if(!member){const rows=(await env.DB.prepare("SELECT city,service_type FROM lead_radar_leads WHERE status='approved' AND public_at IS NOT NULL AND public_expires_at>unixepoch() LIMIT 100").all()).results||[];return new Response('<!doctype html><html lang="tr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>İş talepleri | YükVinç</title><link rel="stylesheet" href="/assets/job-board.css"><main class="page"><h1>İş talepleri</h1>'+rows.map(x=>'<article class="job-card"><h2>'+esc(x.city||'Türkiye')+' — hizmet talebi</h2><a class="button" href="/giris/">Üye ol / Giriş yap</a></article>').join('')+'</main></html>',{headers:{'content-type':'text/html; charset=utf-8','cache-control':'private, no-store','x-robots-tag':'noindex'}});}
   const rows=(await env.DB.prepare("SELECT title,city,public_summary,source_url,public_expires_at FROM lead_radar_leads WHERE status='approved' AND public_at IS NOT NULL AND verified_at IS NOT NULL AND public_expires_at>unixepoch() ORDER BY public_at DESC LIMIT 100").all()).results||[];
   const notices=rows.filter(x=>rentalContentAllowed(x)&&(!code||x.city===selected?.province_name));
   const title=(selected?selected.province_name+' ':'')+'Hizmet Alımı ve İhale Duyuruları';

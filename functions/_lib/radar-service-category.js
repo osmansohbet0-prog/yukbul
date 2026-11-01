@@ -5,7 +5,7 @@ export function radarServiceCategory(service){
  if(/nakliyat asansor|esya asansor|yuk asansor/.test(t))return 'lift';
  if(/sepetli/.test(t))return 'basket';
  if(/manlift|platform/.test(t))return 'manlift';
- if(/is makine|kepce|ekskavator|forklift|yukleyici|greyder|silindir|telehandler/.test(t))return 'machine';
+ if(/manito|manitou|is makine|kepce|ekskavator|forklift|yukleyici|greyder|silindir|telehandler/.test(t))return 'machine';
  if(/vinc|kaldirma/.test(t))return 'crane';
  return 'unknown';
 }

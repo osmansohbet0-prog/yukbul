@@ -9,9 +9,9 @@ export const TARGET_REGIONS = Object.freeze([
 ]);
 const PRIORITY_1 = /\b(gebze|dilovasi|cayirova|darica)\b/;
 const PRIORITY_2 = /\b(korfez|derince|izmit|kartepe|basiskele|golcuk|tuzla|pendik|yalova|altinova|sakarya)\b/;
-const EQUIPMENT = /\b(vinc|hiyap|hiab|manlift|sepetli arac|sepetli platform|makasli platform|mobil platform|kule vinc|agir kaldirma)\b/;
+const EQUIPMENT = /\b(vinc|hiyap|hiab|manito|manitou|telehandler|manlift|sepetli arac|sepetli platform|makasli platform|mobil platform|kule vinc|agir kaldirma)\b/;
 const DEMAND = /\b(kiralama|kiralanacak|kiralanacaktir|kiralanmasi|kiralamak|kiralamaya|kiralik|lazim|ihtiyac|aranmakta|araniyor|hizmet alimi|teklif istiyoruz|teklif talebi|fiyat teklifi)\b/;
-const PERSONNEL = /\b(vinc|hiyap|hiab|manlift|kule vinc|sepetli)\s+(operatoru|operator|sofor|soforu|isci|personel|kullanici)(?:\s+|\b)(araniyor|alinacak|basvur|is ilani|ihtiyaci|arayan|is|calisacak|alimi)\b/;
+const PERSONNEL = /\b(vinc|hiyap|hiab|manito|manitou|telehandler|manlift|kule vinc|sepetli)\s+(operatoru|operator|sofor|soforu|isci|personel|kullanici)(?:\s+|\b)(araniyor|alinacak|basvur|is ilani|ihtiyaci|arayan|is|calisacak|alimi)\b/;
 const PROVIDER = /\b(vinc kiralama hizmetlerimiz|kiraya verilir|kiralama hizmeti veriyoruz|7 24 vinc kiralama|filomuzda|kiralik vinclerimiz|hizmetinizde|vinc kiralama fiyatlari|sizlere hizmet|hizmeti sunuyoruz)\b/;
 const PURCHASE = /\b(mal alimi|satin alma|satinalma|satin alinacak|satin alinmasi|satis ihalesi|satilik|satisa sunulmustur|vinc satisi)\b/;
 const LONG_TERM = /\b(aylik|ay boyunca|ay sureyle|yillik|yil boyunca|yil sureyle|sozlesme suresi|santiye boyunca|proje boyunca|uzun donem|uzun sureli)\b/;

@@ -6,6 +6,8 @@ import {digest} from '../functions/_lib/core.js';
 import * as radar from '../functions/_lib/lead-radar.js';
 import {publisherPublication,rentalContentAllowed} from '../functions/_lib/radar-kocaeli-integration.js';
 import {withJobBoard} from '../functions/_lib/job-board.js';
+import {nationalCoverage,nationalSourceCatalog,nationalDemandQueries} from '../functions/_lib/radar-national-catalog.js';
+import jobAssets from '../src/job-board-assets.js';
 
 function fixture(){
  const sql=new DatabaseSync(':memory:');
@@ -66,4 +68,39 @@ test('public jobs exclude purchase and never expose contact table data',async()=
  const worker=withJobBoard({fetch:async()=>new Response('fallback')},{});
  const r=await worker.fetch(new Request('https://yukvinc.com.tr/api/jobs'),env,{});assert.equal(r.status,200);const text=await r.text();assert.ok(!text.includes('02623183322')&&!text.includes('purchase-test')&&!text.includes('buyerContacts'));
  for(const title of ['Gebze vinç satın alma','Gebze vinç operatörü aranıyor','Gebze filomuz hizmetinizdeyiz'])assert.equal(rentalContentAllowed({title}),false);
+});
+test('nationwide catalog covers every province and validates district and neighborhood queries',()=>{
+ const coverage=nationalCoverage();assert.equal(coverage.provinces,81);assert.ok(coverage.districts>970);assert.equal(coverage.municipalities,929);
+ for(let code=1;code<=81;code++)assert.ok(nationalSourceCatalog(code).total>0);
+ assert.ok(nationalSourceCatalog(41).districts.includes('Gebze'));
+ const query=nationalDemandQueries(41,'Gebze','Güzeller Mahallesi');assert.equal(query.queries.length,4);assert.ok(query.queries.some(x=>x.query.includes('telehandler')));assert.equal(query.automaticExecution,false);
+ assert.equal(nationalDemandQueries(41,'Kadıköy'),null);assert.equal(nationalDemandQueries(41,'Gebze','<script>'),null);
+});
+test('automatic publication requires over 90 percent plus source rights, freshness and verified open demand',async()=>{
+ const {sql,env}=fixture();source(sql,1);const title='Gebze vinç kiralama hizmet alımı için teklif isteniyor';
+ sql.prepare("INSERT INTO lead_radar_leads(id,source_id,title,city,service_type,source_url,status) VALUES('auto-publication-test','kocaeli-test-source',?,'Kocaeli','Vinç','https://www.kocaeli.bel.tr/test','review')").run(title);
+ sql.exec("UPDATE lead_radar_sources SET source_category='public_tender',republish_attested=1,republish_checked_at=unixepoch(),republish_terms_url='https://www.kocaeli.bel.tr/terms'");
+ const src=()=>sql.prepare("SELECT * FROM lead_radar_sources WHERE id='kocaeli-test-source'").get();
+ const expiry=Math.floor(Date.now()/1000)+86400, date=new Date(expiry*1000).toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul',day:'2-digit',month:'2-digit',year:'numeric'});
+ const item={title,excerpt:'Gebze fabrikası için vinç kiralama hizmet alımı talebi.',url:'https://www.kocaeli.bel.tr/test',expires_at:expiry,published_at:new Date().toISOString()};
+ const publish=(score=.91,source=src(),record=item)=>radar.maybeAutoPublish(env,source,record,'auto-publication-test',{kind:'buyer_need',confidence:score},'Kocaeli');
+ const previous=fetch;globalThis.fetch=async()=>new Response('<h1>'+title+'</h1><p>Vinç kiralama hizmet alımı için son teklif tarihi '+date+'</p>');
+ try{
+  assert.equal(await publish(.90),false);
+  assert.equal(await publish(.91,{...src(),republish_attested:0}),false);
+  assert.equal(await publish(.99,src(),{...item,published_at:'2020-01-01T10:00:00Z'}),false);
+  assert.equal(await publish(.99,src(),{...item,title:'Gebze vinç satın alma mal alımı'}),false);
+  assert.equal(await publish(),true);
+  assert.equal(sql.prepare("SELECT publication_method FROM lead_radar_leads WHERE id='auto-publication-test'").get().publication_method,'automatic');
+ }finally{globalThis.fetch=previous;}
+});
+test('anonymous API and rendered cards contain only a short teaser, never job details or tender links',async()=>{
+ const {sql,env}=fixture();
+ sql.prepare(`INSERT INTO lead_radar_leads(id,title,city,service_type,source_url,status,public_at,public_expires_at,verified_at,public_summary) VALUES('private-lead-test','Gebze fabrikası özel iş ayrıntısı','Kocaeli','Vinç','https://www.kocaeli.bel.tr/secret-tender','approved',unixepoch(),unixepoch()+86400,unixepoch(),'Gizli kapsam ve makine ayrıntısı')`).run();
+ const worker=withJobBoard({fetch:async()=>new Response('fallback')},jobAssets);
+ const api=await worker.fetch(new Request('https://yukvinc.com.tr/api/jobs'),env,{});const json=await api.json();assert.equal(json.items.length,1);assert.equal(json.items[0].locked,true);
+ for(const key of ['description','source_url','id','organization','contact_phone'])assert.equal(json.items[0][key],undefined);
+ const r=await worker.fetch(new Request('https://yukvinc.com.tr/is-talepleri/'),env,{});const html=await r.text();
+ assert.doesNotMatch(html,/secret-tender|özel iş ayrıntısı|Gizli kapsam|Resmî duyuruyu aç|ihale-duyurulari/);assert.match(html,/üye girişi/);
+ const client=jobAssets['/assets/job-board-v20261102private.js'][1];assert.ok(client.indexOf('if(job.locked)')<client.indexOf("if(job.kind==='official_tender')"));
 });

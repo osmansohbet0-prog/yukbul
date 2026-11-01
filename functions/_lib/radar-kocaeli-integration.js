@@ -5,7 +5,7 @@ import {isRecentSourcePublication} from './radar-kocaeli-search-plan.js';
 export function inKocaeliScope(row) {
  return /\b(kocaeli|gebze|dilovasi|cayirova|darica|korfez|kartepe|izmit|derince|basiskele|golcuk|kandira|karamursel)\b/.test(normalizeTR([row.city,row.district,row.title].join(' ')));
 }
-export function isKocaeliCrane(row){return inKocaeliScope(row)&&/\b(vinc|hiyap|hiab|manlift|platform|kaldirma|makine indirme|makine montaj)\b/.test(normalizeTR([row.title,row.source_excerpt,row.excerpt,row.service_type].join(' ')));}
+export function isKocaeliCrane(row){return inKocaeliScope(row)&&/\b(vinc|hiyap|hiab|manito|manitou|telehandler|manlift|platform|kaldirma|makine indirme|makine montaj)\b/.test(normalizeTR([row.title,row.source_excerpt,row.excerpt,row.service_type].join(' ')));}
 export function sourceWorkedRecently(s,now=Math.floor(Date.now()/1000)) {
  return Number(s.enabled)===1 && ['publisher_rss','explicitly_attested','robots_allowed'].includes(s.permission_status) && Number(s.last_success_at)>now-604800 && Number(s.last_success_at)<=now && Number(s.consecutive_errors)===0;
 }

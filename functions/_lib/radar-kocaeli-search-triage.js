@@ -8,7 +8,7 @@
 import {normalizeTR} from './radar-kocaeli-qualification.js';
 import {isRecentSourcePublication} from './radar-kocaeli-search-plan.js';
 
-const CRANE=/\b(vinc|hiyap|hiab|mobil vinc|kule vinc|sepetli vinc|manlift|sepetli platform|makasli platform)\b/;
+const CRANE=/\b(vinc|hiyap|hiab|manito|manitou|telehandler|mobil vinc|kule vinc|sepetli vinc|manlift|sepetli platform|makasli platform)\b/;
 const HEAVY_LIFT=/\b(makine indirme|makine montaj|agir makine kaldirma|pres makinesi yerlestirme|endustriyel montaj|prefabrik montaj|celik konstruksiyon montaji)\b/;
 const CLEAR_NEED=/\b(vinc(?:e)?\s+(?:ihtiyacimiz var|ihtiyac vardir|lazim|araniyor|ar(?:iyoruz|anmaktadir))|kiralik vinc lazim|vinc teklifi istiyoruz|vinc kiralanacaktir|vinc kiralama ihalesi|vinc kiralama hizmet alimi|vinc ihtiyaci|fiyat teklifi alinacaktir|vinc kiralama teklifi)\b/;
 const BUYER_WORD=/\b(ariyoruz|aranmakta|aranmaktadir|araniyor|lazim|ihtiyac|kiralayacagiz|kiralanacaktir|teklif istiyoruz|teklif alinacaktir|teklif toplanacaktir|fiyat teklifi|hizmet alimi|ihale)\b/;

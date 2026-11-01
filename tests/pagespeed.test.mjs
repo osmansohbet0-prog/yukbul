@@ -30,7 +30,7 @@ test('thumbnail copies preserve originals, replace atomically and enforce visibi
  assert.throws(()=>validatePhotoPayloads([{...payload,thumbnail:{mime_type:'image/webp',data:'broken'}}]));
  }finally{db.sqlite.close()}
 });
-test('listing cards use semantic headings, thumbnails and early first-image priority',()=>{
+test('listing cards use lightweight previews, semantic headings and early first-image priority',()=>{
  const js=read('public/assets/site.js').toString();assert.match(js,/function card\(x,index=0\)/);assert.match(js,/thumb=1/);assert.match(js,/<h2><a/);assert.match(js,/fetchpriority=/);
  for(const path of ['functions/_lib/home-render.js','functions/kategori/[slug].js','functions/sehir/[slug].js']){
   const source=read(path).toString();assert.match(source,/thumb=1/);assert.match(source,/index===0\?'eager':'lazy'/);
