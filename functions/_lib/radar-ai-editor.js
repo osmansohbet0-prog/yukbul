@@ -5,6 +5,7 @@
  * The current live Worker V178 owns admin auth; this module does not replace it.
  */
 import {qualifyCraneRentalRequest} from './radar-kocaeli-qualification.js';
+import {triageKocaeliSearchHit} from './radar-kocaeli-search-triage.js';
 
 const MODEL='@cf/meta/llama-3.1-8b-instruct';
 const MAX_AI_DAILY_CALLS=8;
@@ -15,6 +16,7 @@ const SYSTEM_INSTRUCTIONS=[
  'Kaynakta olmayan telefon, şirket, son tarih, tonaj, fiyat, kapasite, süre ve konumu ASLA UYDURMA.',
  'Satış ihalesini, vinç operatörü işe alımını ya da vinç kiralama reklamını iş talebi olarak yazma.',
  'İlan açık değilse veya son tarih bilinmiyorsa bunu belirt; güncel açık iş iddia etme.',
+ 'Sosyal medya talebi ise alıcı durumu doğrulanmadığında yalnızca inceleme taslağı üret; kesin açık iş gibi anlatma.',
  'Kaynağı kopyalayıp yapıştırma. Kurumsal, öz ve özgün Türkçe yaz.',
  'Telefon ve e-posta açıklamaya ekleme; sadece kaynaklardan doğrulanmış kurumsal iletişim kaydı ayrıca gösterilir.',
  'İhale teklifinin EKAP üzerinden verileceği biliniyorsa bunu söyle; aksi halde yöntem uydurma.',
@@ -54,6 +56,9 @@ export function buildRadarAiDraftInput(lead,evidence){
         organization:lead.organization||null,
         title:lead.title||null,city:lead.city||null,district:lead.district||null,
         sourceUrl:lead.sourceUrl||null,deadline:lead.deadline||null,
+        openStatusConfirmed:lead.openStatusConfirmed===true,
+        buyerConfirmed:lead.buyerConfirmed===true,
+        authorPublishedAt:lead.authorPublishedAt||null,
         workLocation:lead.workLocation||null,
         verifiedSourceText:text
       })
@@ -76,8 +81,20 @@ export async function draftRadarLeadWithAI(env,actor,lead,evidence,now=Date.now(
   if(!env?.DB||!env?.AI||(!actor?.adminVerified&&!actor?.internalVerified))
     throw new Error('RADAR_EDITOR_NOT_AUTHORIZED');
   const review=qualifyCraneRentalRequest(lead,now);
-  if(review.decision!=='verified_candidate')
-    return {ok:false,reason:review.reason,published:false};
+  const searchHit=triageKocaeliSearchHit({
+    title:lead.title,description:lead.description||lead.serviceType||'',
+    city:lead.city,district:lead.district,location:lead.workLocation,
+    url:lead.sourceUrl,authorPublishedAt:lead.authorPublishedAt,
+    sourceVerified:lead.sourceChecked===true,buyerVerified:lead.buyerConfirmed===true,
+    openStatusConfirmed:lead.openStatusConfirmed===true,
+    organization:lead.organization||null
+  },{now});
+  // A dated, source-checked private market request may receive a DRAFT without a
+  // tender deadline. Lack of confirmed buyer/open status never permits publication.
+  const socialReviewEligible=lead.sourceChecked===true && searchHit.recent24h &&
+    (searchHit.status==='admin_review'||searchHit.status==='fresh_confirmed_buyer');
+  if(review.decision!=='verified_candidate' && !socialReviewEligible)
+    return {ok:false,reason:searchHit.reason||review.reason,published:false};
   const payload=buildRadarAiDraftInput(lead,evidence);
   await reserveAiCall(env.DB,'radar_editor');
   let modelOutput;
@@ -94,12 +111,17 @@ export async function draftRadarLeadWithAI(env,actor,lead,evidence,now=Date.now(
   const hash=Array.from(new Uint8Array(digest)).map(n=>n.toString(16).padStart(2,'0')).join('');
   const revision=crypto.randomUUID();
   const deadline=String(lead.deadline||'');
-  const expires=Date.parse(deadline.includes('T')?deadline+':00+03:00':deadline+'T23:59:00+03:00');
+  const deadlineFull=/[+-]\d{2}:\d{2}$|Z$/.test(deadline)?deadline:
+    deadline.includes('T')?deadline+':00+03:00':deadline+'T23:59:00+03:00';
+  const expires=deadline?Date.parse(deadlineFull):NaN;
   const sql='INSERT INTO lead_radar_ai_drafts (lead_id,revision,summary,source_hash,expires_at,evidence_json,generated_at,generated_by) VALUES(?,?,?,?,?,?,unixepoch(),?) ON CONFLICT(lead_id) DO UPDATE SET revision=excluded.revision,summary=excluded.summary,source_hash=excluded.source_hash,expires_at=excluded.expires_at,evidence_json=excluded.evidence_json,generated_at=excluded.generated_at,generated_by=excluded.generated_by';
   await env.DB.prepare(sql).bind(lead.id,revision,vetted.description,hash,
     Number.isFinite(expires)?Math.floor(expires/1000):null,
     JSON.stringify({title:vetted.title,sourceUrl:lead.sourceUrl,
-      sourceChecked:true,details:normalizedEvidence.slice(0,1200),
+      sourceChecked:true,originalPostRecent24h:searchHit.recent24h,
+      buyerConfirmed:lead.buyerConfirmed===true,
+      openStatusConfirmed:review.decision==='verified_candidate'||searchHit.status==='fresh_confirmed_buyer',
+      details:normalizedEvidence.slice(0,1200),
       missingFacts:vetted.missingFacts}),
     'workers_ai_'+MODEL).run();
   return {ok:true,leadId:lead.id,revision,title:vetted.title,
