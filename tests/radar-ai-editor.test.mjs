@@ -62,3 +62,37 @@ test('Rejects a copied business phone in public AI description',()=>{
  assert.equal(r.ok,false);
  assert.equal(r.error,'AI_PHONE_SHOULD_BE_ADMIN_ONLY');
 });
+
+test('A source-checked fresh social buyer can receive AI DRAFT without EKAP deadline',async()=>{
+ const socialLead={
+   id:'social-gebze-2026-11-02',title:'Gebze için vinç lazım',
+   description:'Fabrikamızda makine indirme için mobil vinç arıyoruz.',
+   city:'Kocaeli',district:'Gebze',
+   sourceUrl:'https://example.com/posts/public-buyer',
+   authorPublishedAt:'2026-11-02T09:00:00+03:00',
+   sourceChecked:true,buyerConfirmed:false,openStatusConfirmed:false,deadline:null
+ };
+ const trustedSource='Gebze tesisimizde yeni üretim hattına ağır makine indirmek için vinç kiralama teklifi istiyoruz. İlanı kurumumuz yayımladı; çalışma günü ve vinç tonajı henüz kesinleşmedi.';
+ const binds=[];
+ const env={DB:{prepare(){return{bind(...args){binds.push(args);return{async run(){return{meta:{changes:1}}}}}}}},
+   AI:{async run(){return{response:JSON.stringify({
+      title:'Gebze tesisinde makine indirme için vinç kiralama talebi',
+      description:'Gebze bölgesindeki tesiste makine indirme ve montaj çalışması için vinç kiralama teklifi istenmektedir. Vinç tonajı, çalışma süresi ve teklif ayrıntıları kaynakta kesin olarak belirtilmediğinden işletmeyle teyit edilmelidir.',
+      missingFacts:['Kesin tonaj ve tarih','Alıcı görüşmesiyle aktif talep doğrulanmalı']
+   })}}}};
+ const r=await draftRadarLeadWithAI(env,{adminVerified:true},socialLead,trustedSource,now);
+ assert.equal(r.ok,true);assert.equal(r.published,false);assert.equal(r.needsAdminApproval,true);
+ assert.ok(binds.some(args=>args.includes(socialLead.id)));
+});
+test('Unconfirmed old social buyer cannot consume AI budget',async()=>{
+ const socialLead={
+   id:'old-social',title:'Gebze için vinç lazım',
+   description:'Fabrikamıza makine indirme için vinç arıyoruz.',city:'Kocaeli',district:'Gebze',
+   sourceUrl:'https://example.com/old',authorPublishedAt:'2026-10-12T09:00:00+03:00',
+   sourceChecked:true,buyerConfirmed:false,deadline:null
+ };
+ let called=false;
+ const env={DB:{prepare(){called=true;throw Error('AI budget not expected')}},AI:{async run(){called=true}}};
+ const r=await draftRadarLeadWithAI(env,{adminVerified:true},socialLead,evidence,now);
+ assert.equal(r.ok,false);assert.equal(called,false);
+});
