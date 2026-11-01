@@ -10,7 +10,8 @@ function env() {
       if(sql.includes('GROUP BY priority')) return {results:[{priority:1,count:6},{priority:2,count:7},{priority:3,count:68}]};
       if(sql.includes('GROUP BY category')) return {results:[{category:'crane',count:8},{category:'basket',count:6},{category:'tow',count:6},{category:'machine',count:6},{category:'lift',count:5}]};
       if(sql.includes('COUNT(*) AS count,SUM')) return {results:[{count:0,active:0}]};
-      if(sql.includes('COUNT(*) AS count')) return {results:[{count:81}]};
+      if(sql.includes('FROM radar_search_profiles')) return {results:[{count:81}]};
+      if(sql.includes('COUNT(*) AS count')) return {results:[{count:0}]};
       if(sql.includes('FROM radar_keyword_rules')) return {results:[{category:'crane',phrase:'vinç lazım',normalized_phrase:'vinc lazim'}]};
       return {results:[]};
     }}};}},
@@ -28,7 +29,7 @@ test('GET health returns staging readiness without touching production',async()=
 test('staging diagnostics do not invent leads',async()=>{
  const e=env(),res=await worker.fetch(request('/api/radar/status'),e);
  const data=await res.json();assert.equal(data.production,false);assert.equal(data.automatedScanning,false);
- assert.equal(data.activeSources,0);assert.equal(data.candidates,81); // mock DB supplies 81 for generic count
+ assert.equal(data.activeSources,0);assert.equal(data.candidates,0);
  assert.ok(e.queries.every(q=>/^\s*SELECT\s/i.test(q)));
 });
 test('staging front page renders safely',async()=>{
