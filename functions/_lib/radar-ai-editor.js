@@ -37,6 +37,8 @@ function validateModelDraft(raw, trustedFacts){
     if(!knownNumbers.includes(n))return {ok:false,error:'AI_UNSUPPORTED_NUMBER_'+n};
   }
   const lowered=(title+' '+description).toLocaleLowerCase('tr-TR');
+  if(/(?:\+90|0[2358]\d{2})[\s().-]*\d{3}[\s().-]*\d{2}[\s().-]*\d{2}/.test(lowered))
+    return {ok:false,error:'AI_PHONE_SHOULD_BE_ADMIN_ONLY'};
   if(/(?:kesin kazanç|garantili müşteri|iş bağlandı|telefonunuz|numarasından arayınız)/i.test(lowered))
     return {ok:false,error:'AI_PROMISE_OR_CONTACT'};
   return {ok:true,title,description,
@@ -91,7 +93,8 @@ export async function draftRadarLeadWithAI(env,actor,lead,evidence,now=Date.now(
   const digest=await crypto.subtle.digest('SHA-256',data);
   const hash=Array.from(new Uint8Array(digest)).map(n=>n.toString(16).padStart(2,'0')).join('');
   const revision=crypto.randomUUID();
-  const expires=Date.parse(lead.deadline+'+03:00');
+  const deadline=String(lead.deadline||'');
+  const expires=Date.parse(deadline.includes('T')?deadline+':00+03:00':deadline+'T23:59:00+03:00');
   const sql='INSERT INTO lead_radar_ai_drafts (lead_id,revision,summary,source_hash,expires_at,evidence_json,generated_at,generated_by) VALUES(?,?,?,?,?,?,unixepoch(),?) ON CONFLICT(lead_id) DO UPDATE SET revision=excluded.revision,summary=excluded.summary,source_hash=excluded.source_hash,expires_at=excluded.expires_at,evidence_json=excluded.evidence_json,generated_at=excluded.generated_at,generated_by=excluded.generated_by';
   await env.DB.prepare(sql).bind(lead.id,revision,vetted.description,hash,
     Number.isFinite(expires)?Math.floor(expires/1000):null,
