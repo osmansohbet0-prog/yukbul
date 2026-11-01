@@ -41,6 +41,7 @@ function validateModelDraft(raw, trustedFacts){
   const lowered=(title+' '+description).toLocaleLowerCase('tr-TR');
   if(/(?:\+90|0[2358]\d{2})[\s().-]*\d{3}[\s().-]*\d{2}[\s().-]*\d{2}/.test(lowered))
     return {ok:false,error:'AI_PHONE_SHOULD_BE_ADMIN_ONLY'};
+  if(/[\w.+-]+@[\w.-]+\.[a-z]{2,}|https?:\/\/|www\./i.test(lowered))return {ok:false,error:'AI_CONTACT_SHOULD_BE_ADMIN_ONLY'};
   if(/(?:kesin kazanç|garantili müşteri|iş bağlandı|telefonunuz|numarasından arayınız)/i.test(lowered))
     return {ok:false,error:'AI_PROMISE_OR_CONTACT'};
   return {ok:true,title,description,
@@ -77,7 +78,7 @@ async function reserveAiCall(db,actor){
  * Trusted calling code must set actor.adminVerified after verified server auth,
  * or actor.internalVerified from a scheduled Worker handler (never request JSON).
  */
-export async function draftRadarLeadWithAI(env,actor,lead,evidence,now=Date.now()){
+export async function draftRadarLeadWithAI(env,actor,lead,evidence,now=Date.now(),options={}){
   if(!env?.DB||!env?.AI||(!actor?.adminVerified&&!actor?.internalVerified))
     throw new Error('RADAR_EDITOR_NOT_AUTHORIZED');
   const review=qualifyCraneRentalRequest(lead,now);
@@ -105,6 +106,9 @@ export async function draftRadarLeadWithAI(env,actor,lead,evidence,now=Date.now(
     evidence,lead.title,lead.organization,lead.city,lead.district,lead.deadline
   ].filter(Boolean).join('\n'));
   if(!vetted.ok)return {ok:false,reason:vetted.error,published:false};
+  // The V178 caller owns the revision compare-and-swap, source hash and audit.
+  // Returning validated content avoids a second, unconditional draft write.
+  if(options.persist===false)return {ok:true,title:vetted.title,description:vetted.description,missingFacts:vetted.missingFacts,model:MODEL,needsAdminApproval:true,published:false};
   const normalizedEvidence=String(evidence).slice(0,6000);
   const data=new TextEncoder().encode(normalizedEvidence);
   const digest=await crypto.subtle.digest('SHA-256',data);

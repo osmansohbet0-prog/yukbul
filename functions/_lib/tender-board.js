@@ -1,0 +1,30 @@
+import {currentMember} from './member.js';
+import {kocaeliJobsPage} from './kocaeli-jobs.js';
+import {rentalContentAllowed} from './radar-kocaeli-integration.js';
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+export function withTenderBoard(worker){return {...worker,async fetch(request,env,ctx){
+ const url=new URL(request.url);
+ if(url.pathname==='/kocaeli-is-ilanlari/'||url.pathname==='/kocaeli-is-ilanlari'){
+  if(!['GET','HEAD'].includes(request.method))return new Response('Method not allowed',{status:405});
+  if(url.pathname==='/kocaeli-is-ilanlari'){url.pathname+='/';return Response.redirect(url.toString(),301);}
+  const html=kocaeliJobsPage();
+  return new Response(request.method==='HEAD'?null:html,{headers:{'content-type':'text/html; charset=utf-8','cache-control':'public, max-age=900','x-content-type-options':'nosniff','x-frame-options':'DENY','referrer-policy':'strict-origin-when-cross-origin','content-security-policy':"default-src 'self'; style-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"}});
+ }
+ if(url.pathname!=='/ihale-duyurulari/'&&url.pathname!=='/ihale-duyurulari')return worker.fetch(request,env,ctx);
+ if(!['GET','HEAD'].includes(request.method))return new Response('Method not allowed',{status:405});
+ if(url.pathname==='/ihale-duyurulari'){url.pathname+='/';return Response.redirect(url.toString(),301);}
+ const code=Number(url.searchParams.get('il')||0);
+ if(code&&(!Number.isInteger(code)||code<1||code>81))return new Response('Geçersiz il',{status:400});
+ try{
+  const cities=(await env.DB.prepare('SELECT * FROM radar_city_sources ORDER BY province_name').all()).results||[];
+  const selected=cities.find(x=>Number(x.province_code)===code);
+  const member=await currentMember(request,env);
+  const rows=(await env.DB.prepare("SELECT title,city,public_summary,source_url,public_expires_at FROM lead_radar_leads WHERE status='approved' AND public_at IS NOT NULL AND verified_at IS NOT NULL AND public_expires_at>unixepoch() ORDER BY public_at DESC LIMIT 100").all()).results||[];
+  const notices=rows.filter(x=>rentalContentAllowed(x)&&(!code||x.city===selected?.province_name));
+  const title=(selected?selected.province_name+' ':'')+'Hizmet Alımı ve İhale Duyuruları';
+  const sourceCards=cities.filter(x=>!code||Number(x.province_code)===code).map(x=>'<article class="usage-card"><h2>'+esc(x.province_name)+'</h2><p>'+esc(x.municipality_name)+'</p><p>'+(x.announcements_url?'<a href="'+esc(x.announcements_url)+'" target="_blank" rel="noopener noreferrer nofollow">Resmî ihale sayfasını aç ↗</a>':x.homepage_url?'<a href="'+esc(x.homepage_url)+'" target="_blank" rel="noopener noreferrer nofollow">Resmî belediye sitesini aç ↗</a>':'Kaynak adresi doğrulanmayı bekliyor.')+'</p><small>Kaynak keşfi: '+esc({announcement_found:'Duyuru bağlantısı bulundu',homepage_checked:'Ana sayfa kontrol edildi',robots_blocked:'Tarama kuralları izin vermiyor',robots_unavailable:'Tarama kuralları doğrulanamadı',homepage_unavailable:'Ana sayfaya erişilemedi',invalid_directory_url:'Kaynak adresi kontrol bekliyor'}[x.discovery_status]||'Kontrol bekliyor')+'. Otomatik ilan taraması ve yeniden yayın yetkisi ayrıca doğrulanır.</small></article>').join('');
+  const listing=notices.map(x=>'<article class="usage-card"><h2>'+esc(member?x.title:(x.city||'Türkiye')+' — hizmet alımı duyurusu')+'</h2>'+(member?'<p>'+esc(x.public_summary)+'</p><p>Son başvuru: '+esc(new Date(Number(x.public_expires_at)*1000).toLocaleString('tr-TR',{timeZone:'Europe/Istanbul'}))+'</p><a href="'+esc(x.source_url)+'" rel="noopener noreferrer nofollow">Asıl duyuruyu aç ↗</a><p>Teklif ve başvurular doğrudan kaynak kuruma yapılır.</p>':'<p>Ayrıntılar için <a href="/giris/">üye girişi yapın</a>.</p>')+'</article>').join('');
+  const html='<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(title)+' | YükVinç</title><meta name="robots" content="'+(code?'noindex,follow':'index,follow')+'"><link rel="canonical" href="https://yukvinc.com.tr/ihale-duyurulari/"><link rel="stylesheet" href="/assets/site.css"></head><body><header class="wrap"><a href="/">YükVinç</a> · <a href="/is-talepleri/">İş talepleri</a></header><main class="wrap section"><h1>'+esc(title)+'</h1><p>Vinç, nakliye ve iş makinesi hizmet alımlarını şehir bazında takip edin. Personel ve iş arama ilanları bu bölümde yer almaz.</p><form method="get"><label for="province">Şehir seçin</label><select name="il" id="province"><option value="0">Tüm şehirler</option>'+cities.map(x=>'<option value="'+Number(x.province_code)+'"'+(Number(x.province_code)===code?' selected':'')+'>'+esc(x.province_name)+'</option>').join('')+'</select><button type="submit">Göster</button></form><h2>Onaylanmış güncel duyurular</h2>'+(listing||'<p>Bu seçimde onaylanmış, süresi geçmemiş duyuru bulunmuyor. Resmî kaynakları aşağıdaki bağlantılardan inceleyebilirsiniz.</p>')+'<h2>Resmî şehir kaynakları</h2><p>Bir kaynak bağlantısının bulunması, o şehirdeki bütün ilanların tarandığı anlamına gelmez. Duyurular yönetici incelemesi ve kaynak izni kontrollerinden sonra yayımlanır.</p><div class="usage-grid">'+sourceCards+'</div><p>Belediye dizini: <a href="https://www.tbb.gov.tr/tr/buyuksehir-ve-il-belediyeleri" rel="noopener noreferrer">Türkiye Belediyeler Birliği</a></p></main></body></html>';
+  return new Response(request.method==='HEAD'?null:html,{headers:{'content-type':'text/html; charset=utf-8','cache-control':'private, no-store','x-content-type-options':'nosniff','x-frame-options':'DENY','referrer-policy':'strict-origin-when-cross-origin','content-security-policy':"default-src 'self'; style-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"}});
+ }catch{return new Response('Duyuru kaynakları şu anda hazırlanıyor.',{status:503,headers:{'cache-control':'no-store'}});}
+}};}

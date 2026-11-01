@@ -4,11 +4,11 @@ const encoder = new TextEncoder();
 const PASSWORD_ITERATIONS = 210000;
 const ALLOWED_ORIGINS = new Set(['https://yukvinc.com.tr', 'https://www.yukvinc.com.tr']);
 const DEFAULT_SITE = {
-  brand_name: 'Yük Vinç', logo_path: '/assets/yuk-vinc-logo-192.png', primary_color: '#172d35', accent_color: '#f6a13b',
-  font_family: 'Inter, Arial, sans-serif', seo_title: 'Yük Vinç | Vinç Kiralama ve Ekipman İlanları', seo_description: 'Yük Vinç’te vinç kiralama, oto kurtarıcı, iş makinesi ve operatör ilanlarını şehir, kategori ve fiyata göre bul; ilanları karşılaştır.', headline: 'Makineyi bul. İşini büyüt.',
+  brand_name: 'YükVinç', logo_path: '/assets/yuk-vinc-logo-192.png', primary_color: '#172d35', accent_color: '#f6a13b',
+  font_family: 'Inter, Arial, sans-serif', seo_title: 'YükVinç | Vinç Kiralama ve Ekipman İlanları', seo_description: 'YükVinç’te vinç kiralama, oto kurtarıcı, iş makinesi ve operatör ilanlarını şehir, kategori ve fiyata göre bul; ilanları karşılaştır.', headline: 'Makineyi bul. İşini büyüt.',
   contact_email: '', contact_phone: '', contact_address: '',
   introduction: 'Vinç, çekici, forklift ve operatör ilanlarını tek yerde keşfet. İhtiyacına göre filtrele, fiyatları karşılaştır.',
-  hero_image: '/assets/yukvinc-hero.webp', about_title: 'Ekipmana da işe de yer var.', about_text: 'Yük Vinç, makine ve araç sahiplerinin kiralama ilanlarıyla operatörlerin iş arayışlarını bir araya getiren bir kullanıcı pazaryeridir. İlanlar yayınlanmadan önce yönetici tarafından incelenir.', faq: [{question:'İş arayan operatörler ilan verebilir mi?',answer:'Evet. Üyeler operatör iş arayışı ilanını ücretsiz oluşturabilir; ilan yayınlanmadan önce incelenir.'},{question:'Fiyatları karşılaştırabilir miyim?',answer:'Ekipman ilanlarında en fazla üç ilanı seçip fiyat ve özellikleri yan yana karşılaştırabilirsin. Fiyatlar ilan sahibinden ayrıca teyit edilmelidir.'},{question:'Bu sayfadaki ilanlar gerçek mi?',answer:'Evet. Ana sayfada onaylanmış gerçek kullanıcı ilanları görünür. Fiyat, kapsam ve müsaitliği ilan sahibiyle doğrula.'}], section_order: ['ilanlar','nasil','about','faq','closing'],
+  hero_image: '/assets/yukvinc-hero.webp', about_title: 'Ekipmana da işe de yer var.', about_text: 'YükVinç, makine ve araç sahiplerinin kiralama ilanlarıyla operatörlerin iş arayışlarını bir araya getiren bir kullanıcı pazaryeridir. İlanlar yayınlanmadan önce yönetici tarafından incelenir.', faq: [{question:'İş arayan operatörler ilan verebilir mi?',answer:'Evet. Üyeler operatör iş arayışı ilanını ücretsiz oluşturabilir; ilan yayınlanmadan önce incelenir.'},{question:'Fiyatları karşılaştırabilir miyim?',answer:'Ekipman ilanlarında en fazla üç ilanı seçip fiyat ve özellikleri yan yana karşılaştırabilirsin. Fiyatlar ilan sahibinden ayrıca teyit edilmelidir.'},{question:'Bu sayfadaki ilanlar gerçek mi?',answer:'Evet. Ana sayfada onaylanmış gerçek kullanıcı ilanları görünür. Fiyat, kapsam ve müsaitliği ilan sahibiyle doğrula.'}], section_order: ['ilanlar','nasil','about','faq','closing'],
   sections: {ilanlar:true,nasil:true,about:true,faq:true,closing:true}
 };
 
@@ -18,6 +18,8 @@ export function json(data, status=200, headers={}) {
 export function fail(message, status=400) { return json({error:message}, status); }
 export function isAllowedOrigin(request) {
   const origin = request.headers.get('Origin');
+  const stagingOrigin='https://yukbul-staging.osmansohbet0.workers.dev';
+  if(origin===stagingOrigin&&new URL(request.url).origin===stagingOrigin)return true;
   return Boolean(origin && ALLOWED_ORIGINS.has(origin));
 }
 export async function readBoundedText(request,max){
@@ -77,6 +79,11 @@ export async function audit(env, actor, action, entityType=null, entityId=null, 
   await env.DB.prepare('INSERT INTO admin_activity(actor_user_id,action,entity_type,entity_id,metadata_json) VALUES(?,?,?,?,?)').bind(actor,action,entityType,entityId,JSON.stringify(meta)).run();
 }
 export async function ipHash(request) { return digest(request.headers.get('CF-Connecting-IP')||'unknown'); }
+export async function keyedDigest(value, secret) {
+  const key=await crypto.subtle.importKey('raw',encoder.encode(String(secret)),{name:'HMAC',hash:'SHA-256'},false,['sign']);
+  const signature=new Uint8Array(await crypto.subtle.sign('HMAC',key,encoder.encode(String(value))));
+  return [...signature].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
 export async function rateLimited(env, request, max=5) {
   const hash=await ipHash(request), now=Math.floor(Date.now()/1000);
   await env.DB.prepare('DELETE FROM admin_login_attempts WHERE created_at < ?').bind(now-86400).run();

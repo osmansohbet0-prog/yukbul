@@ -30,12 +30,13 @@ export async function onRequestPost({request,env}){
     const identity=await verifyGoogleCredential(d.credential,env.GOOGLE_CLIENT_ID);
     if(!identity)return fail('Google doğrulaması geçersiz veya süresi dolmuş. Tekrar dene.',401);
     let user=await env.DB.prepare("SELECT id,email,google_sub,role,active FROM users WHERE google_sub=? AND role='member'").bind(identity.subject).first();
+    if(user)await env.DB.prepare('UPDATE users SET email_verified_at=COALESCE(email_verified_at,unixepoch()) WHERE id=?').bind(user.id).run();
     if(!user){
       const existing=await env.DB.prepare("SELECT id,email,google_sub,role,active FROM users WHERE email_norm=?").bind(identity.email).first();
       if(existing&&existing.role!=='member')return fail('Bu Google hesabı üye girişi için kullanılamaz.',403);
       if(existing?.google_sub&&existing.google_sub!==identity.subject)return fail('Bu e-posta başka bir Google hesabına bağlı.',409);
-      if(existing){user=existing;if(!existing.google_sub)await env.DB.prepare('UPDATE users SET google_sub=?,updated_at=unixepoch() WHERE id=?').bind(identity.subject,existing.id).run()}
-      else{const id=randomId(16);await env.DB.prepare("INSERT INTO users(id,email,email_norm,password_hash,google_sub,role,active) VALUES(?,?,?,NULL,?,'member',1)").bind(id,identity.email,identity.email,identity.subject).run();user={id,email:identity.email,role:'member',active:1}}
+      if(existing){user=existing;if(!existing.google_sub)await env.DB.prepare('UPDATE users SET google_sub=?,email_verified_at=COALESCE(email_verified_at,unixepoch()),updated_at=unixepoch() WHERE id=?').bind(identity.subject,existing.id).run()}
+      else{const id=randomId(16);await env.DB.prepare("INSERT INTO users(id,email,email_norm,password_hash,google_sub,role,active,email_verified_at) VALUES(?,?,?,NULL,?,'member',1,unixepoch())").bind(id,identity.email,identity.email,identity.subject).run();user={id,email:identity.email,role:'member',active:1}}
     }
     if(Number(user.active)!==1)return fail('Bu hesap devre dışı bırakılmış.',403);
     const token=await createSession(env,user.id);await clearAttempts(env,request,'login');await audit(env,user.id,'member.google.login','session',null,{});

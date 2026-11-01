@@ -1,0 +1,2 @@
+export const priceUnitLabels={saatlik:'Saatlik',saat:'Saatlik',gunluk:'Günlük','günlük':'Günlük',aylik:'Aylık','aylık':'Aylık',sefer:'İş başı','sefer başı':'İş başı','sefer basi':'İş başı','iş başı':'İş başı','is başı':'İş başı',is_basi:'İş başı',km_basi:'Km başı',teklif:'Teklif alınır',arayiniz:'Fiyat için arayınız'};
+export function priceUnitLabel(value){return priceUnitLabels[String(value||'').trim().toLocaleLowerCase('tr')]||'Ücret türü belirtilmemiş';}

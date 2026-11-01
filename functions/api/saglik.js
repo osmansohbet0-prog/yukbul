@@ -7,6 +7,7 @@ const TABLES={
   listings:['id','user_id','listing_type','category','title','description','city','district','status','content_hash'],
   listing_photos:['id','listing_id','mime_type','byte_size','image_blob'],
   ai_usage:['user_id','usage_date','count'],
+  ai_suggestion_usage:['user_id','usage_date','count'],
   admin_activity:['action','entity_type','entity_id','metadata_json']
 };
 async function tableInfo(db,name){
@@ -21,8 +22,7 @@ async function diagnostics({env}){
     bindings:{workers_ai:!!env.AI,assets:!!env.ASSETS},
     secrets:{
       turnstile_secret:!!env.TURNSTILE_SECRET,
-      admin_bootstrap_secret:!!env.ADMIN_BOOTSTRAP_SECRET,
-      admin_security_code:!!env.ADMIN_SECURITY_CODE
+      admin_email_code_pepper:!!(env.ADMIN_SECURITY_CODE&&env.ADMIN_SECURITY_CODE.length>=8)
     },
     public_config:{
       turnstile_site_key:!!env.TURNSTILE_SITE_KEY,

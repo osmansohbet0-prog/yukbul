@@ -117,14 +117,25 @@ export function assistantFallback(items,intent){
 export function categoryLabel(category){return categoryLabels[category]||'ekipman'}
 export function siteHelp(question){
  const text=normalize(question);
+ if(/(?:site|yukvinc|uygulama|yukusta)/.test(text)&&/nasil.*kullan|ne yapabil|yardim|rehber/.test(text))return 'İlan aramak için menüden “Ara ve filtrele”yi açıp kategori ve konum seç. İlan vermek için hesabına giriş yapıp “İlan ver”e dokun. İlan sayfasındaki telefon ve WhatsApp düğmeleriyle ilan sahibine ulaşabilirsin.';
+ if(/hesap|profil|sifre|giris|uye/.test(text)&&/nasil|nerede|duzenle|degistir|giris|olustur/.test(text))return 'Giriş veya üyelik için “Giriş yap” sayfasını aç. İlanlarını ve profilini “Hesabım” bölümünden yönetebilirsin. Şifreni veya doğrulama kodunu sohbette paylaşma.';
+ if(/(?:fotograf|gorsel|resim)/.test(text)&&/buyut|buyuk|tam|kirp/.test(text))return 'İlanın fotoğrafına veya “Büyüt” düğmesine dokunarak tam görüntüyü açabilirsin. Diğer fotoğrafları alttaki küçük görsellerden seç.';
  if(/(ara|arama|filtre|bul)/.test(text)&&/\b(nasil|nerede|kullan\w*|ac|sec)\b/.test(text))return'Menüyü açıp önce kategoriyi seç; ardından şehir/ilçe ve diğer filtreleri belirleyip Filtrele’ye dokun.';
  if(/(gizlilik|guvenlik|telefon|eposta|e posta|kisisel bilgi)/.test(text))return'YükUsta yalnızca yayındaki ilanları bulur; hesap, ilan veya fiyat değişikliği yapamaz. Sohbette telefon, e-posta veya parola paylaşma. Ayrıntılar için Gizlilik ve aydınlatma sayfasını inceleyebilirsin.';
  if(/nedir|ne ise yarar|farki|nasil sec/.test(text)){const kind=categoryOf(text).category,guides={crane:'Vinç, yük kaldırma ve konumlandırmada kullanılır. Yük ağırlığı, kaldırma yüksekliği, çalışma mesafesi ve zemin koşullarını yetkili operatöre teyit ettir.',basket:'Sepetli platform, personelin yüksekte çalışmasına erişim sağlar. Çalışma yüksekliği, yatay erişim ve zemin koşullarını belirt.',manlift:'Manlift, yüksekte çalışma erişimi için kullanılan makaslı veya eklemli platformdur. Gereken çalışma yüksekliği ve alanı belirt.',tow:'Çekici ve yol yardım ararken araç türü, durumu ve bulunduğu konumu ilan sahibine ilet.',lift:'Nakliyat asansörü yük/eşya taşımak içindir. Yük ölçülerini, katı ve kurulum alanını teyit et; insan taşımaya uygun varsayma.',machine:'İş makinesi seçiminde yapılacak iş, zemin ve gereken erişim/kapasite belirleyicidir.',operator:'Operatör ilanlarında deneyim ve belgeleri işverenle doğrula.'};if(guides[kind])return guides[kind]}
- if(/fotograf|gorsel|resim/.test(text)&&/yukle|ekle|boyut|kac|gozuk|gorun|bozuk/.test(text))return'İlanına JPEG, PNG veya WebP biçiminde en fazla 3 fotoğraf ekleyebilirsin. Onaylanıp yayına alındığında herkese görünür. Sorun devam ederse İletişim sayfasından bildir.';
+ if(/fotograf|gorsel|resim/.test(text)&&/yukle|ekle|boyut|kac|gozuk|gorun|bozuk/.test(text))return'İlanına JPEG, PNG veya WebP biçiminde en fazla 10 fotoğraf ekleyebilirsin. Fotoğraflar gönderilmeden önce cihazında hazırlanır. Onaylanıp yayına alındığında görünür. Sorun devam ederse İletişim sayfasından bildir.';
  if(/ilan/.test(text)&&/nasil.*(ver|ekle|olustur)|nasil.*yayinla|ilan vermek/.test(text))return'İlan vermek için üye girişi yapıp “İlan ver” sayfasını aç. Kategori, il ve ilçe seç; başlık, açıklama, ücret türü ve fotoğrafları ekleyip gönder. Yayın öncesi yönetici incelemesi yapılır.';
  if(/ilan/.test(text)&&/onay|bekli|yayinlanm/.test(text))return'İlanlar yayınlanmadan önce yönetici incelemesinden geçer. İlan durumunu Hesabım bölümünden görebilirsin.';
  if(/^(merhaba|selam|iyi gunler|ne yapabilirsin|yardim)$/.test(text))return'Merhaba, ben YükUsta. Vinç, çekici/yol yardımı, manlift ve diğer ilanları şehir/ilçeye göre bulabilirim. Hangi şehirde, ne arıyorsun?';
  return'';
+}
+
+export function siteGuideActions(question){
+ const text=normalize(question);
+ if(/gizlilik|guvenlik|kisisel|eposta|e posta/.test(text))return[{label:'Gizlilik ve güvenlik',url:'/gizlilik/'}];
+ if(/hesap|profil|sifre|giris|uye|onay|bekli/.test(text))return[{label:'Hesabım',url:'/hesabim/'},{label:'Giriş yap',url:'/giris/'}];
+ if(/ilan/.test(text)&&/ver|ekle|olustur|yayinla/.test(text)||/fotograf|gorsel|resim/.test(text))return[{label:'İlan ver',url:'/ilan-ver/'},{label:'İlanlarım',url:'/hesabim/#my-listings'}];
+ return[{label:'Ara ve filtrele',url:'/#search-menu-toggle'},{label:'İlan ver',url:'/ilan-ver/'}];
 }
 
 

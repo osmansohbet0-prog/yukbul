@@ -16,3 +16,4 @@ export async function onRequestPost({request,env}){
  }catch{return fail('Konuma göre arama yapılamadı. İl ve ilçe filtresini kullanabilirsin.',503)}
 }
 
+

@@ -1,0 +1,2 @@
+import {fail,requireAdmin} from '../../_lib/core.js';
+export async function onRequestGet({request,env,params}){const a=await requireAdmin({request,env});if(a.response)return a.response;const row=await env.DB.prepare("SELECT avatar_webp FROM users WHERE id=? AND role='member'").bind(String(params.id||'')).first();if(!row?.avatar_webp)return new Response(null,{status:404,headers:{'cache-control':'no-store'}});return new Response(row.avatar_webp,{headers:{'content-type':'image/webp','cache-control':'no-store','x-content-type-options':'nosniff'}})}

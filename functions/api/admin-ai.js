@@ -20,7 +20,7 @@ async function getStats(db){
 }
 export async function onRequestGet(context){
  const auth=await requireAdmin(context);if(auth.response)return auth.response;
- try{const config=await readAiModeration(context.env.DB),extra=await getStats(context.env.DB);return json({config,stats:extra.stats,health:{...extra.health,model_available:context.env.AI_ENABLED==='true'&&!!context.env.AI},recent:extra.recent,feedback:extra.feedback,models:{name:'YükUsta',text:'@cf/meta/llama-3.3-70b-instruct-fp8-fast',image:'Moondream → LLaVA görsel yedeği',classification:'Microsoft ResNet-50'}})}catch{return fail('Yapay zekâ bilgileri alınamadı.',503)}
+ try{const config=await readAiModeration(context.env.DB),extra=await getStats(context.env.DB);return json({config,stats:extra.stats,health:{...extra.health,model_available:context.env.AI_ENABLED==='true'&&!!context.env.AI},recent:extra.recent,feedback:extra.feedback,models:{name:'YükUsta',text:'Llama 3.3 70B → Llama 3.1 8B yedeği',image:'Moondream → LLaVA görsel yedeği',classification:'Microsoft ResNet-50'}})}catch{return fail('Yapay zekâ bilgileri alınamadı.',503)}
 }
 export async function onRequestPatch(context){
  const auth=await requireAdmin(context);if(auth.response)return auth.response;
