@@ -13,7 +13,7 @@ function normalize(value) {
 }
 const EXCLUSIONS = [
   /\b(satilik|satisa sunuldu|ikinci el satilik)\b/,
-  /\b(operator|personel|eleman|sofor|is gucu)\s+(araniyor|alinacak|ihtiyaci)\b/,
+  /\b(operatoru?|personel|eleman|soforu?|is gucu)\s+(araniyor|alinacak|ihtiyaci)\b/,
   /\b(hizmet\s+veriyoruz|kiralik\s+(vinc|makine|platform)lerimiz|filomuzda|hizmetinizde)\b/
 ];
 const INTENT = /\b(lazim|araniyor|ihtiyac|ihtiyaci|kiralanacaktir|hizmet alimi|teklif alinacaktir|ihalesi|talep ediliyor)\b/;
