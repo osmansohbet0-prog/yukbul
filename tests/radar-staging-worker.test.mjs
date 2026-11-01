@@ -3,18 +3,25 @@ import assert from 'node:assert/strict';
 import worker from '../staging/radar-worker.mjs';
 
 function env() {
-  const queries=[];
+  const queries = [];
   return {
     queries,
-    DB: {prepare(sql){queries.push(sql);return {async all(){
-      if(sql.includes('GROUP BY priority')) return {results:[{priority:1,count:6},{priority:2,count:7},{priority:3,count:68}]};
-      if(sql.includes('GROUP BY category')) return {results:[{category:'crane',count:8},{category:'basket',count:6},{category:'tow',count:6},{category:'machine',count:6},{category:'lift',count:5}]};
-      if(sql.includes('COUNT(*) AS count,SUM')) return {results:[{count:0,active:0}]};
-      if(sql.includes('FROM radar_search_profiles')) return {results:[{count:81}]};
-      if(sql.includes('COUNT(*) AS count')) return {results:[{count:0}]};
-      if(sql.includes('FROM radar_keyword_rules')) return {results:[{category:'crane',phrase:'vinç lazım',normalized_phrase:'vinc lazim'}]};
-      return {results:[]};
-    }}};}},
+    DB: {
+      prepare(sql) {
+        queries.push(sql);
+        return {
+          async all() {
+            if (sql.includes('GROUP BY priority')) return {results:[{priority:1,count:6},{priority:2,count:7},{priority:3,count:68}]};
+            if (sql.includes('GROUP BY category')) return {results:[{category:'crane',count:8},{category:'basket',count:6},{category:'tow',count:6},{category:'machine',count:6},{category:'lift',count:5}]};
+            if (sql.includes('COUNT(*) AS count,SUM')) return {results:[{count:0,active:0}]};
+            if (sql.includes('FROM radar_search_profiles')) return {results:[{count:81}]};
+            if (sql.includes('COUNT(*) AS count')) return {results:[{count:0}]};
+            if (sql.includes('FROM radar_keyword_rules')) return {results:[{category:'crane',phrase:'vinç lazım',normalized_phrase:'vinc lazim'}]};
+            return {results:[]};
+          }
+        };
+      }
+    },
     AI: {}
   };
 }
