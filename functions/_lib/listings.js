@@ -35,6 +35,8 @@ export async function publicItems(db,params={}){
    }else{sql+=' AND COALESCE(l.service_category,l.category_detail,l.category)=?';args.push(v)}
   }
  }
+ const district=String(params.district||'').trim().replace(/[%_]/g,'').slice(0,100);
+ if(district){sql+=' AND l.district LIKE ?';args.push('%'+district+'%')}
  const q=String(params.q||'').trim().slice(0,80);
  if(q){
   const terms=(q.toLocaleLowerCase('tr').match(/[\p{L}\p{N}]+/gu)||[]).slice(0,8);
