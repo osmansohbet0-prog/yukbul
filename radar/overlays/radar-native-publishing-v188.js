@@ -85,6 +85,7 @@ async function __yvNativePublicationPost(request,env){
   return msg('Yayınlama veritabanına kaydedilemedi. '+String(e?.message||'').slice(0,120));
  }
 }
+var __yvDirectPublishLinkJs="(()=>{'use strict';const fix=()=>{document.querySelectorAll('#lr-items button[data-publish],#pub-items button[data-pub]').forEach(btn=>{const id=btn.dataset.publish||btn.dataset.pub;if(!id)return;const a=document.createElement('a');a.href='/admin/radar/yayinla/#lead-'+encodeURIComponent(id);a.textContent='Onayla ve Yayınla ↗';a.style.cssText='display:inline-block;background:#145a70;color:#fff;padding:9px 13px;border-radius:8px;text-decoration:none;font-weight:700';btn.replaceWith(a)})};new MutationObserver(fix).observe(document.body,{childList:true,subtree:true});fix()})();";
 var __yvNativePublishPrev=__yvWorkerV187;
 var __yvNativePublishWorker={...__yvNativePublishPrev,async fetch(request,env,ctx){
  const path=new URL(request.url).pathname;
@@ -94,10 +95,15 @@ var __yvNativePublishWorker={...__yvNativePublishPrev,async fetch(request,env,ct
   if(request.method==='POST')return __yvNativePublicationPost(request,env);
   return new Response('Method Not Allowed',{status:405,headers:{allow:'GET, POST'}});
  }
+ if(path==='/assets/radar-direct-publish-link.js'){
+  if(!['GET','HEAD'].includes(request.method))return new Response('Method Not Allowed',{status:405});
+  const auth=await requireAdmin({request,env});if(auth.response)return auth.response;
+  return secure(new Response(request.method==='HEAD'?null:__yvDirectPublishLinkJs,{headers:{'content-type':'application/javascript; charset=utf-8','cache-control':'private, no-store'}}),request);
+ }
  const response=await __yvNativePublishPrev.fetch(request,env,ctx);
  if(['GET','HEAD'].includes(request.method)&&response.status===200&&(path==='/admin/'||path==='/admin'||path==='/admin/radar/'||path==='/admin/radar')&&/text\/html/i.test(response.headers.get('content-type')||'')){
   const notice='<div style="background:#f7ac36;color:#16343e;padding:12px 18px;text-align:center;font:700 15px system-ui,sans-serif"><a href="/admin/radar/yayinla/" style="color:#16343e;text-decoration:underline">YAYIN BEKLEYEN RADAR İLANLARI — ONAYLA VE YAYINLA ↗</a></div>';
-  return new HTMLRewriter().on('body',{element(el){el.prepend(notice,{html:true})}}).transform(response);
+  return new HTMLRewriter().on('body',{element(el){el.prepend(notice,{html:true});if(request.method==='GET')el.append('<script src="/assets/radar-direct-publish-link.js" defer></script>',{html:true})}}).transform(response);
  }
  return response;
 }};
