@@ -5,6 +5,7 @@ let activeView = 'opportunities';
 function safeText(value) {
   return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 }
+function short(value, max=125) { const s=String(value||''); return s.length>max?s.slice(0,max)+'…':s; }
 function safeLink(value) {
   try { const u = new URL(String(value)); return u.protocol === 'https:' || u.protocol === 'http:' ? u.href : ''; }
   catch { return ''; }
@@ -27,7 +28,7 @@ function leadCard(x) {
   const proof = x.verification === 'official_source' ? 'Resmî kaynak' : x.verification === 'manual_reviewed' ? 'Elle doğrulandı' : 'Doğrulanmadı';
   return '<article class="radar-item"><div class="radar-item-title"><strong>'+safeText(x.title)+'</strong>'+state+'</div>'+
     '<p>'+safeText(area(x.city,x.district))+' · '+safeText(x.organization || 'Kurum belirtilmedi')+'</p>'+
-    '<div class="radar-item-meta">'+tag(proof,x.verification==='unverified'?'warn':'')+tag(x.service_type || 'Hizmet talebi')+'</div>'+
+    '<div class="radar-item-meta">'+tag(proof,x.verification==='unverified'?'warn':'')+tag(short(x.service_type || 'Hizmet talebi',90))+'</div>'+
     '<div class="radar-item-foot"><small>Kayıt: '+time(x.created_at)+'</small>'+sourceLink(x.source_url)+'</div></article>';
 }
 function requestCard(x) {
@@ -43,13 +44,13 @@ function sourceCard(x) {
   const kind=paused?'':issue?'warn':'ok';
   return '<article class="radar-item"><div class="radar-item-title"><strong>'+safeText(x.name)+'</strong>'+tag(status,kind)+'</div>'+
     '<p>'+safeText(x.source_category || x.source_type)+' · '+(Number(x.scan_interval_seconds)>=86400?'24 saat':Math.round(Number(x.scan_interval_seconds)/3600)+' saat')+' aralık</p>'+
-    '<small>'+safeText(x.last_scan_status||'Henüz taranmadı')+'</small></article>';
+    '<small>'+safeText(short(x.last_scan_status||'Henüz taranmadı',155))+'</small></article>';
 }
 function runCard(x) {
   const issue=x.outcome==='error';
   return '<article class="radar-log"><div><strong>'+safeText(x.source_name||'Kaynak')+'</strong> '+tag(issue?'Hata':'Tamamlandı',issue?'warn':'ok')+'</div>'+
     '<small>'+time(x.started_at)+' · '+Number(x.items_seen||0)+' kayıt · '+Number(x.candidates_added||0)+' yeni aday</small>'+
-    (issue?'<p>'+safeText(x.error_message||'Nedeni belirtilmemiş')+'</p>':'')+'</article>';
+    (issue?'<p>'+safeText(short(x.error_message||'Nedeni belirtilmemiş',180))+'</p>':'')+'</article>';
 }
 function renderOpportunities() {
   const q=$('radar-search').value.trim().toLocaleLowerCase('tr');
