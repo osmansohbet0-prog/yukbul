@@ -118,3 +118,22 @@ test('a permissioned HTML source with separate republication rights supports the
   r=await radar.onRequestPatch({request:req('PATCH',{id:leadId,action:'approve_publish',revision:draft.revision,verified_now:true}),env:aiEnv});assert.equal(r.status,200,await r.clone().text());assert.equal((await r.json()).published,true);
  }finally{globalThis.fetch=previous;sql.close();}
 });
+test('coverage and source guidance are admin-only and never activate catalog candidates',async()=>{
+ const {sql,env}=fixture();await admin(sql);source(sql,0);
+ for(const view of ['coverage_matrix','signal_guide']){
+  let request=new Request('https://yukvinc.com.tr/api/radar?view='+view);assert.equal((await radar.onRequestGet({request,env})).status,401);
+  request=new Request(request.url,{headers:{cookie:'__Host-yv_admin=integration-session'}});const r=await radar.onRequestGet({request,env});assert.equal(r.status,200);const data=await r.json();
+  if(view==='coverage_matrix'){assert.equal(data.rows.length,81);assert.equal(data.summary.districts,973);assert.equal(data.rows.find(x=>x.provinceCode===41).working,0);}
+  else {assert.ok(data.sources.every(x=>x.automaticEnabled===false&&x.republicationPermission==='not_verified'));assert.equal(data.outreach.automaticSending,false);}
+ }
+ assert.equal(sql.prepare('SELECT SUM(enabled) n FROM lead_radar_sources').get().n,0);
+});
+test('cheap source-text analysis is read-only and does not trust client verification claims',async()=>{
+ const {sql,env}=fixture();await admin(sql);
+ const body={action:'analyze_signal',text:'Gebze fabrikamıza 25–40 ton mobil vinç kiralamak istiyoruz.',sourceUrl:'https://www.kocaeli.bel.tr/duyuru',sourceVerified:true,republish_attested:true};
+ let r=await radar.onRequestPost({request:req('POST',body,false),env});assert.equal(r.status,401);
+ r=await radar.onRequestPost({request:req('POST',body),env});assert.equal(r.status,200);const result=await r.json();assert.equal(result.analysis.signalType,'direct_demand');assert.deepEqual(result.analysis.capacities.map(x=>[x.minTon,x.maxTon]),[[25,40]]);assert.equal(result.analysis.provenance.sourceVerified,false);assert.equal(result.analysis.automaticPublication,false);assert.equal(result.stored,false);assert.equal(result.published,false);
+ assert.equal(sql.prepare('SELECT COUNT(*) n FROM lead_radar_leads').get().n,0);
+ r=await radar.onRequestPost({request:req('POST',{...body,text:'a'.repeat(6001)}),env});assert.equal(r.status,400);
+ r=await radar.onRequestPost({request:req('POST',body,true,'https://evil.example'),env});assert.equal(r.status,403);
+});
