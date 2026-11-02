@@ -81,10 +81,10 @@ test('automatic publication requires over 90 percent plus source rights, freshne
  sql.prepare("INSERT INTO lead_radar_leads(id,source_id,title,city,service_type,source_url,status) VALUES('auto-publication-test','kocaeli-test-source',?,'Kocaeli','Vinç','https://www.kocaeli.bel.tr/test','review')").run(title);
  sql.exec("UPDATE lead_radar_sources SET source_category='public_tender',republish_attested=1,republish_checked_at=unixepoch(),republish_terms_url='https://www.kocaeli.bel.tr/terms'");
  const src=()=>sql.prepare("SELECT * FROM lead_radar_sources WHERE id='kocaeli-test-source'").get();
- const expiry=Math.floor(Date.now()/1000)+86400, date=new Date(expiry*1000).toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul',day:'2-digit',month:'2-digit',year:'numeric'});
+ const expiry=Math.floor((Date.now()/1000+86400)/60)*60+59, date=new Date(expiry*1000).toLocaleString('tr-TR',{timeZone:'Europe/Istanbul',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
  const item={title,excerpt:'Gebze fabrikası için vinç kiralama hizmet alımı talebi.',url:'https://www.kocaeli.bel.tr/test',expires_at:expiry,published_at:new Date().toISOString()};
  const publish=(score=.91,source=src(),record=item)=>radar.maybeAutoPublish(env,source,record,'auto-publication-test',{kind:'buyer_need',confidence:score},'Kocaeli');
- const previous=fetch;globalThis.fetch=async()=>new Response('<h1>'+title+'</h1><p>Vinç kiralama hizmet alımı için son teklif tarihi '+date+'</p>');
+ const previous=fetch;globalThis.fetch=async()=>new Response('<meta property="article:published_time" content="'+new Date().toISOString()+'"><h1>'+title+'</h1><p>Vinç kiralama hizmet alımı için son teklif tarihi '+date+'</p>');
  try{
   assert.equal(await publish(.90),false);
   assert.equal(await publish(.91,{...src(),republish_attested:0}),false);
@@ -103,4 +103,18 @@ test('anonymous API and rendered cards contain only a short teaser, never job de
  const r=await worker.fetch(new Request('https://yukvinc.com.tr/is-talepleri/'),env,{});const html=await r.text();
  assert.doesNotMatch(html,/secret-tender|özel iş ayrıntısı|Gizli kapsam|Resmî duyuruyu aç|ihale-duyurulari/);assert.match(html,/üye girişi/);
  const client=jobAssets['/assets/job-board-v20261102private.js'][1];assert.ok(client.indexOf('if(job.locked)')<client.indexOf("if(job.kind==='official_tender')"));
+});
+test('a permissioned HTML source with separate republication rights supports the human approval flow',async()=>{
+ const {sql,env}=fixture();await admin(sql);source(sql,1);
+ sql.exec("UPDATE lead_radar_sources SET access_method='permitted_html',permission_status='robots_allowed',republish_attested=1,republish_checked_at=unixepoch(),republish_terms_url='https://www.kocaeli.bel.tr/terms'");
+ const leadId='html-manual-publish',title='Gebze fabrikamıza vinç kiralama hizmet alımı';
+ sql.prepare("INSERT INTO lead_radar_leads(id,source_id,title,city,district,service_type,source_url,status) VALUES(?,'kocaeli-test-source',?,'Kocaeli','Gebze','Mobil vinç','https://www.kocaeli.bel.tr/html-demand','review')").run(leadId,title);
+ const until=new Date(Date.now()+86400000).toLocaleString('tr-TR',{timeZone:'Europe/Istanbul',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}),published=new Date(Date.now()-60000).toISOString();
+ const html='<meta property="article:published_time" content="'+published+'"><h1>'+title+'</h1><p>Gebze fabrikamıza vinç kiralama hizmet alımı için teklif isteniyor. Fabrikamızda makine indirme ve yerleştirme yapılacaktır.</p><p>Son teklif tarihi: '+until+'</p>';
+ const previous=fetch;globalThis.fetch=async url=>new Response(String(url).endsWith('/robots.txt')?'User-agent: *\nAllow: /':html,{headers:{'content-type':String(url).endsWith('/robots.txt')?'text/plain':'text/html'}});
+ const aiEnv={...env,AI_ENABLED:'true',AI:{run:async()=>({response:JSON.stringify({title,description:'Gebze fabrikasında makine indirme ve yerleştirme işi için vinç kiralama hizmetine yönelik teklifler bekleniyor. Koşullar asıl kaynakta incelenmelidir.',missingFacts:[]})})}};
+ try{
+  let r=await radar.onRequestPatch({request:req('PATCH',{id:leadId,action:'rewrite',revision:''}),env:aiEnv});assert.equal(r.status,200,await r.clone().text());const draft=(await r.json()).draft;
+  r=await radar.onRequestPatch({request:req('PATCH',{id:leadId,action:'approve_publish',revision:draft.revision,verified_now:true}),env:aiEnv});assert.equal(r.status,200,await r.clone().text());assert.equal((await r.json()).published,true);
+ }finally{globalThis.fetch=previous;sql.close();}
 });

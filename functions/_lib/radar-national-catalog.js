@@ -6,8 +6,29 @@ export function nationalCoverage(){return {provinces:PROVINCES.length,districts:
 export function nationalDemandQueries(code,district='',neighborhood=''){
  const province=PROVINCES.find(p=>p.id===Number(code));if(!province)return null;
  if(district&&!province.districts.some(x=>x.name===district))return null;
- const clean=String(neighborhood).trim();if(clean.length>100||/[<>"\r\n]/.test(clean))return null;
- const location=[province.name,district,clean].filter(Boolean).join(' ');
- const groups=[['Vinç','("vinç aranıyor" OR "vinç kiralamak istiyorum" OR "vinç ihtiyacı" OR "vinç hizmet alımı")'],['Manlift','("manlift aranıyor" OR "manlift kiralama talebi" OR "platform kiralanacaktır")'],['Manito / telehandler','("manito kiralamak" OR "manitou kiralama talebi" OR "telehandler aranıyor" OR "teleskopik forklift kiralanacaktır")'],['Montaj / makine indirme','("makine indirme" OR "fabrika montajı") ("teklif" OR "vinç lazım")']];
- return {province:province.name,district,neighborhood:clean,automaticExecution:false,queries:groups.map(([label,terms])=>({label,query:'"'+location+'" '+terms+' -"satılık" -"operatörü aranıyor" -"filomuz"',url:'https://www.google.com/search?q='+encodeURIComponent('"'+location+'" '+terms+' -"satılık" -"operatörü aranıyor" -"filomuz"')}))};
+ const clean=String(neighborhood).trim().replace(/\s+/g,' ');
+ if(clean.length>100||/[<>"\\\u0000-\u001f\u007f]/.test(String(neighborhood)))return null;
+ // Separate location phrases preserve matches such as "Güzeller Mahallesi,
+ // Gebze/Kocaeli". One quoted concatenation incorrectly requires that order.
+ const locationTerms=[province.name,district,clean].filter(Boolean);
+ const location=locationTerms.map(value=>'"'+value+'"').join(' ');
+ const groups=[
+  ['Vinç','crane','("vinç aranıyor" OR "vinç lazım" OR "vinç kiralamak istiyorum" OR "vinç kiralamak istiyoruz" OR "vinç kiralama talebi" OR "vinç hizmet alımı" OR "aylık vinç aranıyor" OR "uzun dönem vinç kiralama talebi")'],
+  ['Manlift','manlift','("manlift aranıyor" OR "manlift lazım" OR "manlift kiralamak istiyorum" OR "manlift kiralamak istiyoruz" OR "manlift kiralama talebi" OR "platform kiralanacaktır" OR "aylık manlift aranıyor")'],
+  ['Manito / telehandler','telehandler','("manito kiralamak istiyorum" OR "manito kiralamak istiyoruz" OR "manito aranıyor" OR "manitou kiralama talebi" OR "telehandler aranıyor" OR "teleskopik forklift kiralanacaktır" OR "aylık manito aranıyor" OR "uzun dönem telehandler talebi")'],
+  ['Montaj / makine indirme','industrial_lifting','("makine indirme" OR "fabrika makine montajı" OR "pres makinesi yerleştirme") ("teklif istiyoruz" OR "teklif isteniyor" OR "vinç lazım" OR "hizmet alımı")']
+ ];
+ const exclusions=' -"satılık" -"operatörü aranıyor" -"filomuz" -"kiraya veriyoruz"';
+ return {
+  province:province.name,district,neighborhood:clean,locationTerms,
+  automaticExecution:false,sourcePublishedAtRequired:true,
+  freshness:{searchFilter:'past_24_hours',parameter:'tbs=qdr:d',indexFilterOnly:true,provesSourcePublicationTime:false},
+  queries:groups.map(([label,equipment,terms])=>{
+   const query=location+' '+terms+exclusions;
+   const url=new URL('https://www.google.com/search');
+   url.searchParams.set('q',query);url.searchParams.set('tbs','qdr:d');
+   return {label,equipment,intent:'rental_buyer',query,url:url.href,
+    sourcePublishedAtRequired:true,automaticPublication:false};
+  })
+ };
 }

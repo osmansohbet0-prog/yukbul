@@ -12,6 +12,13 @@ export function sourceWorkedRecently(s,now=Math.floor(Date.now()/1000)) {
 export function triageRadarRow(row,{authorPublishedAt=null,sourceVerified=false,now=Date.now()}={}) {
  return triageKocaeliSearchHit({title:row.title,description:row.source_excerpt||row.excerpt||row.public_summary||'',city:row.city,district:row.district,url:row.source_url||row.url,organization:row.organization,authorPublishedAt,sourceVerified,buyerVerified:false},{now});
 }
+export function storedPublicationEvidence(row){
+ try{
+  const e=JSON.parse(row.ai_draft?.evidence_json||'null');
+  if(!e||Array.isArray(e)||typeof e.authorPublishedAt!=='string')return null;
+  return e.sourceChecked===true||e.triage?.sourcePublishedAt===e.authorPublishedAt?e.authorPublishedAt:null;
+ }catch{return null;}
+}
 // Only explicit publisher publication metadata counts. Never use dateModified,
 // search-index dates, fetch time, arbitrary dates in prose or administrator input.
 export function publisherPublication(html,now=Date.now()) {

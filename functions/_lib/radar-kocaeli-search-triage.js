@@ -11,11 +11,11 @@ import {isRecentSourcePublication} from './radar-kocaeli-search-plan.js';
 const CRANE=/\b(vinc|hiyap|hiab|manito|manitou|telehandler|mobil vinc|kule vinc|sepetli vinc|manlift|sepetli platform|makasli platform)\b/;
 const HEAVY_LIFT=/\b(makine indirme|makine montaj|agir makine kaldirma|pres makinesi yerlestirme|endustriyel montaj|prefabrik montaj|celik konstruksiyon montaji)\b/;
 const CLEAR_NEED=/\b(vinc(?:e)?\s+(?:ihtiyacimiz var|ihtiyac vardir|lazim|araniyor|ar(?:iyoruz|anmaktadir))|kiralik vinc lazim|vinc teklifi istiyoruz|vinc kiralanacaktir|vinc kiralama ihalesi|vinc kiralama hizmet alimi|vinc ihtiyaci|fiyat teklifi alinacaktir|vinc kiralama teklifi)\b/;
-const BUYER_WORD=/\b(ariyoruz|aranmakta|aranmaktadir|araniyor|lazim|ihtiyac|kiralayacagiz|kiralanacaktir|teklif istiyoruz|teklif alinacaktir|teklif toplanacaktir|fiyat teklifi|hizmet alimi|ihale)\b/;
+const BUYER_WORD=/\b(ariyoruz|aranmakta|aranmaktadir|araniyor|lazim|ihtiyac|kiralamak\s+(?:istiyorum|istiyoruz)|kiralamaya\s+ihtiyacimiz\s+var|kiralayacagiz|kiralanacaktir|kiralanacak|kiralanmasi|kiralama\s+talebi|teklif istiyoruz|teklif alinacaktir|teklif toplanacaktir|fiyat teklifi|hizmet alimi|ihale)\b/;
 const BUSINESS_CONTEXT=/\b(fabrikamiza|santiyemize|tesisimize|projemize|makinemizin|yerlestirme icin|montaji icin|kiralamak istiyoruz|kiralama talebi)\b/;
-const BAD_PROVIDER=/\b(hizmetinizdeyiz|filomuz|kiralik vinclerimiz|vinclerimiz|kiraya veriyoruz|kiraya verilir|hizmet sunuyoruz|vinc hizmeti sunuyoruz|vinc kiralama firmasi|7 24 vinc kiralama hizmeti|vinc kiralama fiyatlari|vinc kiralama hizmetlerimiz)\b/;
-const BAD_RECRUIT=/\b(vinc operatoru|mobil vinc operatoru|hiyap operatoru|vinc soforu|vinc kullanicisi)\s+(araniyor|alinacak|is ilani|alimi|istihdam)\b/;
-const BAD_SALE=/\b(vinc satilik|satilik vinc|vinc satisi|vinc satin alma|vinc satin alinmasi|vinc mal alimi|koprulu gezer vinc alimi|raf sistemi|ikinci el vinc satis|gayrimenkul kiralama)\b/;
+const BAD_PROVIDER=/\b(hizmetinizdeyiz|filomuz|kiralik vinclerimiz|vinclerimiz|kiraya veriyoruz|kiraya verilir|hizmet sunuyoruz|vinc hizmeti sunuyoruz|7 24 vinc kiralama hizmeti|(?:vinc|manlift|manito|manitou|telehandler|platform)\s+(?:kiralama firmasi|kiralama fiyatlari|kiralama hizmetlerimiz|hizmeti sunuyoruz))\b/;
+const BAD_RECRUIT=/\b(?:mobil\s+)?(?:vinc|hiyap|hiab|manlift|manito|manitou|telehandler|platform)\s+(?:operatoru|operator|soforu|sofor|kullanicisi)\s+(?:araniyor|ariyoruz|aranmaktadir|alinacak|is ilani|alimi|istihdam|ihtiyaci)\b/;
+const BAD_SALE=/\b((?:vinc|manlift|manito|manitou|telehandler|platform)\s+(?:satilik|satisi|satin alma|satin alinmasi|mal alimi)|satilik\s+(?:vinc|manlift|manito|manitou|telehandler|platform)|koprulu gezer vinc alimi|raf sistemi|ikinci el vinc satis|gayrimenkul kiralama)\b/;
 const KNOWN_LOCATIONS=[
  ['gebze',1],['dilovasi',1],['cayirova',1],['darica',1],['korfez',1],['kartepe',1],
  ['izmit',2],['derince',2],['basiskele',2],['tuzla',2],['pendik',2],

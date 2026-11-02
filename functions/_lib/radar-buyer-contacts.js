@@ -79,15 +79,16 @@ export async function saveBuyerContactForAdmin(db, actor, input) {
 }
 export async function listBuyerContactsForAdmin(db, actor, leadId=null) {
   if(!db || !actor || actor.adminVerified!==true)throw new Error('admin_only');
-  const sql="SELECT id,organization,city,district,business_phone,business_email,contact_page_url,contact_source_url,source_kind,verification,demand_status,contact_status,buyer_note,last_verified_at FROM radar_buyer_contacts WHERE contact_status != ? AND (? IS NULL OR lead_id=?) ORDER BY CASE WHEN demand_status='open_verified' THEN 0 ELSE 1 END, last_verified_at DESC LIMIT 100";
+  const sql="SELECT id,lead_id,organization,city,district,business_phone,business_email,contact_page_url,contact_source_url,source_kind,verification,demand_status,contact_status,buyer_note,last_verified_at FROM radar_buyer_contacts WHERE contact_status != ? AND (? IS NULL OR lead_id=?) ORDER BY CASE WHEN demand_status='open_verified' THEN 0 ELSE 1 END, last_verified_at DESC LIMIT 100";
   const rows=(await db.prepare(sql).bind('opt_out',leadId,leadId).all()).results||[];
   return rows.map(row=>({
-    id:row.id,organization:row.organization,location:[row.district,row.city].filter(Boolean).join(', '),
+    id:row.id,leadId:row.lead_id||null,organization:row.organization,location:[row.district,row.city].filter(Boolean).join(', '),
     telephone:row.business_phone,
     telephoneLink:row.business_phone?'tel:'+row.business_phone:null,
     email:row.business_email,emailLink:row.business_email?'mailto:'+row.business_email:null,
     sourceUrl:row.contact_source_url,contactPage:row.contact_page_url,
     verifiedBusinessContact:row.verification!=='unverified',demandStatus:row.demand_status,
-    isCurrentRentalLead:row.demand_status==='open_verified',buyerNote:row.buyer_note
+    isCurrentRentalLead:row.demand_status==='open_verified',buyerNote:row.buyer_note,
+    contactStatus:row.contact_status,lastVerifiedAt:row.last_verified_at||null
   }));
 }

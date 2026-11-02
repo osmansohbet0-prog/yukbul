@@ -1,7 +1,9 @@
+import {buildRadarHealth} from './radar-health.js';
 import {nationalSourceCatalog,nationalCoverage,nationalDemandQueries} from './radar-national-catalog.js';
-import {buildKocaeliSearchQueries} from './radar-kocaeli-search-plan.js';
+import {buildKocaeliSearchQueries,isRecentSourcePublication} from './radar-kocaeli-search-plan.js';
+import {PROVINCES} from '../../public/assets/turkey-locations.js';
 import {listBuyerContactsForAdmin} from './radar-buyer-contacts.js';
-import {inKocaeliScope,isKocaeliCrane,triageRadarRow,sourceWorkedRecently,rentalContentAllowed} from './radar-kocaeli-integration.js';
+import {inKocaeliScope,isKocaeliCrane,triageRadarRow,sourceWorkedRecently,rentalContentAllowed,publisherPublication,storedPublicationEvidence} from './radar-kocaeli-integration.js';
 import { runBudgetedAI } from './ai-budget.js';
 import { requireAdmin } from './core.js';
 import {scanPermittedHtmlSource,readPermittedHtml} from './radar-html-source.js';
@@ -32,34 +34,59 @@ function safeGoogleAlertItemUrl(value){
   return u
  }catch{return null}
 }
-function cityFromText(text,scope=[]){for(const code of Array.isArray(scope)?scope:[]){const city=provinces.find(x=>x[0]===Number(code));if(city)return city[1]}const hay=fold(text);for(const [,name] of provinces){const n=fold(name);if(new RegExp(`(?:^| )${n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}(?: |$)`).test(hay))return name}return null}
+export function resolveRadarLocation(text,{city='',district='',scope=[]}={}){
+ const hay=' '+fold(text)+' ',has=name=>hay.includes(' '+fold(name)+' ');
+ const supplied=PROVINCES.find(p=>fold(p.name)===fold(city));
+ const mentioned=PROVINCES.filter(p=>has(p.name));
+ let province=supplied||(mentioned.length===1?mentioned[0]:null);
+ // Multiple explicit cities are ambiguous. A source's multi-city coverage is
+ // never evidence that the work takes place in its first configured city.
+ if(!province&&mentioned.length===0){
+  const districts=PROVINCES.flatMap(p=>p.districts.filter(d=>fold(d.name)!=='merkez'&&has(d.name)).map(d=>({province:p,district:d})));
+  const codes=new Set(districts.map(x=>x.province.id));
+  if(codes.size===1)province=districts[0].province;
+ }
+ if(!province&&mentioned.length===0){const codes=[...new Set((Array.isArray(scope)?scope:[]).map(Number))];if(codes.length===1)province=PROVINCES.find(p=>p.id===codes[0]);}
+ if(!province)return {city:null,district:null};
+ const suppliedDistrict=province.districts.find(d=>fold(d.name)===fold(district));
+ const local=province.districts.filter(d=>fold(d.name)!=='merkez'&&has(d.name));
+ return {city:province.name,district:suppliedDistrict?.name||(local.length===1?local[0].name:null)};
+}
+function cityFromText(text,scope=[]){return resolveRadarLocation(text,{scope}).city}
 function classifyServiceType(text){const t=fold(text);if(/mobil lastik|yerinde lastik|lastik tamir|patlak lastik|tir lastik|kamyon lastik|agir vasita lastik/.test(t))return'Mobil lastikçi';if(/oto kurtar|arac kurtar|yol yardim|cekici/.test(t))return'Oto kurtarma';if(/nakliyat asansor|esya asansor|dis cephe asansor|yuk asansor/.test(t))return'Nakliyat asansörü';if(/manlift|makasli platform|eklemli platform|teleskopik platform|sepetli platform|sepetli vin/.test(t))return'Manlift / platform';if(/manito|manitou|telehandler|teleskopik forklift|forklift|ekskavator|kepce|yukleyici|is makinesi|is makinasi|is makinalari/.test(t))return'İş makinesi';if(/mobil vin|kiralik vin|vin kiralama|vinc|kaldirma|agir yuk|trafo|jenerator|celik konstruksiyon|montaj|crane|lifting service/.test(t))return'Mobil vinç / kaldırma';return'Hizmet talebi'}
 function heuristic(title,excerpt){const t=fold(title+' '+excerpt);const supplier=/vinc operatoru arani|operator araniyor|is ariyorum|kiralik vinc ilan|vinc kiraya ver|satilik vinc|vinc firmasi|hizmet veriyoruz|filomuz|personel alimi|is ilan|makine satilik|ekipman satilik|kiralik makine|forklift satilik|lastikciyiz|yol yardim hizmeti veriyoruz/.test(t);if(supplier)return{kind:'irrelevant',confidence:.96,reason:'Satıcı, operatör veya personel ilanı'};const equipment=/vinc|kaldirma|lastik|\btir\b|kamyon|otobus|cekici|manlift|platform|manito|manitou|telehandler|forklift|ekskavator|kepce|yukleyici|is makinesi|is makinasi|agir vasita|nakliyat asansoru|esya asansoru|oto kurtarma|crane|lifting service|mobile crane/.test(t);const intent=/hizmet alimi|hizmet talep|kiralama hizmet|kiralama ihtiyac|\bkiralama\b|\bkiralik\b|vin[cç] lazim|vin[cç] arani|teklif bekliyoruz|teklif cagri|ihale|is yaptirilacak|tasima hizmet|kaldirma hizmet|is icin teklif|aranmaktadir|ihtiyacimiz var|yardim gerekiyor|tamir gerekiyor|hizmet ariyoruz|hizmet araniyor|kiralamak istiyoruz|lastik degisimi|yerinde mudahale|servis talebi|crane rental required|crane needed|lifting service required/.test(t);if(equipment&&intent)return{kind:'buyer_need',confidence:.78,reason:'Hizmet alımı talebi ve ekipman/hizmet konusu eşleşti'};if(equipment)return{kind:'uncertain',confidence:.55,reason:'Sektör konusu var; alıcı talebi niyeti net değil'};return{kind:'irrelevant',confidence:.4,reason:'Hizmet kategorileriyle eşleşmedi'}}
 function xmlText(s){return String(s||'').replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g,'$1').replace(/<[^>]*>/g,' ').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&#(\d+);/g,(_,n)=>String.fromCodePoint(Number(n))).replace(/&#x([\da-f]+);/gi,(_,n)=>String.fromCodePoint(parseInt(n,16))).replace(/\s+/g,' ').trim()}
 function tag(block,name){const escaped=name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');const m=block.match(new RegExp(`<${escaped}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${escaped}\\s*>`,'i'));return m?xmlText(m[1]):''}
-function parseDeadline(value){
+export function parseRadarDeadline(value,{requireTime=false}={}){
  const raw=String(value||'').trim();if(!raw)return null;
- const iso=raw.match(/\b(20\d{2})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/);
- if(iso){const date=new Date(Date.UTC(Number(iso[1]),Number(iso[2])-1,Number(iso[3]),Number(iso[4]||23),Number(iso[5]||59),59)-3*3600000);return Number.isFinite(date.getTime())?Math.floor(date.getTime()/1000):null}
- const numeric=raw.match(/\b(\d{1,2})[./-](\d{1,2})[./-](20\d{2})(?:\s+(\d{1,2})[:.](\d{2}))?/);
- if(numeric){const date=new Date(Date.UTC(Number(numeric[3]),Number(numeric[2])-1,Number(numeric[1]),Number(numeric[4]||23),Number(numeric[5]||59),59)-3*3600000);return Number.isFinite(date.getTime())?Math.floor(date.getTime()/1000):null}
  const months={ocak:1,subat:2,mart:3,nisan:4,mayis:5,haziran:6,temmuz:7,agustos:8,eylul:9,ekim:10,kasim:11,aralik:12};
- const turkish=raw.match(/\b(\d{1,2})\s+([A-Za-zÇĞİÖŞÜçğıöşü]+)\s+(20\d{2})(?:\s+(\d{1,2})[:.](\d{2}))?/i);
- if(!turkish)return null;const month=months[fold(turkish[2])];if(!month)return null;
- const date=new Date(Date.UTC(Number(turkish[3]),month-1,Number(turkish[1]),Number(turkish[4]||23),Number(turkish[5]||59),59)-3*3600000);
- return Number.isFinite(date.getTime())?Math.floor(date.getTime()/1000):null
+ const epoch=(year,month,day,hour,minute,second,zone)=>{
+  if(requireTime&&hour===undefined)return null;
+  const yy=Number(year),mm=Number(month),dd=Number(day),hh=Number(hour??23),mi=Number(minute??59),ss=Number(second??(hour===undefined?59:0));
+  const calendar=new Date(Date.UTC(yy,mm-1,dd));
+  if(calendar.getUTCFullYear()!==yy||calendar.getUTCMonth()+1!==mm||calendar.getUTCDate()!==dd||hh>23||mi>59||ss>59)return null;
+  const pad=n=>String(n).padStart(2,'0');
+  const result=Date.parse(yy+'-'+pad(mm)+'-'+pad(dd)+'T'+pad(hh)+':'+pad(mi)+':'+pad(ss)+(zone||'+03:00'));
+  return Number.isFinite(result)?Math.floor(result/1000):null;
+ };
+ const iso=raw.match(/\b(20\d{2})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?(Z|[+-]\d{2}:\d{2})?)?/);
+ if(iso)return epoch(iso[1],iso[2],iso[3],iso[4],iso[5],iso[6],iso[7]);
+ const numeric=raw.match(/\b(\d{1,2})[./-](\d{1,2})[./-](20\d{2})(?:\s+(\d{1,2})[:.](\d{2})(?::(\d{2}))?)?/);
+ if(numeric)return epoch(numeric[3],numeric[2],numeric[1],numeric[4],numeric[5],numeric[6]);
+ const turkish=raw.match(/\b(\d{1,2})\s+([A-Za-zÇĞİÖŞÜçğıöşü]+)\s+(20\d{2})(?:\s+(\d{1,2})[:.](\d{2})(?::(\d{2}))?)?/i);
+ return turkish&&months[fold(turkish[2])]?epoch(turkish[3],months[fold(turkish[2])],turkish[1],turkish[4],turkish[5],turkish[6]):null;
 }
-function extractDeadline(block,excerpt){
+function extractDeadline(block,excerpt,options={}){
  const structured=['deadline','closingDate','endDate','lastApplicationDate','submissionDeadline','ihaleTarihi','sonBasvuruTarihi','sonTeklifTarihi'].map(k=>tag(block,k)).find(Boolean);
  const text=String(structured||excerpt||'');
- const match=text.match(/(?:son\s*(?:başvuru|teklif|teklif\s*verme)|ihale\s*tarihi|son\s*tarih|deadline)[^0-9]{0,60}(\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2})?|\d{1,2}[./-]\d{1,2}[./-]20\d{2}(?:\s+\d{1,2}[:.]\d{2})?|\d{1,2}\s+[A-Za-zÇĞİÖŞÜçğıöşü]+\s+20\d{2}(?:\s+\d{1,2}[:.]\d{2})?)/i);
- return parseDeadline(structured||match?.[1])
+ const match=text.match(/(?:son\s*(?:başvuru|teklif|teklif\s*verme)|ihale\s*tarihi|son\s*tarih|deadline)[^0-9]{0,60}(\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2})?(?:Z|[+-]\d{2}:\d{2})?)?|\d{1,2}[./-]\d{1,2}[./-]20\d{2}(?:\s+\d{1,2}[:.]\d{2})?|\d{1,2}\s+[A-Za-zÇĞİÖŞÜçğıöşü]+\s+20\d{2}(?:\s+\d{1,2}[:.]\d{2})?)/i);
+ return parseRadarDeadline(structured||match?.[1],options)
 }
 function feedItems(body,base){
  return [...body.matchAll(/<(item|entry)\b[^>]*>[\s\S]*?<\/\1\s*>/gi)].slice(0,30).map(m=>{
   const b=m[0],raw=tag(b,'link')||b.match(/<link\b[^>]*href=["']([^"']+)["']/i)?.[1]||tag(b,'guid')||tag(b,'id');
   const excerpt=tag(b,'description')||tag(b,'summary')||tag(b,'content:encoded')||tag(b,'content');
-  return{url:safeUrl(raw,base)?.toString(),title:tag(b,'title'),excerpt,published_at:tag(b,'pubDate')||tag(b,'published')||tag(b,'updated'),organization:tag(b,'author')||tag(b,'dc:creator'),expires_at:extractDeadline(b,excerpt)}
+  return{url:safeUrl(raw,base)?.toString(),title:tag(b,'title'),excerpt,published_at:tag(b,'pubDate')||tag(b,'published'),organization:tag(b,'author')||tag(b,'dc:creator'),expires_at:extractDeadline(b,excerpt)}
  }).filter(x=>x.url&&x.title)
 }
 async function recordEvidence(env,leadId,source,url,title){
@@ -77,7 +104,7 @@ async function classify(env,title,excerpt,base){
   const d=JSON.parse(String(result?.response||'').replace(/^```(?:json)?\s*|\s*```$/g,''));
   if(['supplier','operator_job','sale','construction_news'].includes(d.kind))return{kind:'irrelevant',confidence:.92,reason:'Yapay zekâ satıcı/iş arama/satış/haber olarak sınıflandırdı'};
   const confidence=Number.isFinite(Number(d.confidence))?Math.max(0,Math.min(1,Number(d.confidence))):base.confidence;
-  if(d.kind==='buyer_need')return{kind:'buyer_need',confidence:Math.max(base.confidence,confidence),reason:'Kural ön elemesi ve yapay zekâ alıcı talebi sınıflandırması'};
+  if(d.kind==='buyer_need')return{kind:'buyer_need',confidence,reason:'Kural ön elemesi ve yapay zekâ alıcı talebi sınıflandırması'};
   return{kind:base.kind==='uncertain'?'uncertain':base.kind,confidence:Math.min(base.confidence,confidence||base.confidence),reason:base.reason}
  }catch{return base}
 }
@@ -97,19 +124,23 @@ async function verifyOpportunityPage(sourceUrl,title,expiresAt,source){
   const text=await boundedBody(response),plain=xmlText(text),titleWords=fold(title).split(' ').filter(w=>w.length>3),hay=fold(plain);
   if(!titleWords.length||titleWords.filter(w=>hay.includes(w)).length/titleWords.length<.6)return false;
   if(/ihale iptal|duyuru iptal|iptal edilmistir|iptal edildi/.test(hay))return false;
-  return rentalContentAllowed({title,source_excerpt:plain})&&isClearBuyerNeed(plain)&&deadlineOnPage(plain,expiresAt)
+  const authorPublishedAt=publisherPublication(text),actualDeadline=extractDeadline('',plain,{requireTime:true});
+  // Re-read the original publication and exact bid minute. A refreshed feed or
+  // an unrelated same-day date cannot establish a fresh, still-open tender.
+  return isRecentSourcePublication(authorPublishedAt)&&Number.isFinite(actualDeadline)&&actualDeadline>Math.floor(Date.now()/1000)&&Math.floor(actualDeadline/60)===Math.floor(expiresAt/60)&&rentalContentAllowed({title,source_excerpt:plain})&&isClearBuyerNeed(plain)&&deadlineOnPage(plain,expiresAt)?actualDeadline:false
  }catch{return false}
 }
 export async function maybeAutoPublish(env,source,item,leadId,classification,city){
  const feed=safeUrl(source?.feed_url),terms=safeUrl(source?.republish_terms_url),termsFresh=Number(source?.republish_checked_at)>Math.floor(Date.now()/1000)-90*86400;
  if(!republicationAllowed(source,item.url)||validateGoogleAlertsFeedUrl(source.feed_url).ok||Number(source.republish_attested)!==1||!feed||!terms||feed.hostname!==terms.hostname||!termsFresh||source.source_category!=='public_tender')return false;
- if(!rentalContentAllowed({title:item.title,source_excerpt:item.excerpt})||classification.kind!=='buyer_need'||Number(classification.confidence)<=.90||!isClearBuyerNeed(item.title+' '+item.excerpt)||hasContactData(item.title+' '+item.excerpt))return false;
+ const confidence=Number(classification.confidence);
+ if(!rentalContentAllowed({title:item.title,source_excerpt:item.excerpt})||classification.kind!=='buyer_need'||!Number.isFinite(confidence)||confidence<=.90||confidence>1||!isClearBuyerNeed(item.title+' '+item.excerpt)||hasContactData(item.title+' '+item.excerpt))return false;
  const expiry=Number(item.expires_at||0),published=Date.parse(String(item.published_at||''))/1000,now=Math.floor(Date.now()/1000);
  if(!Number.isFinite(expiry)||expiry<=now||!Number.isFinite(published)||published<now-86400||published>Date.now()/1000)return false;
- if(!await verifyOpportunityPage(item.url,item.title,expiry,source))return false;
+ const verifiedExpiry=await verifyOpportunityPage(item.url,item.title,expiry,source);if(!verifiedExpiry)return false;
  const date=new Date(expiry*1000).toLocaleDateString('tr-TR',{timeZone:'Europe/Istanbul'});
  const summary='Resmî kaynakta “'+String(item.title).slice(0,200)+'” başlıklı '+(city||'konumu duyuruda belirtilmeyen')+' hizmet alımı duyurusu yer alıyor. Son başvuru tarihi '+date+'. Kapsam ve şartlar için asıl duyuruyu açın; başvuru doğrudan ilgili kuruma yapılır, YükVinç teklif toplamaz.';
- const r=await env.DB.prepare("UPDATE lead_radar_leads SET status='approved',classification='relevant',verification='official_source',public_summary=?,public_at=unixepoch(),public_expires_at=?,verified_at=unixepoch(),publication_method='automatic',updated_at=unixepoch() WHERE id=? AND status='review' AND public_at IS NULL").bind(summary,expiry,leadId).run();
+ const r=await env.DB.prepare("UPDATE lead_radar_leads SET status='approved',classification='relevant',verification='official_source',public_summary=?,public_at=unixepoch(),public_expires_at=?,verified_at=unixepoch(),publication_method='automatic',updated_at=unixepoch() WHERE id=? AND status='review' AND public_at IS NULL AND source_id=? AND EXISTS(SELECT 1 FROM lead_radar_sources WHERE id=? AND enabled=1 AND terms_attested=1 AND ((access_method='permitted_html' AND permission_status='robots_allowed') OR permission_status IN ('publisher_rss','explicitly_attested')) AND republish_attested=1 AND republish_checked_at>=unixepoch()-7776000 AND republish_checked_at<=unixepoch() AND republish_terms_url=?)").bind(summary,verifiedExpiry,leadId,source.id,source.id,source.republish_terms_url).run();
  return Number(r.meta?.changes)>0
 }
 
@@ -119,22 +150,22 @@ async function addLead(env,source,item){
  if(!url||title.length<8)return{added:false,duplicate:false,rejected:true};
  const existing=await env.DB.prepare('SELECT id,status FROM lead_radar_leads WHERE source_url=?').bind(url.toString()).first();
  if(existing){await env.DB.prepare("UPDATE lead_radar_leads SET last_seen_at=unixepoch(),stale_at=NULL,status=CASE WHEN status='stale' THEN 'review' ELSE status END,updated_at=unixepoch() WHERE id=?").bind(existing.id).run();await recordEvidence(env,existing.id,source,url.toString(),title);return{added:false,duplicate:true,rejected:false}}
- const city=String(item.city||cityFromText(title+' '+excerpt,source?.access_method!=='permitted_html'&&source?.province_codes_json?JSON.parse(source.province_codes_json):[])||'').slice(0,80)||null;
- const regional=isKocaeliCrane({city,title,excerpt,district:item.district});
- const regionalTriage=regional?triageRadarRow({city,title,excerpt,url:url.toString(),district:item.district}):null;
+ const location=resolveRadarLocation(title+' '+excerpt,{city:item.city,district:item.district,scope:source?.access_method!=='permitted_html'&&source?.province_codes_json?JSON.parse(source.province_codes_json):[]}),city=location.city,district=location.district;
+ const regional=isKocaeliCrane({city,title,excerpt,district});
+ const regionalTriage=regional?triageRadarRow({city,title,excerpt,url:url.toString(),district}):null;
  if(!rentalContentAllowed({title,source_excerpt:excerpt})||regionalTriage?.status==='discard')return{added:false,duplicate:false,rejected:true};
  const base=regionalTriage?{kind:'buyer_need',confidence:.8,reason:'Kocaeli alıcı adayı; kaynak tarihi ve açık iş durumu incelemede'}:heuristic(title,excerpt);if(base.kind==='irrelevant')return{added:false,duplicate:false,rejected:true};
  const classification=await classify(env,title,excerpt,base);if(classification.kind==='irrelevant')return{added:false,duplicate:false,rejected:true};
  const publishedRaw=String(item.published_at||'').slice(0,80),publishedSeconds=publishedRaw?Date.parse(publishedRaw)/1000:NaN;
  if(Number.isFinite(publishedSeconds)&&publishedSeconds<Math.floor(Date.now()/1000)-120*86400)return{added:false,duplicate:false,rejected:true};
- const since=Math.floor(Date.now()/1000)-120*86400,nearby=(await env.DB.prepare("SELECT id,title,city FROM lead_radar_leads WHERE created_at>=? AND status!='dismissed' AND lower(COALESCE(city,''))=lower(COALESCE(? ,'')) ORDER BY created_at DESC LIMIT 100").bind(since,city).all()).results||[];
- const duplicate=nearby.find(x=>overlap(x.title,title)>=.84);
- if(duplicate){await env.DB.prepare('UPDATE lead_radar_leads SET last_seen_at=unixepoch(),updated_at=unixepoch() WHERE id=?').bind(duplicate.id).run();await recordEvidence(env,duplicate.id,source,url.toString(),title);return{added:false,duplicate:true,rejected:false}}
+ // Distinct source URLs may be distinct buyers even with the same city/title.
+ // Keep them for review; exact source-URL deduplication above remains atomic.
  const id=newId(),status='review',service=String(item.service_type||classifyServiceType(title+' '+excerpt)).slice(0,100),published=Number.isFinite(publishedSeconds)?new Date(publishedSeconds*1000).toISOString():publishedRaw||null;
- const result=await env.DB.prepare("INSERT OR IGNORE INTO lead_radar_leads(id,source_id,organization,title,city,district,service_type,published_at,source_url,source_excerpt,classification,confidence,verification,status,outreach_draft,contact_status) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,'unverified',?,?,?)").bind(id,source?.id||null,String(item.organization||'').trim().slice(0,160)||null,title,city,String(item.district||'').slice(0,80)||null,service,published,url.toString(),excerpt,classification.kind==='buyer_need'?'relevant':'uncertain',Math.max(0,Math.min(1,Number(classification.confidence)||0)),status,outreach(title,city),'draft_ready').run();
+ const organization=String(item.organization||'').trim().slice(0,160)||null;
+ const result=await env.DB.prepare("INSERT OR IGNORE INTO lead_radar_leads(id,source_id,organization,title,city,district,service_type,published_at,source_url,source_excerpt,classification,confidence,verification,status,outreach_draft,contact_status) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,'unverified',?,?,?)").bind(id,source?.id||null,organization,title,city,district,service,published,url.toString(),excerpt,classification.kind==='buyer_need'?'relevant':'uncertain',Math.max(0,Math.min(1,Number(classification.confidence)||0)),status,outreach(title,city),'draft_ready').run();
  if(!result.meta?.changes)return{added:false,duplicate:true,rejected:false};
  await recordEvidence(env,id,source,url.toString(),title);
- if(readingAllowed(source)&&env.AI_ENABLED==='true'){try{await generateReviewDraft(env,{id,source_id:source.id,source_url:url.toString(),title},'scanner',reviewHelpers);}catch{/* Keep review candidate when AI is unavailable. */}}
+ if(readingAllowed(source)&&env.AI_ENABLED==='true'){try{await generateReviewDraft(env,{id,source_id:source.id,source_url:url.toString(),title,city,district,source_excerpt:excerpt,organization,published_at:published,service_type:service},'scanner',reviewHelpers);}catch{/* Keep review candidate when AI is unavailable. */}}
  const autoPublished=await maybeAutoPublish(env,source,{...item,url:url.toString(),title,excerpt,published_at:publishedRaw},id,classification,city);
  return{added:true,duplicate:false,rejected:false,autoPublished}
 }
@@ -217,8 +248,8 @@ async function citySourcesForAdmin(env){try{return (await env.DB.prepare('SELECT
 export async function onRequestGet({request,env}){const a=await auth(request,env);if(a.response)return a.response;try{const query=new URL(request.url);if(query.searchParams.get('view')==='demand_queries'){const plan=nationalDemandQueries(query.searchParams.get('province_code'),query.searchParams.get('district')||'',query.searchParams.get('neighborhood')||'');return plan?reply(plan):reply({error:'Konum geçersiz.'},400);}if(query.searchParams.get('view')==='source_catalog'){const catalog=nationalSourceCatalog(query.searchParams.get('province_code'));return catalog?reply(catalog):reply({error:'İl kodu geçersiz.'},400);}const sources=(await env.DB.prepare('SELECT id,name,feed_url,source_type,enabled,terms_attested,auto_publish_enabled,republish_attested,republish_terms_url,republish_checked_at,last_scan_at,last_scan_status,last_scan_count,source_category,access_method,permission_status,province_codes_json,scan_interval_seconds,last_success_at,last_found_at,consecutive_errors FROM lead_radar_sources ORDER BY created_at DESC LIMIT 100').all()).results||[];const items=(await env.DB.prepare("SELECT id,source_id,organization,title,city,district,service_type,published_at,source_url,source_excerpt,public_summary,public_at,public_expires_at,verified_at,classification,confidence,verification,status,outreach_draft,contact_status,publication_method,created_at,updated_at FROM lead_radar_leads ORDER BY CASE status WHEN 'review' THEN 0 WHEN 'approved' THEN 1 WHEN 'stale' THEN 2 ELSE 3 END,created_at DESC LIMIT 200").all()).results||[];const drafts=(await env.DB.prepare('SELECT * FROM lead_radar_ai_drafts').all()).results||[];for(const item of items){item.ai_draft=drafts.find(d=>d.lead_id===item.id)||null;}const provincesDb=(await env.DB.prepare('SELECT province_code,province_name FROM lead_radar_provinces ORDER BY province_code').all()).results||[];const provincesList=provinceCoverage(sources);const last24h=Math.floor(Date.now()/1000)-86400;const recent=(await env.DB.prepare('SELECT COUNT(*) candidates FROM lead_radar_leads WHERE created_at>=?').bind(last24h).first())?.candidates||0;const runs=(await env.DB.prepare('SELECT r.id,r.source_id,s.name source_name,r.started_at,r.finished_at,r.outcome,r.items_seen,r.candidates_added,r.duplicates_linked,r.items_rejected,r.error_message FROM lead_radar_scan_runs r LEFT JOIN lead_radar_sources s ON s.id=r.source_id ORDER BY r.started_at DESC LIMIT 20').all()).results||[];const jobs=(await env.DB.prepare('SELECT id,status,requested_by,created_at,started_at,finished_at,source_total,sources_scanned,items_seen,candidates_added,duplicates_linked,items_rejected,errors,last_error FROM lead_radar_scan_jobs ORDER BY created_at DESC LIMIT 10').all()).results||[];const buyerContacts=await listBuyerContactsForAdmin(env.DB,{adminVerified:true});
  const searchPlan=buildKocaeliSearchQueries();
  const kocaeliSources=sources.filter(x=>{try{return JSON.parse(x.province_codes_json||'[]').map(Number).includes(41)}catch{return false}});
- for(const item of items)if(inKocaeliScope(item))item.kocaeli_triage=triageRadarRow(item);
- return reply({nationalCoverage:nationalCoverage(),autoPublication:{enabled:true,minConfidenceExclusive:.9,requiresSourcePermission:true,requiresCurrentOpenDemand:true},buyerContacts,kocaeli:{queries:searchPlan,queryCount:searchPlan.length,searchExecution:'configured_permitted_sources_only',authorizedSearchApiConfigured:false,workingSources:kocaeliSources.filter(x=>sourceWorkedRecently(x)).length,permittedSources:kocaeliSources.filter(x=>readingAllowed(x)).length,registeredSources:kocaeliSources.length,automaticPublication:true},citySources:await citySourcesForAdmin(env),jobs,sources,items,provinces:provincesList.length?provincesList:provincesDb.map(p=>({code:p.province_code,name:p.province_name,active_sources:0,status:'uncovered'})),runs,summary:{total:items.length,review:items.filter(x=>x.status==='review').length,approved:items.filter(x=>x.status==='approved').length,live:items.filter(x=>x.public_at&&Number(x.public_expires_at)>Date.now()/1000).length,stale:items.filter(x=>x.status==='stale').length,sourcesActive:sources.filter(x=>sourceWorkedRecently(x)).length,candidates24h:recent,verified:items.filter(x=>x.verification!=='unverified').length,sourceErrors:sources.filter(x=>Number(x.consecutive_errors)>0).length,coveredProvinces:provincesList.filter(x=>x.active_sources>0).length}})}catch(e){return reply({error:'Radar tabloları hazır değil; migration 0022/0023/0024/0025 gerekli.',detail:String(e?.message||'').slice(0,120)},503)}}
+ for(const item of items)if(inKocaeliScope(item)){const at=storedPublicationEvidence(item),source=sources.find(s=>s.id===item.source_id);item.kocaeli_triage=triageRadarRow(item,{authorPublishedAt:at,sourceVerified:Boolean(at&&readingAllowed(source))});}
+ return reply({radarHealth:buildRadarHealth(sources,items),nationalCoverage:nationalCoverage(),autoPublication:{enabled:true,minConfidenceExclusive:.9,requiresSourcePermission:true,requiresCurrentOpenDemand:true},buyerContacts,kocaeli:{queries:searchPlan,queryCount:searchPlan.length,searchExecution:'configured_permitted_sources_only',authorizedSearchApiConfigured:false,workingSources:kocaeliSources.filter(x=>sourceWorkedRecently(x)).length,permittedSources:kocaeliSources.filter(x=>readingAllowed(x)).length,registeredSources:kocaeliSources.length,automaticPublication:true},citySources:await citySourcesForAdmin(env),jobs,sources,items,provinces:provincesList.length?provincesList:provincesDb.map(p=>({code:p.province_code,name:p.province_name,active_sources:0,status:'uncovered'})),runs,summary:{total:items.length,review:items.filter(x=>x.status==='review').length,approved:items.filter(x=>x.status==='approved').length,live:items.filter(x=>x.public_at&&Number(x.public_expires_at)>Date.now()/1000).length,stale:items.filter(x=>x.status==='stale').length,sourcesActive:sources.filter(x=>sourceWorkedRecently(x)).length,candidates24h:recent,verified:items.filter(x=>x.verification!=='unverified').length,sourceErrors:sources.filter(x=>Number(x.consecutive_errors)>0).length,coveredProvinces:provincesList.filter(x=>x.active_sources>0).length}})}catch(e){return reply({error:'Radar tabloları hazır değil; migration 0022/0023/0024/0025 gerekli.',detail:String(e?.message||'').slice(0,120)},503)}}
 export async function onRequestPost({request,env,ctx}){
  const a=await auth(request,env);if(a.response)return a.response;
  try{

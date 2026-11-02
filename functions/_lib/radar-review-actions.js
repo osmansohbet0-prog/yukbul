@@ -73,7 +73,7 @@ export async function handleReviewPatch({request,env},helpers) {
    const results=await env.DB.batch([
     env.DB.prepare(`UPDATE lead_radar_leads SET status='approved',verification='manual_reviewed',public_summary=?,public_at=unixepoch(),public_expires_at=?,verified_at=unixepoch(),publication_method='manual',updated_at=unixepoch()
      WHERE id=? AND status IN ('review','approved') AND public_at IS NULL AND EXISTS(SELECT 1 FROM lead_radar_ai_drafts WHERE lead_id=? AND revision=?)
-     AND EXISTS(SELECT 1 FROM lead_radar_sources WHERE id=? AND enabled=1 AND terms_attested=1 AND permission_status IN ('publisher_rss','explicitly_attested') AND republish_attested=1 AND republish_checked_at>=unixepoch()-7776000 AND republish_checked_at<=unixepoch() AND republish_terms_url=?)`)
+     AND EXISTS(SELECT 1 FROM lead_radar_sources WHERE id=? AND enabled=1 AND terms_attested=1 AND ((access_method='permitted_html' AND permission_status='robots_allowed') OR permission_status IN ('publisher_rss','explicitly_attested')) AND republish_attested=1 AND republish_checked_at>=unixepoch()-7776000 AND republish_checked_at<=unixepoch() AND republish_terms_url=?)`)
      .bind(draft.summary,draft.expires_at,key,key,draft.revision,row.source_id,evidence.source.republish_terms_url),
     env.DB.prepare("INSERT INTO lead_radar_review_events(id,lead_id,actor,action,revision) SELECT ?,?,?,'approve_publish',? WHERE changes()=1").bind(id(),key,actor,draft.revision)
    ]);
