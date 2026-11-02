@@ -1,3 +1,4 @@
+import * as labRecruitment from '../functions/_lib/lab-recruitment.js';
 import {withSeoReview} from '../functions/_lib/seo-review.js';
 import {withTenderBoard} from '../functions/_lib/tender-board.js';
 import * as seoMonitor from '../functions/api/admin-seo-monitor.js';
@@ -70,6 +71,7 @@ import * as r25 from "../functions/sehir/[slug].js";
 import * as r26 from "../functions/sitemap.xml.js";
 
 const ROUTES = [
+ {path:'/api/lab-recruitment',params:[],handlers:labRecruitment},
  {path:'/api/admin-lead-radar',params:[],handlers:leadRadar},
  {path:'/api/radar',params:[],handlers:leadRadar},
  {path:'/api/admin-seo-monitor',params:[],handlers:seoMonitor},
@@ -194,6 +196,7 @@ const mainWorker = {
       ctx.waitUntil(processListingAgent(env).catch(error=>console.error('[listing-agent]',JSON.stringify({event:'scheduled_failed',name:error?.name||'Error'}))));
       ctx.waitUntil(processPublicationEmails(env).catch(error=>console.error('[owner-publication-email]',JSON.stringify({event:'scheduled_failed',name:error?.name||'Error'}))));
       ctx.waitUntil(scheduledLeadRadar(env));
+      ctx.waitUntil(labRecruitment.scanLabRecruitment(env).catch(()=>console.error('[lab-recruitment] scheduled_failed')));
       return;
     }
     ctx.waitUntil(runImprovementReview(env).catch(async error=>{try{await env.DB.prepare('INSERT INTO ai_audit(id,actor,action,outcome,metadata_json) VALUES(?,?,?,?,?)').bind(crypto.randomUUID().replaceAll('-',''),'system','improvement.review','failed',JSON.stringify({name:error?.name||'Error'})).run()}catch{}console.error('[ai-improvements]',JSON.stringify({event:'scheduled_review_failed',name:error?.name||'Error'}))}));
