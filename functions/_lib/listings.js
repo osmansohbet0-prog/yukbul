@@ -169,7 +169,32 @@ export async function reviewListingInBackground(env,listingId,userId,item){
   }
   return result;
  }
- if(!result.duplicate&&!result.suspicious&&!result.images_failed)return result;
+ if(!result.duplicate&&!result.suspicious&&!result.images_failed){
+  try{
+   const config=await readAiModeration(db);
+   if(config.auto_publish&&config.image_review&&result.confidence_score>=90&&result.images_total>0&&result.images_reviewed===result.images_total&&Number.isInteger(item.updated_at)){
+    const rules=await db.prepare('SELECT risk_score FROM listing_reviews WHERE listing_id=?').bind(listingId).first();
+    if(rules&&Number(rules.risk_score)===0){
+     const hash=String(item.content_hash||await contentHash(item));
+     const updated=await db.prepare("UPDATE listings SET status='approved',updated_at=unixepoch(),trial_expires_at=CASE WHEN category<>'operator' AND user_id NOT IN (SELECT id FROM users WHERE role='admin') THEN COALESCE(trial_expires_at,unixepoch()+2592000) ELSE trial_expires_at END WHERE id=? AND user_id=? AND status='pending' AND content_hash=? AND updated_at=?").bind(listingId,userId,hash,item.updated_at).run();
+     if(updated.meta?.changes){
+      await db.prepare("INSERT INTO admin_activity(actor_user_id,action,entity_type,entity_id,metadata_json) VALUES(NULL,'ai.listing.auto_published','listing',?,?)").bind(listingId,JSON.stringify({confidence_score:result.confidence_score,images_reviewed:result.images_reviewed,reason:'Yüksek güvenli metin ve fotoğraf denetimi; yönetici sonradan kontrol edebilir.'})).run();
+      await notifyListingPublished(env,'ai',{id:listingId,title:item.title,city:item.city});
+      return{...result,published:true};
+     }
+    }
+   }
+   if(config.auto_publish&&Number.isInteger(result.confidence_score)&&result.confidence_score>=50){
+    const pending=await db.prepare("SELECT id FROM listings WHERE id=? AND user_id=? AND status='pending'").bind(listingId,userId).first();
+    if(pending){
+     const dueAt=Math.floor(Date.now()/1000)+900;
+     await db.prepare("INSERT INTO admin_activity(actor_user_id,action,entity_type,entity_id,metadata_json) VALUES(NULL,'ai.listing.review_priority','listing',?,?)").bind(listingId,JSON.stringify({confidence_score:result.confidence_score,due_at:dueAt,reason:'15 dakika hedefli yönetici incelemesi; yönetici onayı olmadan yayınlanmaz.'})).run();
+     await notifyListingReview(env,{id:listingId,title:item.title,city:item.city,reason:'%'+result.confidence_score+' güven puanlı ilan, 15 dakika hedefli yönetici incelemesi bekliyor.'});
+    }
+   }
+  }catch(error){console.error('[listing-review] publication_safeguard',error?.name||'Error')}
+  return result;
+ }
  try{
   const old=await db.prepare("SELECT status,moderation_note,title,city,district FROM listings WHERE id=?").bind(listingId).first();
   if(!old||!['pending','flagged'].includes(old.status))return result;
