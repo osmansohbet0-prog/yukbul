@@ -38,6 +38,26 @@ for(const id of ['#price-unit-filter','#sort'])$(id)?.addEventListener('change',
 function scheduleLoad(){clearTimeout(searchTimer);$('#result-caption').textContent='Filtreler uygulanıyor…';searchTimer=setTimeout(load,300)}
 const searchMenu=$('#search-menu'),searchToggle=$('#search-menu-toggle');
 function updateSearchStep(){const chosen=true;const details=$('#search-step-details');if(details)details.hidden=!chosen}
+let provinces;
+function refreshDistricts(preferred = '') {
+ const district = $('#district-filter');
+ if (!district || !provinces) return;
+ const city = provinces.find(row => row.name.toLocaleLowerCase('tr') === value('#city-filter').toLocaleLowerCase('tr'));
+ district.replaceChildren(new Option('Tüm ilçeler',''));
+ for (const row of city?.districts || []) district.add(new Option(row.name,row.name));
+ district.disabled = !city;
+ district.value = preferred;
+ if (district.selectedIndex < 0) district.selectedIndex = 0;
+}
+if ($('#district-filter')) {
+ $('#city-filter').addEventListener('input', () => refreshDistricts());
+ import('./turkey-locations.js').then(({PROVINCES}) => {
+  provinces = PROVINCES;
+  $('#city-options')?.replaceChildren(...provinces.map(row => new Option(row.name)));
+  refreshDistricts(new URLSearchParams(location.search).get('district') || '');
+  load();
+ }).catch(() => {});
+}
 searchToggle.addEventListener('click',()=>{const open=searchMenu.hidden;searchMenu.hidden=!open;searchToggle.setAttribute('aria-expanded',String(open));if(open)$('#category-filter').focus()});
 $('#category-filter').addEventListener('change',updateSearchStep);
 $('#apply-search').addEventListener('click',()=>{const chosen=$('#category-filter').value||'all';active=chosen;saveSearchUrl();searchMenu.hidden=true;searchToggle.setAttribute('aria-expanded','false');load();const menuButton=document.querySelector('.yv-menu-toggle');if(menuButton?.getAttribute('aria-expanded')==='true')menuButton.click();$('#listing-grid').scrollIntoView({behavior:'smooth',block:'start'})});

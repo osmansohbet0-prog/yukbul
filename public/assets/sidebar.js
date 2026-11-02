@@ -29,7 +29,7 @@
       '<div id="search-step-details" class="search-step-details" hidden>' +
         '<label for="q">Aradığın ilan<input id="q" type="search" placeholder="Örn. Gebze kiralık vinç" maxlength="100"></label>' +
         '<label for="city-filter">İl<input id="city-filter" list="city-options" placeholder="Türkiye geneli" maxlength="80"></label>' +
-        '<label for="district-filter">İlçe<input id="district-filter" placeholder="Tüm ilçeler" maxlength="100"></label>' +
+        '<label for="district-filter">İlçe<select id="district-filter" disabled><option value="">Tüm ilçeler</option></select></label>' +
         '<datalist id="city-options"><option>Konya</option><option>İstanbul</option><option>Ankara</option><option>İzmir</option><option>Bursa</option><option>Antalya</option></datalist>' +
         '<div class="yv-filter-row"><label for="price-unit-filter">Ücret türü<select id="price-unit-filter"><option value="all">Tüm ücretler</option><option value="saatlik">Saatlik</option><option value="is_basi">İş başı</option><option value="günlük">Günlük</option><option value="aylık">Aylık</option><option value="teklif">Teklif alınır</option></select></label>' +
           '<label for="max-price">En yüksek ücret<input id="max-price" type="number" min="0" placeholder="Fark etmez"></label></div>' +

@@ -6,7 +6,7 @@ const item={id:'listing_123456',user_id:'member-1',listing_type:'equipment',cate
 
 function fixture(score=95,{images=1,risk=0,auto=true,flag=false}={}){
  const writes=[],readQueries=[],emails=[];
- const db={prepare(sql){
+ const db={async batch(statements){return Promise.all(statements.map(statement=>statement.run()))},prepare(sql){
   readQueries.push(sql);
   return{args:[],bind(...args){this.args=args;return this},
    async first(){

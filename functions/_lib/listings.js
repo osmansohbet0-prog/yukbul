@@ -158,7 +158,11 @@ export async function reviewListingInBackground(env,listingId,userId,item){
    }
    return{reviewed:false,reason:'duplicate_signal',duplicate:true,suspicious:true,matched_id:duplicate.id};
   }
- }catch(error){console.error('[listing-review] duplicate-signal check failed',error?.message||error)}
+ }catch(error){
+  console.error('[listing-review] duplicate-signal check failed',error?.name);
+  await db.prepare("INSERT INTO admin_activity(actor_user_id,action,entity_type,entity_id,metadata_json) VALUES(NULL,'ai.listing.review_failed','listing',?,?)").bind(listingId,JSON.stringify({reason:'Tekrar ilan denetimi tamamlanamadı.'})).run();
+  return {reviewed:false,reason:'duplicate_check_failed',suspicious:false,duplicate:false};
+ }
  const result=await aiReview(env,db,userId,item,listingId);
  if(result.reviewed){
   try{await db.prepare("INSERT INTO admin_activity(actor_user_id,action,entity_type,entity_id,metadata_json) VALUES(NULL,?,?,?,?)").bind(result.images_failed?'ai.listing.image_review_failed':'ai.listing.review_completed','listing',listingId,JSON.stringify({reason:result.images_failed?'Bazı fotoğraflar otomatik incelenemedi; fotoğrafları elle kontrol edin.':result.reason||'İnceleme tamamlandı.',images_reviewed:result.images_reviewed||0,images_failed:result.images_failed||0,image_observations:result.image_observations||[],suspicious:result.suspicious,duplicate:result.duplicate})).run()}catch{}
@@ -174,11 +178,12 @@ export async function reviewListingInBackground(env,listingId,userId,item){
    const config=await readAiModeration(db);
    if(config.auto_publish&&config.image_review&&result.confidence_score>=90&&result.images_total>0&&result.images_reviewed===result.images_total&&Number.isInteger(item.updated_at)){
     const rules=await db.prepare('SELECT risk_score FROM listing_reviews WHERE listing_id=?').bind(listingId).first();
-    if(rules&&Number(rules.risk_score)===0){
+    if(rules?.risk_score===0){
      const hash=String(item.content_hash||await contentHash(item));
-     const updated=await db.prepare("UPDATE listings SET status='approved',updated_at=unixepoch(),trial_expires_at=CASE WHEN category<>'operator' AND user_id NOT IN (SELECT id FROM users WHERE role='admin') THEN COALESCE(trial_expires_at,unixepoch()+2592000) ELSE trial_expires_at END WHERE id=? AND user_id=? AND status='pending' AND content_hash=? AND updated_at=?").bind(listingId,userId,hash,item.updated_at).run();
+     const publish=db.prepare("UPDATE listings SET status='approved',updated_at=unixepoch(),trial_expires_at=CASE WHEN category<>'operator' AND user_id NOT IN (SELECT id FROM users WHERE role='admin') THEN COALESCE(trial_expires_at,unixepoch()+2592000) ELSE trial_expires_at END WHERE id=? AND user_id=? AND status='pending' AND content_hash=? AND updated_at=? AND EXISTS(SELECT 1 FROM listing_reviews WHERE listing_id=listings.id AND risk_score=0)").bind(listingId,userId,hash,item.updated_at);
+     const audit=db.prepare("INSERT INTO admin_activity(actor_user_id,action,entity_type,entity_id,metadata_json) SELECT NULL,'ai.listing.auto_published','listing',?,? WHERE changes()=1").bind(listingId,JSON.stringify({confidence_score:result.confidence_score,images_reviewed:result.images_reviewed}));
+     const [updated]=await db.batch([publish,audit]);
      if(updated.meta?.changes){
-      await db.prepare("INSERT INTO admin_activity(actor_user_id,action,entity_type,entity_id,metadata_json) VALUES(NULL,'ai.listing.auto_published','listing',?,?)").bind(listingId,JSON.stringify({confidence_score:result.confidence_score,images_reviewed:result.images_reviewed,reason:'Yüksek güvenli metin ve fotoğraf denetimi; yönetici sonradan kontrol edebilir.'})).run();
       await notifyListingPublished(env,'ai',{id:listingId,title:item.title,city:item.city});
       return{...result,published:true};
      }
