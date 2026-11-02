@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>İş Talebi Radarı | YükVinç Yönetim</title>
+<link rel="icon" href="/assets/yuk-vinc-logo-192.png"><link rel="stylesheet" href="/assets/radar-simple.css">
+<script src="/assets/radar-simple.js" defer></script></head>
+<body><header class="radar-header"><div class="radar-shell radar-top"><a class="radar-brand" href="/admin/">Yük<span>Vinç</span> · Yönetim</a><a href="/admin/">← Yönetim paneli</a></div></header>
+<main class="radar-shell"><div class="radar-heading"><div><p class="radar-eyebrow">MÜŞTERİ BULMA · İŞ TALEBİ RADARI</p><h1>İş fırsatları</h1><p>Önce gerçek kiralama talepleri, sonra doğrulanmış ihaleler. Kaynak sorunları ayrı ekranda.</p></div><button type="button" id="radar-refresh">↻ Yenile</button></div>
+<p id="radar-status" role="status" aria-live="polite"></p>
+<div class="radar-stats" aria-label="Radar özeti">
+  <article><span>Açık üye talebi</span><strong id="radar-stat-open">–</strong></article>
+  <article><span>İncelenecek</span><strong id="radar-stat-review">–</strong></article>
+  <article><span>Onaylı fırsat</span><strong id="radar-stat-approved">–</strong></article>
+  <article><span>Aktif kaynak</span><strong id="radar-stat-sources">–</strong></article>
+  <article><span>Aktifliği teyitli alıcı</span><strong id="radar-stat-buyer">–</strong></article>
+  <article><span>Hatalı aktif kaynak</span><strong id="radar-stat-errors">–</strong></article>
+</div>
+<nav class="radar-tabs" aria-label="Radar bölümleri">
+<button type="button" data-radar-view="opportunities" aria-pressed="true">Fırsatlar</button>
+<button type="button" data-radar-view="sources" aria-pressed="false">Kaynaklar</button>
+<button type="button" data-radar-view="history" aria-pressed="false">Tarama geçmişi</button>
+</nav>
+<section data-radar-panel="opportunities" aria-label="Öncelikli fırsatlar">
+<div class="radar-filters"><label>Fırsat ara<input type="search" id="radar-search" placeholder="Vinç, sepetli, Gebze..." maxlength="100"></label><label>Bölge<select id="radar-region"><option value="">Türkiye geneli</option><option value="kocaeli">Kocaeli ve çevresi</option><option value="Kocaeli">Yalnızca Kocaeli</option><option value="Konya">Konya</option><option value="İstanbul">İstanbul</option><option value="Ankara">Ankara</option></select></label></div>
+<section class="radar-group"><h2>1. Doğrudan müşteri talepleri <span id="radar-request-count">0</span></h2><p class="radar-hint">YükVinç kullanıcılarının açık ve yönetici onayı bekleyen talepleri. Onay bekleyenleri gerçek ve doğrulanmış talep kabul etmeyin.</p><div id="radar-requests" class="radar-items"></div></section>
+<section class="radar-group"><h2>2. İhaleler ve tespit edilen fırsatlar <span id="radar-lead-count">0</span></h2><p class="radar-hint">İncelenecekler önce, ardından Kocaeli ve yakın çevredeki doğrulanmış kayıtlar. Kaynak bağlantısını ve son tarihi kontrol edin.</p><div id="radar-leads" class="radar-items"></div></section></section>
+<section data-radar-panel="sources" hidden aria-label="Radar kaynakları"><div class="radar-heading-small"><h2>Kaynak sağlığı</h2><label>Göster<select id="radar-source-filter"><option value="active">Aktif</option><option value="problem">Hatalı / durdurulmuş</option><option value="all">Tüm kaynaklar</option></select></label></div><p class="radar-hint">Pasif kaynaklar otomatik taranmaz. Erişim hakkı teyit edilmeden açılmamalıdır.</p><div id="radar-sources" class="radar-items"></div></section>
+<section data-radar-panel="history" hidden aria-label="Tarama geçmişi"><h2>Son tarama olayları</h2><p class="radar-hint">Hatalar ve yeni aday sayısı; bu kayıtlar müşteri sayısı değildir.</p><div id="radar-runs" class="radar-items"></div></section>
+<p class="radar-footer"><span id="radar-updated"></span> · Bu ekran salt okunurdur. Yayınlama ve iletişim kararları mevcut yetkili yönetim akışında kalır.</p>
+</main></body></html>
