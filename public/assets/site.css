@@ -397,3 +397,7 @@ body>header .brand{gap:10px;flex-shrink:0;letter-spacing:-.035em}body>header .br
  #yukusta-widget{right:12px;bottom:calc(74px + env(safe-area-inset-bottom))}
  #yukusta-panel{position:fixed;left:12px;right:12px;bottom:calc(124px + env(safe-area-inset-bottom));width:auto;max-width:440px;height:min(420px,calc(100dvh - 150px));max-height:calc(100dvh - 150px);margin-inline:auto;transform:none}
 }
+/* Listing card click and city emphasis: also keyboard focusable. */
+.listing-grid .listing-card[data-detail-url]{cursor:pointer}
+.listing-grid .listing-card[data-detail-url]:focus-visible{outline:3px solid var(--orange,#f6a13b);outline-offset:3px}
+.listing-grid .place strong{font-weight:750;color:var(--ink,#172d35)}
