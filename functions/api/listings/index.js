@@ -8,7 +8,7 @@ export async function onRequestGet({request,env}){
   if(!env.DB)return listingError('DB_BINDING_MISSING',request,503);
   try{
     const u=new URL(request.url);
-    const items=await publicItems(env.DB,{q:u.searchParams.get('q'),category:u.searchParams.get('category'),city:u.searchParams.get('city')});
+    const items=await publicItems(env.DB,{q:u.searchParams.get('q'),category:u.searchParams.get('category'),city:u.searchParams.get('city'),district:u.searchParams.get('district')});
     return json({items});
   }catch(error){
     return listingFailure(error,request,'listings-read',503);
