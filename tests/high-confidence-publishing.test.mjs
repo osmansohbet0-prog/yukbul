@@ -69,6 +69,6 @@ test('district filter is always parameterized, independent of city',async()=>{
  let sql='',bindArgs=[];
  const db={prepare(query){sql=query;return{bind(...args){bindArgs=args;return this},async all(){return{results:[]}}}}};
  await publicItems(db,{city:'Konya',district:'Meram'});
- assert.match(sql,/l\\.district LIKE \\?/);
+ assert.ok(sql.includes('l.district LIKE ?'));
  assert.ok(bindArgs.some(x=>String(x).includes('Meram')));
 });
