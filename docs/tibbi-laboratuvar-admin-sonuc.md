@@ -19,14 +19,14 @@ Kaynaklar bölümü kapanabilir. Burada son tarama, hata durumu, açma/kapama ve
 
 ## Gerçek tarama sonucu
 
-[Kapadokya Üniversitesi Kariyer](https://kariyer.kapadokya.edu.tr/is-ilanlari/) ve [Gazi Üniversitesi Personel Dairesi](https://personel.gazi.edu.tr/) başarıyla okundu. İki kaynak da canlıda `ok` durumunda.
+[Kapadokya Üniversitesi Kariyer](https://kariyer.kapadokya.edu.tr/is-ilanlari/) ve [Gazi Üniversitesi Personel Dairesi](https://personel.gazi.edu.tr/) başlangıçta eklendi. Kullanıcı isteğiyle 2 Kasım'da [Sakarya Üniversitesi Personel Dairesi](https://personel.sakarya.edu.tr/tr/duyuru/goruntule/liste/140546) ve [Üsküdar Üniversitesi Kariyer Merkezi](https://kariyer.uskudar.edu.tr/) de eklendi. Dört kurumun ilgili sayfalarında robots.txt otomatik okumaya izin verdi. Dört kaynak da canlı taramada `ok` oldu; yeni Sakarya ve Üsküdar listelerinde filtreye uyan aday bağlantı sayısı 0.
 
-- 6 aday bağlantı incelendi.
+- 6 aday bağlantı incelendi; diğer üç kaynağın izinli ilan listelerinde eşleşen yeni aday bağlantı sayısı 0.
 - 5 ilgisiz personel ilanı elendi.
 - Anadolu OSGB laboratuvar teknikeri duyurusu AI tarafından kaynak kanıtıyla incelendi; son başvuru tarihi doğrulanamadığından **doğrulanamayan** durumda kaldı.
 - **Doğrulanmış açık ilan: 0.** Bu sonuç, Türkiye'de hiç açık ilan olmadığı anlamına gelmez.
 
-Şu anda yalnız bu iki okuyucu bağlı. Tüm Türkiye'deki tüm özel/kamu ilanlarına eksiksiz erişim sağlandığı iddia edilmez. İŞKUR, Kariyer Kapısı, Sağlık Bakanlığı ve ÖSYM bağlantıları admin'de ayrı başvuru kaynakları olarak gösteriliyor; çalışan okuyucu sayısına eklenmedi. İŞKUR/özel kariyer siteleri için yetkili API veya izinli besleme entegrasyonu ayrıca gerekir. PDF eklerinin içindeki kadro tabloları ve JavaScript ile yüklenen listeler bu sürümde otomatik çözümlenmiyor. Kaynak başına bir taramada en çok 6 yeni aday ve toplam 8 detay işlenir; bu bir eksiksiz arşiv taraması değildir.
+Şu anda dört kurum okuyucusu bağlı ve dördü de canlı taramayı başarıyla tamamladı. Tüm Türkiye'deki tüm özel/kamu ilanlarına eksiksiz erişim sağlandığı iddia edilmez. İŞKUR, Kariyer Kapısı, Sağlık Bakanlığı ve ÖSYM bağlantıları admin'de ayrı başvuru kaynakları olarak gösteriliyor; çalışan okuyucu sayısına eklenmedi. İŞKUR/özel kariyer siteleri için yetkili API veya izinli besleme entegrasyonu ayrıca gerekir. PDF eklerinin içindeki kadro tabloları ve JavaScript ile yüklenen listeler bu sürümde otomatik çözümlenmiyor. Kaynak başına bir taramada en çok 6 yeni aday ve toplam 8 detay işlenir; bu bir eksiksiz arşiv taraması değildir.
 
 ## Gizlilik ve mevcut site
 
