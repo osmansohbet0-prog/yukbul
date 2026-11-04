@@ -83,7 +83,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819638,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://personel.aku.edu.tr/",
@@ -102,7 +103,8 @@
           "permission_note": "robots_checked",
           "checked_at": 1793819642,
           "health": "unreachable",
-          "error": "URL can't contain control characters. '/<php echo $anasayfa_linki.' (found at least ' ')"
+          "error": "URL can't contain control characters. '/<php echo $anasayfa_linki.' (found at least ' ')",
+          "catalog_only": true
         },
         {
           "url": "https://personel.aku.edu.tr/2026/10/28/21-09-2026-tarihli-ogretim-elemani-ilani-nihai-degerlendirme-sonuclari/",
@@ -110,7 +112,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://personel.aku.edu.tr/2026/10/14/21-09-2026-tarihli-ogretim-elemani-ilani-on-degerlendirme-sonuclari/",
@@ -118,7 +121,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://personel.aku.edu.tr/2026/10/13/2026-yili-24-adet-sozlesmeli-personel-alim-ilan-sonuclari/",
@@ -126,7 +130,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://aku.edu.tr/category/personel-duyurulari/",
@@ -134,7 +139,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://aku.edu.tr/personel/",
@@ -259,7 +265,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819637,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://iisbf.alanya.edu.tr/",
@@ -289,7 +296,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://pdb.amasya.edu.tr/ilanlar/akademik-personel-ilanlari/ogretim-üyesi-disindaki-diger-ogretim-elemanlari-ilani.aspx",
@@ -297,7 +305,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://pdb.amasya.edu.tr/ilanlar/akademik-personel-ilanlari/üniversitemize-atanan-ogretim-elemanlarindan-istenilen-evraklar.aspx",
@@ -305,7 +314,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://pdb.amasya.edu.tr/",
@@ -370,7 +380,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.anadolu.edu.tr/kisisel/personel",
@@ -395,7 +406,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.anadolu.edu.tr/acikogretim/aof-duyurular",
@@ -403,7 +415,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.anadolu.edu.tr/kisisel/personel/kafeterya-ve-restoranlar",
@@ -412,7 +425,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819635,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.anadolu.edu.tr/duyurular",
@@ -430,7 +444,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819636,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819634,
@@ -483,7 +498,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819636,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.mgu.edu.tr/idari-ve-mali-isler-daire-baskanligi/",
@@ -492,7 +508,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819636,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.mgu.edu.tr/mgu-duyurular/",
@@ -501,7 +518,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819637,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819634,
@@ -532,7 +550,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819635,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.asbu.edu.tr/tr/duyuru/basinda-asbu",
@@ -736,7 +755,8 @@
           "permission_note": "robots_checked",
           "checked_at": 1793819638,
           "health": "unreachable",
-          "error": "size_limit"
+          "error": "size_limit",
+          "catalog_only": true
         },
         {
           "url": "https://imidb.artvin.edu.tr",
@@ -785,7 +805,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819637,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://atauni.edu.tr/sozlesmeli-personel-alim-ilani-2026-1/",
@@ -794,7 +815,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819637,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://atauni.edu.tr/iskur-genclik-programi-duyuru-metni/",
@@ -803,7 +825,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819638,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819635,
@@ -846,7 +869,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.agri.edu.tr/haberduyuru.aspx?tid=2&bid=265",
@@ -854,7 +878,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.agri.edu.tr/detail.aspx?bid=265&tid=15&dil=tr-TR",
@@ -863,7 +888,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819639,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.agri.edu.tr/haberduyuru.aspx?id=2&bid=1",
@@ -871,7 +897,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.agri.edu.tr/detail.aspx?id=66875&bid=1&tid=17",
@@ -880,7 +907,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819640,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.agri.edu.tr/detail.aspx?id=66875&bid=1&tid=17",
@@ -888,7 +916,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.agri.edu.tr/haberduyuru.aspx?id=2&bid=1",
@@ -896,7 +925,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.agri.edu.tr/detail.aspx?id=66849&bid=1&tid=17",
@@ -905,7 +935,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819641,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.agri.edu.tr/detail.aspx?bid=258&tid=15&dil=tr-TR",
@@ -914,7 +945,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819643,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819636,
@@ -1061,7 +1093,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://uzem.bartin.edu.tr/duyurular/20262027-guz-donemi-ortak-zorunlu-dersler-ara-sinavlari.html",
@@ -1088,7 +1121,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819642,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://posta.bartin.edu.tr/",
@@ -1127,7 +1161,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://batman.edu.tr/duyurular/ata-aof-2026-2027-bahar-donemi-guz-donemi-ara-sinavi-gorev-talebi-duyuru/19836",
@@ -1181,7 +1216,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819641,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://batman.edu.tr/Birimler/imidb",
@@ -1190,7 +1226,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819642,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://batman.edu.tr/tum-duyurular",
@@ -1199,7 +1236,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819644,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819638,
@@ -1260,7 +1298,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://ajanda.ibu.edu.tr/iyilik-standi-duyurusu/",
@@ -1268,7 +1307,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://ajanda.ibu.edu.tr/sozlesmeli-personel-alimi-ile-ilgili-yedeklere-ait-basvuru-islemleri-hakkinda-duyuru/",
@@ -1277,7 +1317,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819644,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://ajanda.ibu.edu.tr/duyuru/",
@@ -1374,7 +1415,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.mehmetakif.edu.tr/content/13518/1/17112025-tarih-ve-33080-sayili-resmi-gazetede-yayimlanan-sozlesmeli-personel-ilanina-ait-yedek-olarak-atanmaya-hak-kazanan-adaylara-iliskin-duyuru",
@@ -1382,7 +1424,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.mehmetakif.edu.tr/content/13481/1/09092026-tarihli-sozlesmeli-4b-personel-alim-ilanimizda-yer-alan-pozisyonlara-asil-olarak-yerlesen-adaylara-iliskin-duyuru",
@@ -1390,7 +1433,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.mehmetakif.edu.tr/content/13462/1/17112025-tarih-ve-33080-sayili-resmi-gazetede-yayimlanan-sozlesmeli-personel-ilanina-ait-yedek-olarak-atanmaya-hak-kazanan-adaylara-iliskin-duyuru",
@@ -1398,7 +1442,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.mehmetakif.edu.tr/content/13408/1/09092026-tarih-ve-33365-sayili-resmi-gazetede-yayimlanan-sozlesmeli-personel-alim-ilani-duzeltme-metni",
@@ -1406,7 +1451,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.mehmetakif.edu.tr/content/13465/1/kadinlara-yonelik-yoga-kursu-duyurusu",
@@ -1414,7 +1460,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.mehmetakif.edu.tr/content/13556/1/sozlesmeli-bilisim-personel-alim-ilani-28102026-tarih-ve-33414-sayili-resmi-gazete",
@@ -1423,7 +1470,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819642,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.mehmetakif.edu.tr/content/13556/1/sozlesmeli-bilisim-personel-alim-ilani-28102026-tarih-ve-33414-sayili-resmi-gazete",
@@ -1431,7 +1479,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.mehmetakif.edu.tr/content/13518/1/17112025-tarih-ve-33080-sayili-resmi-gazetede-yayimlanan-sozlesmeli-personel-ilanina-ait-yedek-olarak-atanmaya-hak-kazanan-adaylara-iliskin-duyuru",
@@ -1439,7 +1488,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.mehmetakif.edu.tr/content/13481/1/09092026-tarihli-sozlesmeli-4b-personel-alim-ilanimizda-yer-alan-pozisyonlara-asil-olarak-yerlesen-adaylara-iliskin-duyuru",
@@ -1447,7 +1497,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.mehmetakif.edu.tr/content/13462/1/17112025-tarih-ve-33080-sayili-resmi-gazetede-yayimlanan-sozlesmeli-personel-ilanina-ait-yedek-olarak-atanmaya-hak-kazanan-adaylara-iliskin-duyuru",
@@ -1455,7 +1506,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.mehmetakif.edu.tr/content/13408/1/09092026-tarih-ve-33365-sayili-resmi-gazetede-yayimlanan-sozlesmeli-personel-alim-ilani-duzeltme-metni",
@@ -1463,7 +1515,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.mehmetakif.edu.tr/content/13465/1/kadinlara-yonelik-yoga-kursu-duyurusu",
@@ -1471,7 +1524,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.mehmetakif.edu.tr/content/13531/1/09092026-tarih-ve-33365-sayili-resmi-gazetede-yayimlanan-sozlesmeli-personel-ilanina-ait-kazanan-yedek-adaylara-iliskin-duyuru",
@@ -1480,7 +1534,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819642,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.mehmetakif.edu.tr/content/13513/1/iv-uluslararasi-artuklu-iktisadi-idari-ve-siyasi-bilimler-kongresi",
@@ -1489,7 +1544,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819643,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819641,
@@ -1627,7 +1683,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819644,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://uludag.edu.tr/personelara",
@@ -1636,7 +1693,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819645,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.uludag.edu.tr/sorumluluk/rektorluk",
@@ -1645,7 +1703,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819645,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819643,
@@ -1742,7 +1801,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.bingol.edu.tr/tr/duyurular",
@@ -2075,7 +2135,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819646,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://peyosis.erciyes.edu.tr/",
@@ -2101,7 +2162,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.erciyes.edu.tr/tr/2/personel-yemek-listesi",
@@ -2110,7 +2172,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819648,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819645,
@@ -2196,7 +2259,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819654,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://erzurum.edu.tr/duyuru/etu-universite-sporlarnda-ust-uste-ikinci-kez-turkiye-sampiyonu1/",
@@ -2227,7 +2291,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://pbs.ebyu.edu.tr/personel/",
@@ -2245,7 +2310,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819651,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://personel.ebyu.edu.tr/yuksekogretim-kurumlari-arasi-idari-personelin-karsilikli-yer-degistirme-sonuclari-guncel-2/",
@@ -2254,7 +2320,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819652,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://ebyu.edu.tr/category/duyurular/",
@@ -2284,7 +2351,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.ogu.edu.tr/Web/DuyuruDetay/13601",
@@ -2292,7 +2360,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.ogu.edu.tr/Web/DuyuruDetay/13599",
@@ -2300,7 +2369,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.ogu.edu.tr/Web/DuyuruDetay/13597",
@@ -2308,7 +2378,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.ogu.edu.tr",
@@ -2334,7 +2405,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://personel.ogu.edu.tr",
@@ -2351,7 +2423,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.ogu.edu.tr/Web/EtkinlikDetay/5003",
@@ -2360,7 +2433,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819651,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819646,
@@ -2525,7 +2599,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://pdb.gaziantep.edu.tr/duyuru.php?id=32",
@@ -2533,7 +2608,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://pdb.gaziantep.edu.tr/duyuru.php?id=31",
@@ -2541,7 +2617,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://pdb.gaziantep.edu.tr/duyuru.php?id=30",
@@ -2549,7 +2626,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://pdb.gaziantep.edu.tr/",
@@ -2567,7 +2645,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819651,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.gaziantep.edu.tr/duyuru_detay.php?duyuru_ID=51613",
@@ -2576,7 +2655,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819652,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://islahiyeiibf.gaziantep.edu.tr/",
@@ -2629,7 +2709,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819653,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://mygtu.gtu.edu.tr/Login/Index?returnUrl=https://pays.gtu.edu.tr/Home/Index",
@@ -2647,7 +2728,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819659,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819652,
@@ -2696,7 +2778,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819653,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.gumushane.edu.tr/media/uploads/images/duyuru/2026_Duyuru/2026_Ekim/Duyuru-Metni.pdf",
@@ -2723,7 +2806,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819654,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://pbs.gumushane.edu.tr/pbs/",
@@ -2732,7 +2816,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819655,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://pbs.gumushane.edu.tr/pbs/personel/",
@@ -2842,7 +2927,8 @@
           "permission_note": "robots_404",
           "checked_at": 1793819655,
           "health": "unreachable",
-          "error": "The read operation timed out"
+          "error": "The read operation timed out",
+          "catalog_only": true
         },
         {
           "url": "https://www.harran.edu.tr/bilgilendirme/tanitimlar/personel ",
@@ -2852,7 +2938,8 @@
           "permission_note": "robots_404",
           "checked_at": 1793819667,
           "health": "unreachable",
-          "error": "The read operation timed out"
+          "error": "The read operation timed out",
+          "catalog_only": true
         },
         {
           "url": "https://www.harran.edu.tr/Duyurular/31-07-2026-tarihli-sozlesmeli-personel-alim-ilani-yedek-kazananlarin-listesi-4-4543",
@@ -2925,7 +3012,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819657,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://hitit.edu.tr/tr/personel",
@@ -2943,7 +3031,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819660,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819653,
@@ -3090,7 +3179,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819655,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.igdir.edu.tr/en_GB/blog/duyurular-7/13-uluslararas-cocuk-ve-genclik-edebiyat-sempozyumu-3248",
@@ -3099,7 +3189,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819657,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.igdir.edu.tr/en_GB/blog/duyurular-7",
@@ -3108,7 +3199,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819658,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819653,
@@ -3161,7 +3253,8 @@
           "permission_status": "blocked",
           "permission_note": "robots_unavailable",
           "checked_at": 1793819656,
-          "health": "blocked"
+          "health": "blocked",
+          "catalog_only": true
         },
         {
           "url": "https://mail.ksu.edu.tr/Mondo/lang/sys/login.aspx",
@@ -3170,7 +3263,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819656,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.ksu.edu.tr/default.aspx?DId=103417",
@@ -3200,7 +3294,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://personel.karabuk.edu.tr/index.aspx",
@@ -3227,7 +3322,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819658,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://personel.karabuk.edu.tr/icerikGoster.aspx?K=S&id=5526&BA=index.aspx",
@@ -3236,7 +3332,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819658,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819655,
@@ -3258,7 +3355,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819658,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.ktu.edu.tr/personel",
@@ -3450,7 +3548,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819660,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819657,
@@ -3567,7 +3666,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819659,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.ktun.edu.tr/en/Universite/DuyuruDetay/4_b_sOzleSmelI_personel_Ilani_yedek_aday_duyurusu_9031",
@@ -3625,7 +3725,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819661,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.ktun.edu.tr/tr/Birim/Duyurular/?brm=n2T+80HcJL6izRtg65ioWg==",
@@ -3691,7 +3792,8 @@
           "permission_status": "blocked",
           "permission_note": "robots_html",
           "checked_at": 1793819662,
-          "health": "blocked"
+          "health": "blocked",
+          "catalog_only": true
         },
         {
           "url": "https://personel.dpu.edu.tr/index/oturum",
@@ -3700,7 +3802,8 @@
           "permission_status": "blocked",
           "permission_note": "robots_html",
           "checked_at": 1793819663,
-          "health": "blocked"
+          "health": "blocked",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819658,
@@ -3815,7 +3918,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819663,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://imid.ozal.edu.tr/",
@@ -3877,7 +3981,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819663,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.artuklu.edu.tr/personel-daire-baskanligi",
@@ -3895,7 +4000,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819665,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819660,
@@ -3935,7 +4041,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819663,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.marmara.edu.tr/allnotices",
@@ -3943,7 +4050,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.marmara.edu.tr",
@@ -4171,7 +4279,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819665,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://personel.mu.edu.tr",
@@ -4371,7 +4480,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://personel.nevsehir.edu.tr/tr/53457",
@@ -4379,7 +4489,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://personel.nevsehir.edu.tr/tr",
@@ -4397,7 +4508,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819668,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://imid.nevsehir.edu.tr/tr",
@@ -4415,7 +4527,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819670,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819665,
@@ -4465,7 +4578,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819668,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819665,
@@ -4486,7 +4600,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://pdb.omu.edu.tr",
@@ -4521,7 +4636,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://pdb.omu.edu.tr/",
@@ -4552,7 +4668,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819667,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://pdb.odu.edu.tr/Duyurular/195/sozlesmeli_personel_4_b_alim_ilani_kesin_sonuc_listesi",
@@ -4640,7 +4757,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819667,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.metu.edu.tr/announcements/home",
@@ -4754,7 +4872,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819669,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://imidb.erdogan.edu.tr",
@@ -4772,7 +4891,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819671,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819667,
@@ -4805,7 +4925,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819670,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://sakarya.edu.tr/duyurular123",
@@ -4814,7 +4935,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819671,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://ilan.sakarya.edu.tr/tr/duyuru/goruntule",
@@ -4864,7 +4986,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://pdb.samsun.edu.tr/sozlesmeli-personel-alimi-6-yedek-aday-duyurusu-27072026-tarihli-ve-33322-sayili-resmi-gazete-2/",
@@ -4872,7 +4995,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://pdb.samsun.edu.tr/sozlesmeli-personel-alimi-5-yedek-aday-duyurusu-27072026-tarihli-ve-33322-sayili-resmi-gazete/",
@@ -4880,7 +5004,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://pdb.samsun.edu.tr/sozlesmeli-personel-alimi-4-yedek-aday-duyurusu-27072026-tarihli-ve-33322-sayili-resmi-gazete/",
@@ -4888,7 +5013,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://pdb.samsun.edu.tr/sozlesmeli-personel-alimi-3-yedek-aday-duyurusu-27072026-tarihli-ve-33322-sayili-resmi-gazete/",
@@ -4896,7 +5022,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://pdb.samsun.edu.tr/sozlesmeli-personel-alimi-2-yedek-aday-duyurusu-27072026-tarihli-ve-33322-sayili-resmi-gazete/",
@@ -4904,7 +5031,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://samsun.edu.tr/idari-personel/",
@@ -4913,7 +5041,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819672,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://imidb.samsun.edu.tr",
@@ -4931,7 +5060,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819674,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819668,
@@ -4974,7 +5104,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://selcuk.edu.tr/anasayfa/personel",
@@ -5009,7 +5140,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://selcuk.edu.tr/icerik/duyuru/68351/deney-hayvanlari-kullanim-sertifikasi-egitim-programi",
@@ -5055,7 +5187,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819672,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://selcuk.edu.tr/icerik/duyuru/68351/deney-hayvanlari-kullanim-sertifikasi-egitim-programi",
@@ -5087,7 +5220,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819672,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://w3.sdu.edu.tr/duyuru/14152/5-uluslararasi-ve-8-ulusal-saglik-hizmetleri-kongresi-inhsc2026-bildiri-gonderim-suresi-uzatildi",
@@ -5178,7 +5312,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.sivas.edu.tr/hdetay/18092026-tarihli-sozlesmeli-personel-alim-yedek-sonuclari-1691",
@@ -5187,7 +5322,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819671,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://personel.sivas.edu.tr/duyurular/18-09-2026-tarihli-sozlesmeli-personel-alim-sonuclari-04cbf60eb17a4c5f",
@@ -5204,7 +5340,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.sivas.edu.tr/hdetay/18092026-tarihli-sozlesmeli-personel-alim-sonuclari-1680",
@@ -5213,7 +5350,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819673,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://imid.sivas.edu.tr",
@@ -5244,7 +5382,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819671,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.cumhuriyet.edu.tr/personel/duyuru/38048-sozlesmeli-personel-2-yedek-alim-duyurusu",
@@ -5263,7 +5402,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819672,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.cumhuriyet.edu.tr/duyuru",
@@ -5294,7 +5434,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819672,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://siirt.edu.tr/dosya/personel/siirt-universitesi-organizasyon-semasi-2025-siirt-202541415152179.jpg",
@@ -5304,7 +5445,8 @@
           "permission_note": "robots_checked",
           "checked_at": 1793819673,
           "health": "unreachable",
-          "error": "size_limit"
+          "error": "size_limit",
+          "catalog_only": true
         },
         {
           "url": "https://siirt.edu.tr/dosya/personel/kalite-politikasi-2018-siirt-201892115293474.pdf",
@@ -5398,7 +5540,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.tarsus.edu.tr/Website/Duyurular/278/1/tum-duyurular?LangID=1?LangID=1",
@@ -5467,7 +5610,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819674,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.nku.edu.tr/sayilarlauniversitemiz/idaripersonel",
@@ -5476,7 +5620,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819675,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819672,
@@ -5497,7 +5642,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://personel.gop.edu.tr/duyuruDetay.aspx?d=tr-TR&m=duyuru_detay&mk=36044&id=54226",
@@ -5505,7 +5651,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://personel.gop.edu.tr",
@@ -5559,7 +5706,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819688,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://erasmus.gop.edu.tr/depo/menuler/birim_11392/duyurular_198/dd534f8c-3ac8-4052-a3bf-79fd1503e13c/html_icerik/files/personel%20hareketlili%C4%9Fi%20sonu%C3%A7%20itiraz%20dilek%C3%A7esi%20171.doc",
@@ -5595,7 +5743,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819688,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819673,
@@ -5617,7 +5766,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819675,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://personel.trabzon.edu.tr/Duyuru/12355",
@@ -5713,7 +5863,8 @@
           "permission_status": "blocked",
           "permission_note": "robots_unavailable",
           "checked_at": 1793819674,
-          "health": "blocked"
+          "health": "blocked",
+          "catalog_only": true
         },
         {
           "url": "https://personel.trakya.edu.tr/mustafatan",
@@ -5722,7 +5873,8 @@
           "permission_status": "blocked",
           "permission_note": "robots_unavailable",
           "checked_at": 1793819674,
-          "health": "blocked"
+          "health": "blocked",
+          "catalog_only": true
         },
         {
           "url": "https://personel.trakya.edu.tr/eylembayir",
@@ -5731,7 +5883,8 @@
           "permission_status": "blocked",
           "permission_note": "robots_unavailable",
           "checked_at": 1793819674,
-          "health": "blocked"
+          "health": "blocked",
+          "catalog_only": true
         },
         {
           "url": "https://personel.trakya.edu.tr/sedatustundag",
@@ -5740,7 +5893,8 @@
           "permission_status": "blocked",
           "permission_note": "robots_unavailable",
           "checked_at": 1793819674,
-          "health": "blocked"
+          "health": "blocked",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819673,
@@ -5813,7 +5967,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://pdb.tibu.edu.tr/sozlesmeli-personel-alim-ilani-2026-03/",
@@ -5821,7 +5976,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://pdb.tibu.edu.tr/sozlesmeli-personel-alim-ilani-2026-02-on-degerlendirme-sonuclari/",
@@ -5829,7 +5985,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://pdb.tibu.edu.tr/category/duyurular/",
@@ -5854,7 +6011,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://tibu.edu.tr/sozlesmeli-personel-alim-ilani-2026-03/",
@@ -5862,7 +6020,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://tibu.edu.tr/category/duyurular/",
@@ -5879,7 +6038,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819682,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://tibu.edu.tr/sozlesmeli-personel-alim-ilani-2026-03/",
@@ -5887,7 +6047,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://tibu.edu.tr/category/duyurular/",
@@ -5904,7 +6065,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819685,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://tibu.edu.tr/sozlesmeli-personel-alim-ilani-2026-03-on-degerlendirme-sonuclari/",
@@ -5912,7 +6074,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://tibu.edu.tr/category/duyurular/",
@@ -5929,7 +6092,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819687,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819674,
@@ -6207,7 +6371,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819676,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.yildiz.edu.tr/en/university/announcements/job-posting-contract-it-staff",
@@ -6224,7 +6389,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.yildiz.edu.tr/universite/ytu-duyurular/tei-meet-connect-etkinligi-duyurusu",
@@ -6232,7 +6398,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.yildiz.edu.tr/universite/ytu-duyurular/2026-2027-egitim-ogretim-yili-kismi-zamanli-ogrenci-basvuru-sonuclari",
@@ -6240,7 +6407,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.yildiz.edu.tr/universite/ytu-duyurular/t3-fpv-akademi-fpv-dron-egitmen-egitimi-basvurulari-basladi",
@@ -6248,7 +6416,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.yildiz.edu.tr/universite/ytu-duyurular",
@@ -6256,7 +6425,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.yildiz.edu.tr/universite/ytu-duyurular/sozlesmeli-bilisim-personeli-ilani-7",
@@ -6265,7 +6435,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819677,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.yildiz.edu.tr/medya/ytu-duyurular",
@@ -6274,7 +6445,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819677,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.yildiz.edu.tr/universite/ytu-duyurular/2026-2027-egitim-ogretim-yili-kismi-zamanli-ogrenci-basvuru-sonuclari",
@@ -6283,7 +6455,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819677,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819675,
@@ -6356,7 +6529,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819676,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.beun.edu.tr/tr/personel-page/yonetim-kurulu",
@@ -6365,7 +6539,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819677,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.beun.edu.tr/tr/personel-page/i-c-denetim-birimi",
@@ -6374,7 +6549,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819679,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://personel.beun.edu.tr/",
@@ -6414,7 +6590,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819679,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.comu.edu.tr/rektorluk-sehir-ofisi",
@@ -6423,7 +6600,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819680,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.comu.edu.tr/duyurular.html",
@@ -6432,7 +6610,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819680,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819677,
@@ -6453,7 +6632,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://personel.karatekin.edu.tr/dosyalama-arsivleme-ve-belge-yonetimi-konulu-hizmet-ici-egitimimiz-tamamlandi-70550-duyurusu-icerigi.karatekin",
@@ -6461,7 +6641,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://personel.karatekin.edu.tr/ogretim-gorevlisi-ve-arastima-gorevlisi-alim-ilani-on-degerlendirme-sonuclari-70525-duyurusu-icerigi.karatekin",
@@ -6469,7 +6650,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://personel.karatekin.edu.tr/ogretim-uyesi-alim-ilani-70497-duyurusu-icerigi.karatekin",
@@ -6477,7 +6659,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://personel.karatekin.edu.tr/universitemizde-siber-guvenlik-farkindalik-egitimi-duzenlendi-70492-duyurusu-icerigi.karatekin",
@@ -6485,7 +6668,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://personel.karatekin.edu.tr/",
@@ -6503,7 +6687,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819683,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.karatekin.edu.tr/personel-376-sayfasi-karatekin",
@@ -6512,7 +6697,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819684,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.karatekin.edu.tr/personel-servisleri-907-sayfasi-karatekin",
@@ -6521,7 +6707,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819686,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819679,
@@ -6542,7 +6729,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://personel.cu.edu.tr/posts/duyurular/2026",
@@ -6588,7 +6776,8 @@
           "permission_note": "robots_404",
           "checked_at": 1793819687,
           "health": "unreachable",
-          "error": "'ascii' codec can't encode character '\\u0131' in position 56: ordinal not in range(128)"
+          "error": "'ascii' codec can't encode character '\\u0131' in position 56: ordinal not in range(128)",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819680,
@@ -6631,7 +6820,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://iste.edu.tr/duyuru-merkezi/erasmus/2026/10",
@@ -6639,7 +6829,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://iste.edu.tr/duyuru-merkezi/erasmus/2026/09",
@@ -6647,7 +6838,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://iste.edu.tr/duyuru-merkezi/erasmus/2026/08",
@@ -6655,7 +6847,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://iste.edu.tr/duyuru-merkezi/erasmus/2026/07",
@@ -6663,7 +6856,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://iste.edu.tr/duyuru-merkezi/erasmus/2026/06",
@@ -6671,7 +6865,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://iste.edu.tr/duyuru-merkezi/erasmus/2026/04",
@@ -6679,7 +6874,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://iste.edu.tr/duyuru-merkezi/erasmus/2026/03",
@@ -6687,7 +6883,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://iste.edu.tr/duyuru-merkezi/erasmus/2026/10/19/7182",
@@ -6696,7 +6893,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819682,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://iste.edu.tr/duyuru-merkezi/erasmus",
@@ -6704,7 +6902,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://iste.edu.tr/duyuru-merkezi/erasmus/2026/10",
@@ -6712,7 +6911,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://iste.edu.tr/duyuru-merkezi/erasmus/2026/09",
@@ -6720,7 +6920,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://iste.edu.tr/duyuru-merkezi/erasmus/2026/08",
@@ -6728,7 +6929,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://iste.edu.tr/duyuru-merkezi/erasmus/2026/07",
@@ -6736,7 +6938,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://iste.edu.tr/duyuru-merkezi/erasmus/2026/06",
@@ -6744,7 +6947,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://iste.edu.tr/duyuru-merkezi/erasmus/2026/04",
@@ -6752,7 +6956,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://iste.edu.tr/duyuru-merkezi/erasmus/2026/03",
@@ -6760,7 +6965,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://iste.edu.tr/duyuru-merkezi/erasmus/2026/10/30/7159",
@@ -6769,7 +6975,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819683,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.iste.edu.tr/en/announcement-center/2026/09/28",
@@ -6795,7 +7002,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.iste.edu.tr/duyuru-merkezi/2026/10",
@@ -6803,7 +7011,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.iste.edu.tr/duyuru-merkezi/2026/09",
@@ -6811,7 +7020,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.iste.edu.tr/duyuru-merkezi/2026/08",
@@ -6819,7 +7029,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.iste.edu.tr/duyuru-merkezi/2026/07",
@@ -6827,7 +7038,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.iste.edu.tr/duyuru-merkezi/2026/09/28/7057",
@@ -6836,7 +7048,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819683,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.iste.edu.tr/haber-merkezi/2026/11/04/3320",
@@ -6845,7 +7058,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819684,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819681,
@@ -6987,7 +7201,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819685,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://bakircay.edu.tr/tum-haber-duyuru.aspx?type=1&page=1",
@@ -6996,7 +7211,8 @@
           "permission_status": "blocked",
           "permission_note": "robots_unavailable",
           "checked_at": 1793819698,
-          "health": "blocked"
+          "health": "blocked",
+          "catalog_only": true
         },
         {
           "url": "https://bakircay.edu.tr/tum-haber-duyuru.aspx?type=2&page=1",
@@ -7005,7 +7221,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819698,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819683,
@@ -7038,7 +7255,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819688,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://personel.ikcu.edu.tr/",
@@ -7140,7 +7358,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819688,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://personeldb.sirnak.edu.tr/tr/menu/sozlesmeli-personel-ilanlari/1921",
@@ -7148,7 +7367,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://personeldb.sirnak.edu.tr/tr/aktivite/sozlesmeli-personelin-kadroya-gecis-islemleri-hakkinda-duyuru/53388",
@@ -7156,7 +7376,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://personeldb.sirnak.edu.tr/tr",
@@ -7174,7 +7395,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819690,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://obs.sirnak.edu.tr/pbs/personel/",
@@ -7205,7 +7427,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819687,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.acibadem.edu.tr/duyurular",
@@ -7255,7 +7478,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://hr.alanyauniversity.edu.tr/",
@@ -7291,7 +7515,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819695,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819687,
@@ -7312,7 +7537,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.altinbas.edu.tr/asset/awd/files/8/duyuru/2026/insan-kaynaklari-ilanlar/09-10-2026-i-lani.pdf",
@@ -7338,7 +7564,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819687,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.altinbas.edu.tr/tr",
@@ -7365,7 +7592,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819688,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819687,
@@ -7398,7 +7626,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819689,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.ankaramedipol.edu.tr/en/announcements/8-our-academic-staff-named-worlds-most-influential-scientists-list",
@@ -7453,7 +7682,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819691,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.ankaramedipol.edu.tr/universite/genel-sekreterlik/idari-ve-mali-isler-dairesi/idari-ve-mali-isler-daire-baskanligi",
@@ -7462,7 +7692,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819692,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819687,
@@ -7484,7 +7715,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819697,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.belek.edu.tr/Home/News/1",
@@ -7503,7 +7735,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819699,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.belek.edu.tr/Home/NewsOne/744",
@@ -7512,7 +7745,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819700,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819688,
@@ -7534,7 +7768,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819691,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.antalya.edu.tr/tr/haberler/abuden-kamu-personeline-iha-pilot-egitimi-protokol-antalya-valiliginde-imzalandi",
@@ -7553,7 +7788,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819694,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.antalya.edu.tr/tr/fakulte-ve-enstituler/iktisadi-ve-idari-bilimler-fakultesi",
@@ -7562,7 +7798,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819695,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819689,
@@ -7593,7 +7830,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819690,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.atilim.edu.tr/tr/home/page/3904/rektorluk-ozel-kalem-mudurlugu",
@@ -7602,7 +7840,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819691,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.atilim.edu.tr/tr/direktorlukler",
@@ -7611,7 +7850,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819691,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819689,
@@ -7640,7 +7880,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://avrasya.edu.tr/personel-daire-baskanligi/",
@@ -7658,7 +7899,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819693,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://avrasya.edu.tr/kurum-disi-duyurular/",
@@ -7667,7 +7909,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819694,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://avrasya.edu.tr/idari-ve-mali-isler-daire-baskanligi/",
@@ -7676,7 +7919,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819696,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819690,
@@ -7698,7 +7942,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819692,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://bau.edu.tr/kadro/6939-rektorluk",
@@ -7707,7 +7952,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819693,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://bau.edu.tr/akademik/12546-iktisadi-idari-ve-sosyal-bilimler-fakultesi",
@@ -7716,7 +7962,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819694,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://bau.edu.tr/haber/19958-2026-dgs-ek-yerlestirme-kayit-islemleri-hakkinda-duyuru",
@@ -7760,7 +8007,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819694,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.beykoz.edu.tr/icerik/2383-rektorluk",
@@ -7769,7 +8017,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819694,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.beykoz.edu.tr/akademik/1301-yabanci-diller-yuksekokulu-duyurular",
@@ -7778,7 +8027,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819695,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.beykoz.edu.tr/icerik/5393-proje-duyurulari",
@@ -7787,7 +8037,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819696,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819692,
@@ -7809,7 +8060,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819696,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://bezmialem.edu.tr/tr/Sayfalar/Duyuru-Detay.aspx",
@@ -7818,7 +8070,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819698,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://bezmialem.edu.tr/tr/Sayfalar/uzaktan-erisim/yonetim/Rektorluk.aspx",
@@ -7827,7 +8080,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819699,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://bezmialem.edu.tr/tr/Sayfalar/idari/strateji-kalite-ve-gelisim-koordinatorlugu/hakkimizda.aspx",
@@ -7836,7 +8090,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819701,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819692,
@@ -7886,7 +8141,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819694,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.biruni.edu.tr/idari-birimler/yazi-isleri-direktorlugu",
@@ -7895,7 +8151,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819695,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819693,
@@ -7928,7 +8185,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819697,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.dogus.edu.tr/hakkimizda/yonetim/rektorluk",
@@ -7937,7 +8195,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819698,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.dogus.edu.tr/hakkimizda/genel-sekreterlik/idari-isler-mudurlugu",
@@ -7946,7 +8205,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819700,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://iibf.dogus.edu.tr/",
@@ -7995,7 +8255,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819699,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.fsm.edu.tr/Yonetim-Rektorluk-Rektor-Yardimcilari",
@@ -8004,7 +8265,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819701,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819696,
@@ -8108,7 +8370,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819698,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.isikun.edu.tr/duyurular",
@@ -8158,7 +8421,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819711,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.khas.edu.tr/rektorluk/",
@@ -8167,7 +8431,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819713,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.khas.edu.tr/duyurular/",
@@ -8286,7 +8551,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819701,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.kocaelisaglik.edu.tr",
@@ -8343,7 +8609,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819701,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.gidatarim.edu.tr/tr/duyurular/ipard-proje-danismani-belgelendirme-egitimi-ve-sinavi-1054",
@@ -8407,7 +8674,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819701,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.lokmanhekim.edu.tr/universitemiz/yonetim/idari-birimler/idari-isler-daire-baskanligi/ihale-ilani",
@@ -8416,7 +8684,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819702,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.lokmanhekim.edu.tr/universitemiz/yonetim/idari-birimler/strateji-gelistirme-ve-kalite-guvence-koordinatorlugu",
@@ -8425,7 +8694,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819703,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.lokmanhekim.edu.tr/universitemiz/yonetim/rektorluk/rektor-yardimcilari-2/",
@@ -8434,7 +8704,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819704,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819700,
@@ -8455,7 +8726,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.maltepe.edu.tr/tr/hakkimizda",
@@ -8464,7 +8736,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819701,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://destek.maltepe.edu.tr/login?redirect=%2F",
@@ -8473,7 +8746,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819703,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.maltepe.edu.tr/Content/Media/CkEditor/15092026031818167-Maltepe_Erasmus_KA131_HEART_BIP_Personel_Ders_Verme_Ilani_2026.pdf",
@@ -8499,7 +8773,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819704,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.maltepe.edu.tr/tr/rektorluk",
@@ -8508,7 +8783,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819705,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819700,
@@ -8582,7 +8858,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819703,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://mudanya.edu.tr/duyuru-detay?slug=neden-butunlesik-yuksek-lisans-programina-basvurmaliyim-074968&kategori=y%C3%BCksek-lisans-522206",
@@ -8591,7 +8868,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819703,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://mudanya.edu.tr/duyuru-detay?slug=hemsirelik-tezli-874010&kategori=y%C3%BCksek-lisans-522206",
@@ -8600,7 +8878,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819704,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://mudanya.edu.tr/duyuru-detay?slug=fizyoterapi-ve-rehabilitasyon-tezli-120657&kategori=y%C3%BCksek-lisans-522206",
@@ -8609,7 +8888,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819705,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819702,
@@ -8648,7 +8928,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819703,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://nny.edu.tr/",
@@ -8710,7 +8991,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819705,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://pirireis.edu.tr/hakkimizda/rektorluk/",
@@ -8719,7 +9001,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819705,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://pirireis.edu.tr/hakkimizda/idari-birimler/",
@@ -8728,7 +9011,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819706,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://pirireis.edu.tr/hakkimizda/duyuru/",
@@ -8781,7 +9065,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819705,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://hr.tedu.edu.tr/duyurular-0",
@@ -8789,7 +9074,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://hr.tedu.edu.tr/duyurular/egitim-fakultesi-matematik-ve-fen-bilimleri-egitimi-anabilim-dali-ogretim-gorevlisi-nihai",
@@ -8834,7 +9120,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819708,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://hr.tedu.edu.tr/idari-imkanlari",
@@ -8844,7 +9131,8 @@
           "permission_note": "robots_checked",
           "checked_at": 1793819708,
           "health": "unreachable",
-          "error": "<urlopen error [WinError 10054] Varolan bir bağlantı uzaktaki bir ana bilgisayar tarafından zorla kapatıldı>"
+          "error": "<urlopen error [WinError 10054] Varolan bir bağlantı uzaktaki bir ana bilgisayar tarafından zorla kapatıldı>",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819704,
@@ -8875,7 +9163,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819717,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.etu.edu.tr/tr/kurumsal/rektorluk",
@@ -8884,7 +9173,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_404",
           "checked_at": 1793819720,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819704,
@@ -8906,7 +9196,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819707,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://toros.edu.tr/duyurular/serhat-kalkinma-ajansinin-serka-personel-alim-ilani",
@@ -8925,7 +9216,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819711,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.toros.edu.tr/sayfalar/rektorluk",
@@ -8934,7 +9226,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819712,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819704,
@@ -8966,7 +9259,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.ufuk.edu.tr/personel-mudurlugu/personel-duyuru-ve-haberler/ogretim-uyesi-alim-duzeltme-ilani-10102026-tarih-ve-33396-sayili-resmi-gazete",
@@ -8974,7 +9268,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.ufuk.edu.tr/personel-mudurlugu",
@@ -8983,7 +9278,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819706,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.ufuk.edu.tr/home/yonetim/rektorluk",
@@ -8992,7 +9288,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819706,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.ufuk.edu.tr/iktisadi-ve-idari-bilimler-fakultesi",
@@ -9001,7 +9298,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819707,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.ufuk.edu.tr/incek-idari-isler-mudurlugu",
@@ -9010,7 +9308,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819707,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819705,
@@ -9043,7 +9342,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819707,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.yeditepe.edu.tr/tr/duyuru/derya-sagrac-kirbasin-projesine-tubitak-1002-destegi",
@@ -9133,7 +9433,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819710,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.cankaya.edu.tr/duyuru/index.php",
@@ -9164,7 +9465,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.cag.edu.tr/tr/universite-mevzuatlar-ilgili-diger-baglantilar-yuksekogretim-kurulu-personel-dairesi-baskanligi",
@@ -9173,7 +9475,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819708,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.cag.edu.tr/tr/personel-mudurlugu-duyurular",
@@ -9181,7 +9484,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.cag.edu.tr/tr/kutuphane-mudurlugu-hakkimizda-kutuphane-personelleri",
@@ -9190,7 +9494,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819710,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.cag.edu.tr/tr/personel-mudurlugu-duyurular",
@@ -9198,7 +9503,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.cag.edu.tr/tr/personel-mudurlugu",
@@ -9207,7 +9513,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819713,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.cag.edu.tr/tr/personel-mudurlugu-duyurular",
@@ -9215,7 +9522,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.cag.edu.tr/tr/personel-mudurlugu-genel-bilgi",
@@ -9224,7 +9532,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819715,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819706,
@@ -9245,7 +9554,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.ozyegin.edu.tr/tr/insan-kaynaklari/olanaklari/insan-kaynaklari-politikasi",
@@ -9254,7 +9564,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819707,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.ozyegin.edu.tr/tr/insan-kaynaklari/bilissel-sinirbilim-alaninda-ogretim-uyesi-ilani",
@@ -9262,7 +9573,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.ozyegin.edu.tr/tr/insan-kaynaklari/doktora-sonrasi-arastirmaci-ilani-tubitak-1001-projesi-ozyegin-universitesi",
@@ -9270,7 +9582,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.ozyegin.edu.tr/tr/insan-kaynaklari/klinik-psikoloji-alaninda-ogretim-uyesi-ilani-0",
@@ -9278,7 +9591,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.ozyegin.edu.tr/tr/insan-kaynaklari/olanaklari",
@@ -9287,7 +9601,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819708,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.ozyegin.edu.tr/tr/idari-isler",
@@ -9296,7 +9611,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819709,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.ozyegin.edu.tr/tr/duyurular/21671",
@@ -9397,7 +9713,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819711,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.ihu.edu.tr/tr/duyurular",
@@ -9415,7 +9732,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819713,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819708,
@@ -9460,7 +9778,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819716,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://arel.edu.tr/rektor/",
@@ -9469,7 +9788,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819718,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://arel.edu.tr/idari-destek-ve-teknik-hizmetler-ofisi/",
@@ -9478,7 +9798,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819720,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://arel.edu.tr/iktisadi-ve-idari-bilimler-fakultesi/",
@@ -9487,7 +9808,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819722,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819711,
@@ -9519,7 +9841,8 @@
           "permission_note": "robots_checked",
           "checked_at": 1793819714,
           "health": "unreachable",
-          "error": "<urlopen error _ssl.c:1015: The handshake operation timed out>"
+          "error": "<urlopen error _ssl.c:1015: The handshake operation timed out>",
+          "catalog_only": true
         },
         {
           "url": "https://www.atlas.edu.tr/haber-etkinlik",
@@ -9527,7 +9850,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.atlas.edu.tr/icerik-turu-kategorisi/duyurular",
@@ -9562,7 +9886,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819726,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.atlas.edu.tr/rektorluk",
@@ -9571,7 +9896,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819728,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819711,
@@ -9604,7 +9930,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819713,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.beykent.edu.tr/beykent-hakkinda/universite-yonetimi/rektorluk",
@@ -9613,7 +9940,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819714,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.beykent.edu.tr/duyurular",
@@ -9674,7 +10002,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819715,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819713,
@@ -9695,7 +10024,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.esenyurt.edu.tr/icerik/1285-personel-daire-baskanligi",
@@ -9704,7 +10034,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819716,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.esenyurt.edu.tr/haber/2685-universitemizde-kriz-ve-stres-yonetimi-etkinligi-gerceklestirildi",
@@ -9800,7 +10131,8 @@
           "kind": "personnel",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.gedik.edu.tr/duyurular/azerbaycan-gurcistan-erasmus-ka171-personel-hareketliligi-on-degerlendirme-sonuclari-aciklandi",
@@ -9819,7 +10151,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819718,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.gedik.edu.tr/hakkimizda/idari-birimler/idari-isler-daire-baskanligi",
@@ -9828,7 +10161,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819719,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819714,
@@ -9850,7 +10184,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819716,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://iisbf.gelisim.edu.tr/tr/akademik-anasayfa",
@@ -9859,7 +10194,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819717,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://labk.gelisim.edu.tr/tr/idari-icerik-dis-hekimligi-fakultesi",
@@ -9868,7 +10204,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819718,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://labk.gelisim.edu.tr/tr/idari-icerik-iktisadi-idari-ve-sosyal-bilimler-fakultesi",
@@ -9877,7 +10214,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819719,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819715,
@@ -9898,7 +10236,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.kent.edu.tr/personel-bilgisi-0014968",
@@ -9907,7 +10246,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819719,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.kent.edu.tr",
@@ -9925,7 +10265,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819726,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.kent.edu.tr/iktisadi-idari-ve-sosyal-bilimler-fakultesi-sadabad-kampusu-02531",
@@ -9934,7 +10275,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819729,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819715,
@@ -9955,7 +10297,8 @@
           "kind": "rectorate",
           "permission_status": "pending",
           "permission_note": "runtime_robots_check_required",
-          "health": "not_checked"
+          "health": "not_checked",
+          "catalog_only": true
         },
         {
           "url": "https://www.iku.edu.tr/tr/insan-kaynaklari-daire-baskanligi",
@@ -9964,7 +10307,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819717,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.iku.edu.tr/tr/rektor",
@@ -9973,7 +10317,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819718,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.iku.edu.tr/tr/duyurular/ogrenci-affi-basvurulari",
@@ -10015,7 +10360,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819719,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.medipol.edu.tr/universite/rektorluk/universite-yonetim-kurulu",
@@ -10024,7 +10370,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819720,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.medipol.edu.tr/duyurular",
@@ -10065,7 +10412,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819720,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://iisbf.nisantasi.edu.tr/",
@@ -10115,7 +10463,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819720,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.okan.edu.tr/uploads/smink005-insan-kaynaklari-mudurlugu-organizasyon-semasirev03-11082026.pdf",
@@ -10134,7 +10483,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819721,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.okan.edu.tr/uploads/idari-personel-disiplin-kurulu-uyeleri.pdf",
@@ -10318,7 +10668,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819722,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://iisbf.istun.edu.tr/",
@@ -10336,7 +10687,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819724,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.istun.edu.tr/tr/duyurular",
@@ -10367,7 +10719,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819723,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.topkapi.edu.tr/tr-TR/universitemiz-topkapi-universitesi-kalite-sistemi--arastirma-destek-ve-tesvik-yonetimi--akademik-personel-performans-degerlendirme-mimarlik-planlama-ve-tasarim-temel-alani/163064",
@@ -10376,7 +10729,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819723,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.topkapi.edu.tr/tr-TR/universitemiz-topkapi-universitesi-kalite-sistemi--arastirma-destek-ve-tesvik-yonetimi--akademik-personel-performans-degerlendirme-muhendislik-temel-alani/163065",
@@ -10385,7 +10739,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819724,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.topkapi.edu.tr/tr-TR/universitemiz-topkapi-universitesi-kalite-sistemi--arastirma-destek-ve-tesvik-yonetimi--akademik-personel-performans-degerlendirme-saglik-bilimleri-temel-alani/163066",
@@ -10394,7 +10749,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819724,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819722,
@@ -10437,7 +10793,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819735,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://ihale.yeniyuzyil.edu.tr/",
@@ -10455,7 +10812,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819736,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         }
       ],
       "discovery_checked_at": 1793819722,
@@ -10477,7 +10835,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819722,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.istinye.edu.tr/tr/duyurular",
@@ -10527,7 +10886,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819725,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://www.ieu.edu.tr/tr/announcements/type/all",
@@ -10595,7 +10955,8 @@
           "permission_status": "robots_allowed",
           "permission_note": "robots_checked",
           "checked_at": 1793819724,
-          "health": "ok"
+          "health": "ok",
+          "catalog_only": true
         },
         {
           "url": "https://tinaztepe.edu.tr/tr/iletisim/duyurular",

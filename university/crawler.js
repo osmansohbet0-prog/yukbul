@@ -1,5 +1,5 @@
 import {robotsAllows,plainSourceText} from './text.js';
-import {officialUrl,sameUniversity,candidateLinks,analyzeNotice,fold} from './analyze.js';
+import {officialUrl,sameUniversity,candidateLinks,analyzeNotice,fold,isAnnouncementIndex} from './analyze.js';
 const AGENT='YukVincUniversityRadar/1.0 (+https://yukvinc.com.tr/)';
 export async function boundedText(response,max=1500000){
  const reader=response.body?.getReader();if(!reader)return '';const chunks=[];let size=0;
@@ -62,6 +62,7 @@ export async function scanUniversity(env,{fetcher=fetch,now=Math.floor(Date.now(
   const read=await readOfficial(source.url,{fetcher:limitedFetch,robotsCache:cache,publisher:source.homepage});
   if(read.notModified)throw Error('unexpected_304');
   if(source.homepage&&source.kind==='homepage')for(const link of discoverLinks(read.body,read.url,source.homepage)){
+   if(!isAnnouncementIndex(link.url))continue;
    if(/\/(?:duyuru|duyurular|announcement|announcements|haber|haberler|news)\/.+/i.test(new URL(link.url).pathname)||/\.(?:pdf|docx?|xlsx?)$/i.test(new URL(link.url).pathname))continue;
    await db.prepare('INSERT OR IGNORE INTO university_sources(id,university_id,kind,url,label,interval_seconds,next_scan_at) SELECT ?,?,?,?,?,?,? WHERE (SELECT COUNT(*) FROM university_sources WHERE university_id=?)<8').bind(await hash(link.url),source.university_id,link.kind,link.url,link.label,link.kind==='personnel'?86400:172800,now+60,source.university_id).run();
   }

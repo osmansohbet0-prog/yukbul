@@ -24,7 +24,7 @@ Tekrarlanan URL'ler temizlenip tekilleştirilir. Üniversite, başlık, tarihler
 
 GitHub `main`, üretimdeki İş Radarı'nı içermiyor. Bu yüzden `src/production-baseline.mjs`, 4 Kasım'da üretimden okunan V215'in birebir kodudur; yalnız iki mevcut kimlik doğrulama fonksiyonunu dışa açan son satır eklenmiştir. Orijinal bölümün SHA-256 özeti: `52cf5d7d156dead58495df2f1979f5697201460219d277e40919252370d92934`. Test bu özeti doğrular. Yeni giriş `src/university-worker.js`, mevcut kodu sarmalar ve yalnız üniversite sayfası/API'si, panel bağlantısı ve yeni zamanlamayı ekler. Mevcut kaynak, vinç ilanı veya laboratuvar tablolarına yazmaz.
 
-`0016_university_radar.sql`, `0017_university_catalog_seed.sql` `0018_university_verified_sources.sql` ve `0019_university_index_hygiene.sql` yalnız yeni tabloları/kataloğu ekler, tekrar çalıştırılabilir. Mevcut veri tabanına eski `main` migration'larının tamamı tekrar uygulanmamalıdır. Önce bu dört dosya önizleme D1'de doğrulanır, sonra `yukvinc-db`'ye uygulanır.
+`0016_university_radar.sql`, `0017_university_catalog_seed.sql` `0018_university_verified_sources.sql` `0019_university_index_hygiene.sql` ve `0020_university_index_validation.sql` yalnız yeni tabloları/kataloğu ekler, tekrar çalıştırılabilir. Mevcut veri tabanına eski `main` migration'larının tamamı tekrar uygulanmamalıdır. Önce bu beş dosya önizleme D1'de doğrulanır, sonra `yukvinc-db`'ye uygulanır.
 
 `wrangler.university.jsonc` uyumluluk/bağlantı ve derleme kontrolü içindir. **Mevcut statik varlıklar GitHub main'den daha yeni olabilir. Üretime normal Wrangler assets yüklemesi yapılmamalıdır.** Cloudflare API kod yüklemesinde mevcut bağlar, gizli değerler ve `keep_assets: true` korunmalı; kod dışında rota/alan adı değiştirilmemelidir. Yeni cron, eski iki cron korunarak eklenmelidir. Geri dönüş, önceki sürüm `d645bd49-6a6c-4bc9-8e88-a346cb9d2f0d` %100 dağıtımı ve yalnız yeni cron'un kaldırılmasıdır. Yeni tablolar geri dönüşte silinmez.
 
@@ -35,3 +35,5 @@ GitHub `main`, üretimdeki İş Radarı'nı içermiyor. Bu yüzden `src/producti
 Katalog yeni üniversite veya değişmiş personel adresleri için YÖK diziniyle yeniden karşılaştırılmalıdır. Ana sayfa keşfi mevcut üniversitelerin bağlantılarını günceller; yeni üniversite eklenmesi kendiliğinden varsayılmaz.
 
 Tekil duyuru, sonuç, belge, mevzuat ve dil değiştirme bağlantıları kaynak dizini sayılmaz; katalogda açıklamayla durdurulur. Kapsam özeti yalnız etkin dizinleri sayar.
+
+207 etkin duyuru/personel dizini ve 204 ana sayfa keşfi tutulur. Personel istatistikleri, tekil içerikler ve dizin olduğu doğrulanamayan rotalar katalogda kalır; bu rotalar başarılı dizin kapsamına eklenmez.
