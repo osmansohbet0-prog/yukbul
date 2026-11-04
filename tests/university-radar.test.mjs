@@ -29,8 +29,14 @@ test('deadline, withdrawn notices, reserves and foundation vacancies are conserv
 test('official URL validation and feed links reject credential, foreign and insecure addresses',()=>{
  for(const u of ['http://a.edu.tr/','https://a.edu.tr.evil.com/','https://a.edu.tr:444/','https://user@a.edu.tr/','https://127.0.0.1/'])assert.equal(officialUrl(u),null);
  assert.equal(officialUrl('https://a.edu.tr/ilan?utm_source=x#foo'),'https://a.edu.tr/ilan');
+ assert.equal(officialUrl('https://www.sabanciuniv.edu/'),'https://www.sabanciuniv.edu/');
+ assert.equal(officialUrl('https://sabanciuniv.edu.evil.com/'),null);
  const rss='<rss><item><title>4/B personel alım ilanı</title><link>https://a.edu.tr/i</link></item><item><title>Personel alım ilanı</title><link>https://evil.gov.tr/x</link></item></rss>';
  assert.deepEqual(candidateLinks(rss,'https://a.edu.tr/duyurular').map(x=>x.url),['https://a.edu.tr/i']);
+});
+test('challenge pages are not counted as healthy source reads; trusted university subdomains retain official links',async()=>{
+ await assert.rejects(readOfficial('https://personel.iuc.edu.tr/',{fetcher:async u=>String(u).endsWith('robots.txt')?new Response('User-agent: *\nAllow: /'):new Response('<h4>Güvenlik Doğrulaması</h4>',{headers:{'content-type':'text/html'}})}),/challenge_or_login/);
+ const links=candidateLinks('<a href="https://fs.hacettepe.edu.tr/ilan.pdf">4/B Sözleşmeli Personel Alım İlanı</a>','https://pdb.hacettepe.edu.tr/','https://hacettepe.edu.tr/');assert.equal(links[0].url,'https://fs.hacettepe.edu.tr/ilan.pdf');
 });
 test('robots denial and off-publisher redirects are not bypassed',async()=>{
  let detail=false;
@@ -54,7 +60,7 @@ test('leased sources cannot be scanned concurrently and failed sources cannot le
  await scanUniversity({DB:d},{now,fetcher:async()=>new Response('',{status:403})});assert.equal((await d.prepare('SELECT status FROM university_notices').first()).status,'unverified');assert.equal((await d.prepare('SELECT health FROM university_sources').first()).health,'blocked');d.sqlite.close();
 });
 test('catalog and seeds cover the same official universities without claiming bootstrap health as runtime success',async()=>{
- const d=db();d.sqlite.exec(readFileSync(new URL('../migrations/0017_university_catalog_seed.sql',import.meta.url),'utf8'));
+ const d=db();d.sqlite.exec(readFileSync(new URL('../migrations/0017_university_catalog_seed.sql',import.meta.url),'utf8'));d.sqlite.exec(readFileSync(new URL('../migrations/0018_university_verified_sources.sql',import.meta.url),'utf8'));d.sqlite.exec(readFileSync(new URL('../migrations/0019_university_index_hygiene.sql',import.meta.url),'utf8'));
  const data=await snapshot(d,now);const catalog=JSON.parse(readFileSync(new URL('../university/catalog.json',import.meta.url),'utf8'));
  assert.equal(data.universities.length,catalog.universities.length);assert.ok(data.universities.length>=202);assert.equal(data.summary.with_healthy_sources,0);
  assert.equal(data.sources.filter(s=>s.kind==='portal').length,2);assert.ok(data.sources.filter(s=>s.kind==='portal').every(s=>s.enabled===0));

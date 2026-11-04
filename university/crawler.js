@@ -6,8 +6,8 @@ export async function boundedText(response,max=1500000){
  try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>max)throw Error('size_limit');chunks.push(value);}}catch(e){await reader.cancel().catch(()=>{});throw e;}finally{reader.releaseLock();}
  const bytes=new Uint8Array(size);let pos=0;for(const c of chunks){bytes.set(c,pos);pos+=c.length;}return new TextDecoder().decode(bytes);
 }
-export async function readOfficial(raw,{fetcher=fetch,headers={},robotsCache=new Map()}={}){
- let url=officialUrl(raw);if(!url)throw Error('invalid_official_url');const root=url;
+export async function readOfficial(raw,{fetcher=fetch,headers={},robotsCache=new Map(),publisher=null}={}){
+ let url=officialUrl(raw);if(!url||publisher&&(!officialUrl(publisher)||!sameUniversity(url,publisher)))throw Error('invalid_official_url');const root=publisher||url;
  const request=address=>fetcher(address,{redirect:'manual',headers:{'user-agent':AGENT,...headers},signal:AbortSignal.timeout(10000)});
  for(let redirects=0;redirects<4;redirects++){
   const origin=new URL(url).origin;let rules=robotsCache.get(origin);
@@ -32,7 +32,10 @@ export async function readOfficial(raw,{fetcher=fetch,headers={},robotsCache=new
   if(r.status===304)return {notModified:true,url,response:r};
   if(!r.ok)throw Error('http_'+r.status);
   if(!/(?:text\/html|application\/(?:rss\+xml|atom\+xml|xml)|text\/xml)/i.test(r.headers.get('content-type')||''))throw Error('unsupported_format');
-  return {body:await boundedText(r),url,response:r};
+  const body=await boundedText(r),plain=fold(plainSourceText(body));
+  if((plain.length<600&&/guvenlik dogrulamasi|checking your browser|just a moment|access denied|verify you are human/.test(plain))||/<title[^>]*>\s*(?:just a moment|access denied)/i.test(body))throw Error('challenge_or_login');
+  if(/text\/html/i.test(r.headers.get('content-type')||'')&&(plain.length<4||/<div[^>]+id=["'](?:root|app|__next)["']/i.test(body)&&!/<a\b/i.test(body)))throw Error('javascript_or_empty_page');
+  return {body,url,response:r};
  }
  throw Error('redirect_limit');
 }
@@ -56,12 +59,13 @@ export async function scanUniversity(env,{fetcher=fetch,now=Math.floor(Date.now(
  const cache=new Map();let detailsFailed=0;
  try{
   // Read discovery pages without validators: unread job details must still advance on an unchanged index.
-  const read=await readOfficial(source.url,{fetcher:limitedFetch,robotsCache:cache});
+  const read=await readOfficial(source.url,{fetcher:limitedFetch,robotsCache:cache,publisher:source.homepage});
   if(read.notModified)throw Error('unexpected_304');
   if(source.homepage&&source.kind==='homepage')for(const link of discoverLinks(read.body,read.url,source.homepage)){
+   if(/\/(?:duyuru|duyurular|announcement|announcements|haber|haberler|news)\/.+/i.test(new URL(link.url).pathname)||/\.(?:pdf|docx?|xlsx?)$/i.test(new URL(link.url).pathname))continue;
    await db.prepare('INSERT OR IGNORE INTO university_sources(id,university_id,kind,url,label,interval_seconds,next_scan_at) SELECT ?,?,?,?,?,?,? WHERE (SELECT COUNT(*) FROM university_sources WHERE university_id=?)<8').bind(await hash(link.url),source.university_id,link.kind,link.url,link.label,link.kind==='personnel'?86400:172800,now+60,source.university_id).run();
   }
-  const candidates=candidateLinks(read.body,read.url);
+  const candidates=candidateLinks(read.body,read.url,source.homepage||read.url);
   for(const c of candidates){
    const id=await hash(c.url);
    await db.prepare('INSERT INTO university_notices(id,university_id,source_id,source_url,title,last_seen_at,first_seen_at) VALUES(?,?,?,?,?,?,?) ON CONFLICT(source_url) DO UPDATE SET last_seen_at=excluded.last_seen_at').bind(id,source.university_id,source.id,c.url,c.title,now,now).run();
@@ -70,7 +74,7 @@ export async function scanUniversity(env,{fetcher=fetch,now=Math.floor(Date.now(
   const pending=(await db.prepare("SELECT * FROM university_notices WHERE source_id=? AND (checked_at IS NULL OR checked_at<?) ORDER BY checked_at IS NOT NULL,checked_at,id LIMIT 3").bind(source.id,now-43200).all()).results||[];
   for(const job of pending){
    try{
-    const detail=await readOfficial(job.source_url,{fetcher:limitedFetch,robotsCache:cache});
+    const detail=await readOfficial(job.source_url,{fetcher:limitedFetch,robotsCache:cache,publisher:source.homepage});
     const row=analyzeNotice(detail.body,{title:job.title,now});
     if(row.status==='open'&&source.university_id==null){row.status='unverified';row.reason='Üniversite eşleştirmesi gerekli.';}
     const fingerprint=await hash(JSON.stringify([source.university_id,fold(row.title),row.deadline,row.kpss_years,row.score_types,fold(plainSourceText(detail.body))]));

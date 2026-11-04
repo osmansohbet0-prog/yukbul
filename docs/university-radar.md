@@ -6,7 +6,7 @@ Yönetim panelindeki **Üniversite 4/B ve KPSS ilanları** bağlantısı `/admin
 
 4 Kasım 2026 tarihli katalog, YÖK'ün `https://www.yok.gov.tr/university?type=1` ve `?type=2` dizinlerindeki 202 kurumu ve YÖK ana sayfasındaki Millî Savunma ile Türk-Japon üniversitelerini içerir: **204 kurum**. e-Devlet üniversite listesi ve YÖK Atlas listesiyle karşılaştırıldı; eski Kahramanmaraş İstiklal adı YÖK'te İstiklal Bilim ve Teknoloji Üniversitesi olarak yer alıyor. Yurt dışındaki ortak üniversiteler ve bağımsız meslek yüksekokulları Türkiye üniversiteleri kapsamına eklenmedi.
 
-İlk keşifte 140 kurumda ilgili resmî sayfa bağlantıları, 115 kurumda personel/insan kaynakları bağlantısı bulundu. Bunlar doğrulanmış tüm personel ilanlarının eksiksiz tarandığı anlamına gelmez. `university/catalog.json` ilk kontrolün ham kapsamını ve hatalarını korur. Başarılı başlangıç erişimi, çalışma zamanında başarılı tarama olarak sayılmaz.
+İlk otomatik keşifte 140 kurumda ilgili resmî sayfa bağlantıları, 115 kurumda personel/insan kaynakları bağlantısı bulundu. Doğrudan resmî sayfa araştırmasıyla bu kapsam 173 kurumda ilgili bağlantı ve 154 kurumda personel bağlantısına genişletildi. YÖK kaydındaki Hakkari/Sinop web adresleri düzeltildi; YÖK tarafından listelenen sabanciuniv.edu alan adı açık izin listesine alındı. Bunlar doğrulanmış tüm personel ilanlarının eksiksiz tarandığı anlamına gelmez. `university/catalog.json` ilk kontrolün ham kapsamını ve hatalarını korur. Başarılı başlangıç erişimi, çalışma zamanında başarılı tarama olarak sayılmaz.
 
 Kariyer Kapısı ve Resmî Gazete her üniversitenin görünümünde resmî kontrol bağlantıları olarak bulunur. Doğrulanmış açık API/RSS okuyucusu olmadığı için otomatik taranıyor sayılmazlar. Oturum/CAPTCHA veya erişim kısıtları aşılmaz. HTML, RSS ve Atom okuyucusu bağlı kaynakları okur. PDF eklerinin tabloları, JavaScript ile yüklenen duyurular, sayfalı arşivlerin tamamı ve yetkili API gerektiren kaynaklar kapsam dışı kalabilir. Panel bunu açıkça belirtir.
 
@@ -24,7 +24,7 @@ Tekrarlanan URL'ler temizlenip tekilleştirilir. Üniversite, başlık, tarihler
 
 GitHub `main`, üretimdeki İş Radarı'nı içermiyor. Bu yüzden `src/production-baseline.mjs`, 4 Kasım'da üretimden okunan V215'in birebir kodudur; yalnız iki mevcut kimlik doğrulama fonksiyonunu dışa açan son satır eklenmiştir. Orijinal bölümün SHA-256 özeti: `52cf5d7d156dead58495df2f1979f5697201460219d277e40919252370d92934`. Test bu özeti doğrular. Yeni giriş `src/university-worker.js`, mevcut kodu sarmalar ve yalnız üniversite sayfası/API'si, panel bağlantısı ve yeni zamanlamayı ekler. Mevcut kaynak, vinç ilanı veya laboratuvar tablolarına yazmaz.
 
-`0016_university_radar.sql` ve `0017_university_catalog_seed.sql` yalnız yeni tabloları/kataloğu ekler, tekrar çalıştırılabilir. Mevcut veri tabanına eski `main` migration'larının tamamı tekrar uygulanmamalıdır. Önce bu iki dosya önizleme D1'de doğrulanır, sonra `yukvinc-db`'ye uygulanır.
+`0016_university_radar.sql`, `0017_university_catalog_seed.sql` `0018_university_verified_sources.sql` ve `0019_university_index_hygiene.sql` yalnız yeni tabloları/kataloğu ekler, tekrar çalıştırılabilir. Mevcut veri tabanına eski `main` migration'larının tamamı tekrar uygulanmamalıdır. Önce bu dört dosya önizleme D1'de doğrulanır, sonra `yukvinc-db`'ye uygulanır.
 
 `wrangler.university.jsonc` uyumluluk/bağlantı ve derleme kontrolü içindir. **Mevcut statik varlıklar GitHub main'den daha yeni olabilir. Üretime normal Wrangler assets yüklemesi yapılmamalıdır.** Cloudflare API kod yüklemesinde mevcut bağlar, gizli değerler ve `keep_assets: true` korunmalı; kod dışında rota/alan adı değiştirilmemelidir. Yeni cron, eski iki cron korunarak eklenmelidir. Geri dönüş, önceki sürüm `d645bd49-6a6c-4bc9-8e88-a346cb9d2f0d` %100 dağıtımı ve yalnız yeni cron'un kaldırılmasıdır. Yeni tablolar geri dönüşte silinmez.
 
@@ -33,3 +33,5 @@ GitHub `main`, üretimdeki İş Radarı'nı içermiyor. Bu yüzden `src/producti
 `npm test`: mevcut testler, KPSS/tarih/erişim/yinelenme senaryoları, yerel SQLite D1 akışı ve Miniflare içinde V215 ile aday sürümün mevcut uç noktalarının karşılaştırması. Yeni yönetici sayfasının oturumsuz kapalı olduğu ve oturumla çalıştığı test edilir. `npx wrangler deploy --config wrangler.university.jsonc --dry-run` gerçek yükleme yapmadan derlemeyi doğrular.
 
 Katalog yeni üniversite veya değişmiş personel adresleri için YÖK diziniyle yeniden karşılaştırılmalıdır. Ana sayfa keşfi mevcut üniversitelerin bağlantılarını günceller; yeni üniversite eklenmesi kendiliğinden varsayılmaz.
+
+Tekil duyuru, sonuç, belge, mevzuat ve dil değiştirme bağlantıları kaynak dizini sayılmaz; katalogda açıklamayla durdurulur. Kapsam özeti yalnız etkin dizinleri sayar.

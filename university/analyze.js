@@ -2,11 +2,11 @@ import {plainSourceText} from './text.js';
 import {labDeadline} from './legacy-analysis.js';
 export const fold=s=>String(s||'').toLocaleLowerCase('tr').replaceAll('ı','i').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 export function officialUrl(raw,base){
- try{const u=new URL(raw,base);if(u.protocol!=='https:'||u.port||u.username||u.password||!/(?:\.edu\.tr|\.gov\.tr)$/.test(u.hostname))return null;u.hash='';for(const k of [...u.searchParams.keys()])if(/^utm_|^fbclid$/.test(k))u.searchParams.delete(k);u.searchParams.sort();return u.href;}catch{return null;}
+ try{const u=new URL(raw,base);if(u.protocol!=='https:'||u.port||u.username||u.password||(!/(?:\.edu\.tr|\.gov\.tr)$/.test(u.hostname)&&!/(?:^|\.)sabanciuniv\.edu$/.test(u.hostname)))return null;u.hash='';for(const k of [...u.searchParams.keys()])if(/^utm_|^fbclid$/.test(k))u.searchParams.delete(k);u.searchParams.sort();return u.href;}catch{return null;}
 }
 export const sameUniversity=(a,b)=>{const root=new URL(b).hostname.replace(/^www\./,'');const h=new URL(a).hostname;return h===root||h.endsWith('.'+root);};
-export function candidateLinks(body,base){
- const out=[];const add=(raw,label)=>{const url=officialUrl(raw?.replaceAll('&amp;','&'),base),title=plainSourceText(label),f=fold(title);if(!url||url===base||new URL(url).hostname!==new URL(base).hostname||!/(?:personel|sozlesmeli|4\s*[/ -]?b|kpss|laboratuvar)/.test(f)||!/(?:alim|ilan|basvuru|sozlesmeli)/.test(f)||out.some(x=>x.url===url))return;out.push({url,title:title.slice(0,300)});};
+export function candidateLinks(body,base,homepage=base){
+ const out=[];const add=(raw,label)=>{const url=officialUrl(raw?.replaceAll('&amp;','&'),base),title=plainSourceText(label),f=fold(title);if(!url||url===base||!sameUniversity(url,homepage)||!/(?:personel|sozlesmeli|4\s*[/ -]?b|kpss|laboratuvar)/.test(f)||!/(?:alim|ilan|basvuru|sozlesmeli)/.test(f)||out.some(x=>x.url===url))return;out.push({url,title:title.slice(0,300)});};
  if(/<(?:rss|feed)\b/i.test(body))for(const m of body.matchAll(/<(item|entry)\b[^>]*>([\s\S]*?)<\/\1>/gi)){const b=m[2];add(b.match(/<link\b[^>]*href=["']([^"']+)/i)?.[1]||b.match(/<link[^>]*>([\s\S]*?)<\/link>/i)?.[1],b.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]);}
  else for(const m of body.replace(/<(script|style|nav|footer)\b[^>]*>[\s\S]*?<\/\1>/gi,'').matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi))add(m[1],m[2]);
  return out.slice(0,80);
