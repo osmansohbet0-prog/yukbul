@@ -90,7 +90,7 @@ const ROUTES = [
 ];
 
 const API_NOT_FOUND = () => Response.json({ error: 'Uç nokta bulunamadı.' }, { status: 404 });
-const CSP = "default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://accounts.google.com https://www.googletagmanager.com 'sha256-GeAb3cexp836W7AcgqvBwf0rBo37VG7JZBGpgEu3JtM='; frame-src https://challenges.cloudflare.com https://accounts.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.gstatic.com https://*.google-analytics.com; connect-src 'self' https://challenges.cloudflare.com https://accounts.google.com https://*.google-analytics.com https://www.googletagmanager.com; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests";
+const CSP = "default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://accounts.google.com https://www.googletagmanager.com 'sha256-GeAb3cexp836W7AcgqvBwf0rBo37VG7JZBGpgEu3JtM='; frame-src https://challenges.cloudflare.com https://accounts.google.com; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' data: blob: https://*.gstatic.com https://*.google-analytics.com; connect-src 'self' https://challenges.cloudflare.com https://accounts.google.com https://*.google-analytics.com https://www.googletagmanager.com; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests";
 
 function secure(response, request, isApi = false) {
   const headers = new Headers(response.headers);
@@ -108,6 +108,34 @@ function secure(response, request, isApi = false) {
     result = new HTMLRewriter().on('link[rel="stylesheet"][href="/assets/site.css"]',{element(el){el.replace('<style data-site-styles>'+siteStyles+'</style>',{html:true})}}).on('head', { element(el) { el.append('<style data-analytics-styles>'+analyticsStyles+'</style><script src="/assets/analytics.js" defer></script>', { html: true }); } }).transform(result);
   }
   return result;
+}
+
+
+async function bootstrapMemberLogin(response, request, env) {
+  if (response.status !== 200 || !/text\/html/i.test(response.headers.get('content-type') || '')) return response;
+  const responseHeaders = new Headers(response.headers);
+  responseHeaders.set('cache-control', 'no-store, max-age=0, must-revalidate');
+  responseHeaders.delete('etag');
+  try {
+    const authAsset = await env.ASSETS.fetch(new Request(new URL('/assets/auth.js', request.url)));
+    if (!authAsset.ok) return new Response(response.body, {status:response.status,headers:responseHeaders});
+    const source = await authAsset.text();
+    const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(18))));
+    const config = JSON.stringify({
+      turnstile_site_key:env.TURNSTILE_SITE_KEY || '',
+      google_client_id:env.GOOGLE_CLIENT_ID || ''
+    }).replace(/</g,'\\u003c');
+    const script = ("window.__YV_AUTH_CONFIG=" + config + ";\n" + source).replace(/<\/script/gi,'<\\/script');
+    const originalCsp = responseHeaders.get('content-security-policy') || CSP;
+    responseHeaders.set('content-security-policy',originalCsp.replace("script-src 'self'","script-src 'self' 'nonce-" + nonce + "'"));
+    return new HTMLRewriter()
+      .on('script[src^="/assets/auth.js"]',{element(el) {
+        el.replace('<script nonce="' + nonce + '">' + script + '</script>', {html:true});
+      }})
+      .transform(new Response(response.body,{status:response.status,headers:responseHeaders}));
+  } catch {
+    return new Response(response.body,{status:response.status,headers:responseHeaders});
+  }
 }
 
 export default {
@@ -146,7 +174,20 @@ export default {
       return secure(response, request, pathname.startsWith('/api/'));
     }
     if (pathname === "/api" || pathname.startsWith("/api/")) return secure(API_NOT_FOUND(), request, true);
-    const assetResponse = await env.ASSETS.fetch(request);
-    return secure(pathname === "/" && request.method === "GET" ? await renderHome(assetResponse, env) : assetResponse, request);
+    const authScript = pathname === '/assets/auth.js' && ['GET','HEAD'].includes(request.method);
+    const headers = new Headers(request.headers);
+    if (authScript) {headers.delete('if-none-match');headers.delete('if-modified-since');}
+    let assetResponse = await env.ASSETS.fetch(authScript ? new Request(request,{headers}) : request);
+    if ([200,304].includes(assetResponse.status) && /^\/assets\/[a-zA-Z0-9_./-]+\.(?:js|css)$/.test(pathname)) {
+      const h = new Headers(assetResponse.headers);
+      const originalType = (h.get('content-type')||'').split(';')[0];
+      if (originalType === 'application/octet-stream' || authScript) {
+        h.set('content-type',pathname.endsWith('.js')?'application/javascript; charset=utf-8':'text/css; charset=utf-8');
+      }
+      if (authScript) {h.set('cache-control','no-store, max-age=0, must-revalidate');h.delete('etag');}
+      assetResponse = new Response(request.method==='HEAD'?null:assetResponse.body,{status:assetResponse.status,headers:h});
+    }
+    const secured=secure(pathname === '/' && request.method === 'GET' ? await renderHome(assetResponse,env) : assetResponse,request);
+    return pathname === '/giris' && request.method === 'GET' ? bootstrapMemberLogin(secured,request,env) : secured;
   },
 };
