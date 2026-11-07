@@ -6,7 +6,25 @@ function drawTurnstile(){const box=$('#turnstile-box');if(!siteKey){box.textCont
 async function api(path,body){const r=await fetch(path,{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify(body)});let d={};try{d=await r.json()}catch{}if(!r.ok)throw Error(d.error||'İşlem başarısız.');return d}
 function goToAccount(){const next=new URLSearchParams(location.search).get('next')||'/hesabim/';location.replace(next.startsWith('/')&&!next.startsWith('//')?next:'/hesabim/')}
 function loadGoogle(){if(!googleClientId)return;const box=$('#google-auth-container');box.hidden=false;const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.async=true;s.defer=true;s.onload=()=>{if(!window.google?.accounts?.id)return;google.accounts.id.initialize({client_id:googleClientId,callback:async response=>{if(!turnstileToken()){msg('Google ile devam etmeden önce bot doğrulamasını tamamla.',true);return}try{await api('/api/auth/google',{credential:response.credential,turnstile_token:turnstileToken()});goToAccount()}catch(err){msg(err.message,true);if(window.turnstile&&widget!==null)window.turnstile.reset(widget)}}});google.accounts.id.renderButton($('#google-auth-button'),{type:'standard',theme:'outline',size:'large',text:'continue_with',shape:'rectangular',locale:'tr',width:280})};s.onerror=()=>msg('Google girişi şu an yüklenemedi.',true);document.head.append(s)}
-async function setMode(next){mode=next;document.querySelectorAll('[data-auth-tab]').forEach(b=>b.classList.toggle('selected',b.dataset.authTab===mode));const register=mode==='register';$('#password-confirm-wrap').hidden=!register;form.elements.confirm.required=register;form.elements.password.autocomplete=register?'new-password':'current-password';$('#auth-submit').textContent=register?'Ücretsiz hesap oluştur →':'Giriş yap →';msg('');if(widget!==null&&window.turnstile){window.turnstile.remove(widget);widget=null;drawTurnstile()}}
+function setMode(next){
+  const isRegister=next==='register';
+  mode=isRegister?'register':'login';
+  document.querySelectorAll('[data-auth-tab]').forEach(button=>{
+    const active=button.dataset.authTab===mode;
+    button.classList.toggle('selected',active);
+    button.setAttribute('aria-selected',String(active));
+  });
+  const confirmWrap=$('#password-confirm-wrap');
+  const confirmInput=form.querySelector('input[name="confirm"]');
+  confirmWrap.hidden=!isRegister;
+  confirmInput.required=isRegister;
+  if(!isRegister)confirmInput.value='';
+  form.querySelector('input[name="password"]').autocomplete=isRegister?'new-password':'current-password';
+  $('#auth-submit').textContent=isRegister?'Ücretsiz hesap oluştur →':'Giriş yap →';
+  msg('');
+  // Rebuilding Turnstile on a tab change invalidates in-progress captcha tokens.
+  // Keep the active widget intact for both registration and login.
+}
 document.querySelectorAll('[data-auth-tab]').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.authTab)));
-form.addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget;if(f.elements.website.value)return;if(!turnstileToken()){msg('Devam etmeden önce bot doğrulamasını tamamla.',true);return}if(mode==='register'&&f.elements.password.value!==f.elements.confirm.value){msg('Şifreler eşleşmiyor.',true);return}const button=$('#auth-submit');button.disabled=true;try{await api('/api/auth/'+mode,{email:f.elements.email.value,password:f.elements.password.value,turnstile_token:turnstileToken()});goToAccount()}catch(err){msg(err.message,true);if(window.turnstile&&widget!==null)window.turnstile.reset(widget)}finally{button.disabled=false}});
+form.addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget;if(f.elements.website.value){msg('Güvenlik kontrolü başarısız. Sayfayı yenileyerek tekrar dene.',true);return}if(!turnstileToken()){msg('Devam etmeden önce bot doğrulamasını tamamla.',true);return}if(mode==='register'&&f.elements.password.value!==f.querySelector('input[name="confirm"]').value){msg('Şifreler eşleşmiyor.',true);return}const button=$('#auth-submit');button.disabled=true;try{await api('/api/auth/'+mode,{email:f.elements.email.value,password:f.elements.password.value,turnstile_token:turnstileToken()});goToAccount()}catch(err){msg(err.message,true);if(window.turnstile&&widget!==null)window.turnstile.reset(widget)}finally{button.disabled=false}});
 (async()=>{let d=window.__YV_AUTH_CONFIG||{};if(!d.turnstile_site_key||!d.google_client_id){try{const response=await fetch('/api/public-settings',{cache:'no-store',signal:AbortSignal.timeout(6000)});if(!response.ok)throw Error('Ayarlar alınamadı.');d={...d,...await response.json()}}catch(err){msg('Giriş ayarları alınamadı. Sayfayı yenileyip tekrar dene.',true)}}siteKey=d.turnstile_site_key||'';googleClientId=d.google_client_id||'';if(siteKey){const s=document.createElement('script');s.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';s.async=true;s.defer=true;s.onload=drawTurnstile;s.onerror=()=>msg('Bot doğrulama servisine erişilemiyor. İnternet bağlantını kontrol et.',true);document.head.append(s)}else drawTurnstile();loadGoogle()})();
