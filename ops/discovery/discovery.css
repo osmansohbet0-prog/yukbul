@@ -24,3 +24,12 @@ body.yv-discovery{background:#f3f6f9!important;color:#193043;--ink:#193043;--ora
 @media(min-width:1000px){#yv-discovery #search-step-details{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:999px){#yv-discovery #search-step-details{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:640px){#yv-discovery .search-menu-stage{grid-column:1/-1}}
+/* Search lives in the existing left navigation and opens only on request. */
+.yv-sidebar #yv-discovery{padding:14px;margin:10px 0 18px;border-radius:10px;box-shadow:none;scroll-margin-top:12px}
+.yv-sidebar #yv-discovery[hidden]{display:none!important}
+.yv-sidebar #yv-discovery #search-step-details,.yv-sidebar #yv-discovery .yv-advanced-grid{grid-template-columns:minmax(0,1fr)!important;gap:12px}
+.yv-sidebar #yv-discovery .yv-search-heading{margin-bottom:16px}.yv-sidebar #yv-discovery .yv-search-heading h2{font-size:19px!important}
+.yv-sidebar #yv-discovery .yv-kicker{font-size:8px;letter-spacing:.6px}.yv-sidebar #yv-discovery .yv-search-region{display:none}
+.yv-sidebar #yv-discovery label,.yv-sidebar #yv-discovery .search-menu-stage{grid-column:1/-1}
+.yv-sidebar #yv-discovery .yv-filter-actions{flex-wrap:wrap;gap:6px}.yv-sidebar #yv-discovery #apply-search{width:100%;padding:11px 8px;font-size:13px}
+.yv-sidebar #yv-discovery .listing-modes{flex-wrap:wrap}.yv-sidebar #yv-discovery .mode-chip{padding:7px 9px;font-size:11px}

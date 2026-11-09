@@ -27,7 +27,7 @@ test('different fee units are grouped rather than numerically compared',()=>{
  assert.deepEqual(Array.from(sandbox.yvFilter(list,{sort:'price-asc'}),x=>x.id),['day','hour']);
 });
 test('client remains valid classic JavaScript and enhancement is scoped to existing controls',()=>{
- new vm.Script(source);assert.match(source,/panel\.hidden = false/);assert.doesNotMatch(source,/fetch\(|localStorage|innerHTML\s*=.*item/);
+ new vm.Script(source);assert.match(source,/toggle\.after\(section\)/);assert.doesNotMatch(source,/fetch\(|localStorage|innerHTML\s*=.*item/);
 });
 test('upstream contract changes safely retain the original working script',()=>{
  const original='window.siteVersion=999;';assert.equal(enhanceScript(original).source,original);assert.equal(enhanceScript(original).changed,false);

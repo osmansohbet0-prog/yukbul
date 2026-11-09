@@ -45,10 +45,11 @@ function yvSetupDiscovery() {
   const section = document.createElement('section');
   section.id = 'yv-discovery'; section.setAttribute('aria-label','İlan ara ve filtrele');
   section.innerHTML = '<div class="yv-search-heading"><div><span class="yv-kicker">İŞİNE UYGUN EKİPMANI BUL</span><h2>Ne arıyorsun?</h2></div><span class="yv-search-region">Türkiye geneli</span></div>';
-  heading.after(section); section.append(panel); panel.hidden = false;
   const toggle = document.querySelector('#search-menu-toggle');
-  toggle.setAttribute('aria-expanded','true');
-  toggle.addEventListener('click',()=>{panel.hidden=false;section.scrollIntoView({behavior:'smooth',block:'start'});document.querySelector('#q').focus({preventScroll:true})});
+  toggle.after(section); section.append(panel);
+  section.hidden=location.hash!=='#search-menu-toggle';panel.hidden=section.hidden;
+  toggle.setAttribute('aria-expanded',String(!section.hidden));
+  toggle.addEventListener('click',()=>{section.hidden=panel.hidden;toggle.setAttribute('aria-expanded',String(!section.hidden));if(!section.hidden)document.querySelector('#q').focus({preventScroll:true})});
   document.querySelector('#search-step-details').hidden=false;
   document.querySelector('#search-step-details').prepend(panel.querySelector('.search-menu-stage'));
   document.querySelector('.search-step-number')?.remove();
@@ -76,11 +77,11 @@ function yvSetupDiscovery() {
   const originalSave=saveSearchUrl;
   saveSearchUrl=function(){originalSave();const url=new URL(location.href);for(const [key,id]of [['min_price','#min-price'],['tons','#tonnage-filter']]){const v=value(id);if(v)url.searchParams.set(key,v);else url.searchParams.delete(key)}history.replaceState(null,'',url.pathname+url.search+url.hash)};
   const originalReset=reset;
-  reset=function(){document.querySelector('#min-price').value='';document.querySelector('#tonnage-filter').value='';refreshDistricts();originalReset();panel.hidden=false;toggle.setAttribute('aria-expanded','true')};
+  reset=function(){document.querySelector('#min-price').value='';document.querySelector('#tonnage-filter').value='';refreshDistricts();originalReset();panel.hidden=section.hidden;toggle.setAttribute('aria-expanded',String(!section.hidden))};
   // The old handlers captured reset before the override; clear the added fields first.
   for(const id of ['#reset-filters','#empty-reset']) document.querySelector(id).addEventListener('click',()=>{document.querySelector('#min-price').value='';document.querySelector('#tonnage-filter').value=''},true);
-  for(const id of ['#reset-filters','#empty-reset']) document.querySelector(id).addEventListener('click',()=>{refreshDistricts();panel.hidden=false;toggle.setAttribute('aria-expanded','true')});
-  document.querySelector('#apply-search').addEventListener('click',()=>{panel.hidden=false;toggle.setAttribute('aria-expanded','true');saveSearchUrl()});
+  for(const id of ['#reset-filters','#empty-reset']) document.querySelector(id).addEventListener('click',()=>{refreshDistricts();panel.hidden=section.hidden;toggle.setAttribute('aria-expanded',String(!section.hidden))});
+  document.querySelector('#apply-search').addEventListener('click',()=>{panel.hidden=true;section.hidden=true;toggle.setAttribute('aria-expanded','false');saveSearchUrl()});
   document.querySelector('#city-filter').addEventListener('change',()=>refreshDistricts());
   const originalRender=renderAppliedFilters;
   renderAppliedFilters=function(){originalRender();const summary=document.querySelector('#applied-filters');for(const [id,label]of [['#min-price','En az'],['#tonnage-filter','Tonaj']])if(value(id)){const chip=document.createElement('span');chip.textContent=label+' '+value(id)+(id==='#min-price'?' ₺':' ton');summary.append(chip);summary.hidden=false}document.querySelector('#yv-search-error').textContent=value('#min-price')&&value('#max-price')&&Number(value('#min-price'))>Number(value('#max-price'))?'En düşük ücret, en yüksek ücretten büyük olamaz.':''};
@@ -89,6 +90,7 @@ function yvSetupDiscovery() {
   filtered=function(){return yvFilter(items,yvCurrentFilters())};
   // Keep the underlying implementation available for emergency debugging without invoking it.
   void originalFilter;
-  document.querySelectorAll('[data-mobile-search]').forEach(button=>button.addEventListener('click',()=>{document.querySelector('.yv-menu-close')?.click();panel.hidden=false;section.scrollIntoView({behavior:'smooth',block:'start'});document.querySelector('#q').focus({preventScroll:true})}));
+  document.querySelectorAll('[data-mobile-search]').forEach(button=>button.addEventListener('click',()=>{section.hidden=false;panel.hidden=false;toggle.setAttribute('aria-expanded','true');document.querySelector('#q').focus({preventScroll:true})}));
+  window.addEventListener('hashchange',()=>{if(location.hash==='#search-menu-toggle'){section.hidden=false;panel.hidden=false;toggle.setAttribute('aria-expanded','true')}});
 }
 yvSetupDiscovery();
