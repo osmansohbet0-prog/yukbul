@@ -9,6 +9,7 @@ import * as priceCheck from '../functions/api/listings/price-check.js';
 import { renderHome } from "../functions/_lib/home-render.js";
 // Former Pages handlers are bundled and dispatched through this single Workers entry.
 import * as health from "../functions/api/saglik.js";
+import * as radarDashboard from "../functions/api/admin-radar-dashboard.js";
 import * as r0 from "../functions/api/admin-activity.js";
 import * as r1 from "../functions/api/admin-bootstrap.js";
 import * as r2 from "../functions/api/admin-listings.js";
@@ -53,7 +54,8 @@ const ROUTES = [
   {path:'/api/admin-moderation',params:[],handlers:moderationAdmin},
   {path:'/api/listings/price-check',params:[],handlers:priceCheck},
   { path: '/api/saglik', params: [], handlers: health },
-  { path: '/api/admin-activity', params: [], handlers: r0 },
+  { path: '/api/admin-radar-dashboard', params: [], handlers: radarDashboard },
+ { path: '/api/admin-activity', params: [], handlers: r0 },
   { path: '/api/admin-bootstrap', params: [], handlers: r1 },
   { path: '/api/admin-listings', params: [], handlers: r2 },
   { path: '/api/admin-login', params: [], handlers: r3 },
