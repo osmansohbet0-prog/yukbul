@@ -1,0 +1,10 @@
+.listing-gallery { min-width: 0; max-width: 100%; }
+.photo-strip { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; }
+.photo-strip > a { flex: 0 0 100%; min-width: 0; scroll-snap-align: start; }
+.photo-strip img { display: block; width: 100%; height: auto; aspect-ratio: 4/3; object-fit: contain; background: #edf1ed; }
+.photo-controls { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: .5rem; padding: .35rem; }
+.photo-controls button { min-width: 44px; min-height: 44px; cursor: pointer; }
+.listing-gallery dialog[open] { position: fixed; inset: 0; box-sizing: border-box; width: 100%; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: .5rem; display: flex; flex-direction: column; background: #14252b; color: white; }
+.photo-stage { flex: 1; min-height: 0; overflow: auto; }
+.photo-stage img { width: 100%; height: 100%; object-fit: contain; }
+.photo-stage.zoomed img { max-width: none; width: 200%; height: 200%; }
