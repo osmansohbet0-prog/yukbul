@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'app_update.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
@@ -110,6 +112,63 @@ class Shell extends StatefulWidget {
 }
 class _ShellState extends State<Shell> {
   int tab = 0;
+  bool checkingUpdate = false;
+  bool get supportsUpdate => !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
+  @override
+  void initState() {
+    super.initState();
+    if (supportsUpdate) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) checkUpdate();
+      });
+    }
+  }
+
+  Future<void> checkUpdate({bool manual = false}) async {
+    if (checkingUpdate) return;
+    checkingUpdate = true;
+    final client = http.Client();
+    var openingDownload = false;
+    try {
+      final update = await AndroidUpdates.check(client);
+      if (!mounted) return;
+      if (update == null) {
+        if (manual) updateMessage('YükVinç v$installedVersion güncel.');
+        return;
+      }
+      final accepted = await showDialog<bool>(
+        context: context,
+        builder: (dialog) => AlertDialog(
+          title: Text('YükVinç ${update.version} hazır'),
+          content: SingleChildScrollView(child: Text(update.notes)),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialog, false),
+              child: const Text('Daha sonra')),
+            FilledButton(onPressed: () => Navigator.pop(dialog, true),
+              child: const Text('Şimdi güncelle')),
+          ],
+        ),
+      );
+      if (accepted == true && mounted) {
+        openingDownload = true;
+        final launched = await launchUrl(update.download, mode: LaunchMode.externalApplication);
+        if (!launched && mounted) updateMessage('APK indirme bağlantısı açılamadı.');
+      }
+    } catch (_) {
+      if (mounted && (manual || openingDownload)) {
+        updateMessage(openingDownload ? 'APK indirme bağlantısı açılamadı.'
+          : 'Sürüm kontrolü yapılamadı. Tekrar dene.');
+      }
+    } finally {
+      client.close();
+      checkingUpdate = false;
+    }
+  }
+
+  void updateMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
   final openedTabs = <int>{0};
 
   void openTab(int index) => setState(() {
@@ -124,7 +183,13 @@ class _ShellState extends State<Shell> {
         SizedBox(width: 10),
         Text('YükVinç', style: TextStyle(fontWeight: FontWeight.w900)),
       ]),
-      actions: [IconButton(
+      actions: [
+        if (supportsUpdate) IconButton(
+          icon: const Icon(Icons.system_update_rounded),
+          tooltip: 'Güncellemeleri kontrol et',
+          onPressed: () => checkUpdate(manual: true),
+        ),
+        IconButton(
         icon: const Icon(Icons.open_in_browser_rounded), tooltip: 'Web sitesi',
         onPressed: () => openSite(context, '/'),
       )],
