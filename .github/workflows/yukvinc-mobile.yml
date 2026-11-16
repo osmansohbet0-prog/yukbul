@@ -25,6 +25,8 @@ jobs:
           cache: true
       - name: Generate Flutter Android runner
         run: flutter create --platforms android --org tr.com.yukvinc --project-name yukvinc_mobile .
+      - name: Remove Flutter template test (project has custom tests)
+        run: rm -f test/widget_test.dart
       - name: Resolve dependencies
         run: flutter pub get
       - name: Static analysis
