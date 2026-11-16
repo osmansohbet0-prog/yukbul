@@ -28,10 +28,10 @@ void main() {
       expect(request.url.path, '/api/listings');
       expect(request.url.queryParameters['category'], 'tow');
       expect(request.url.queryParameters['q'], 'İstanbul');
-      return http.Response(jsonEncode({'items': [
+      return http.Response.bytes(utf8.encode(jsonEncode({'items': [
         {'id': 'abc', 'title': 'İstanbul Yol Yardım', 'city': 'İstanbul',
           'district': 'Pendik', 'category': 'tow', 'description': 'Oto kurtarıcı'}
-      ]}), 200);
+      ]})), 200, headers: {'content-type': 'application/json; charset=utf-8'});
     });
     final values = await YukApi(client: client)
         .listings(category: 'tow', query: 'İstanbul');
