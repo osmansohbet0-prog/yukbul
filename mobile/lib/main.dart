@@ -16,16 +16,19 @@ const bg = Color(0xFFF0F5F5);
 class YukListing {
   const YukListing({required this.id, required this.title, required this.city,
     required this.district, required this.category, required this.description,
-    this.photoUrl, this.distanceKm});
+    this.photoUrl, this.distanceKm, this.phone = '', this.createdAt = 0});
   final String id, title, city, district, category, description;
   final String? photoUrl;
   final num? distanceKm;
+  final String phone;
+  final int createdAt;
   factory YukListing.fromJson(Map<String, dynamic> v) {
     String s(String key) => (v[key] ?? '').toString();
     return YukListing(
       id: s('id'), title: s('title'), city: s('city'), district: s('district'),
       category: s('category'), description: s('description'),
       photoUrl: v['photo_url']?.toString(),
+      phone: s('contact_phone'), createdAt: int.tryParse(s('created_at')) ?? 0,
       distanceKm: v['distance_km'] is num ? v['distance_km'] as num : null,
     );
   }
@@ -42,19 +45,20 @@ class YukApi {
       Error.throwWithStackTrace(error, stack);
     },
   );
-  Future<List<YukListing>> listings({String category = 'all', String query = ''}) async {
+  Future<List<YukListing>> listings({String category = 'all', String query = '', String city = ''}) async {
     final q = <String, String>{};
     if (category != 'all') q['category'] = category;
+    if (city.trim().isNotEmpty) q['city'] = city.trim();
     if (query.trim().isNotEmpty) q['q'] = query.trim();
     final uri = Uri.parse(baseUrl + '/api/listings')
       .replace(queryParameters: q.isEmpty ? null : q);
     return _parse(await client.get(uri, headers: const {'Accept': 'application/json'})
         .timeout(const Duration(seconds: 15)));
   }
-  Future<List<YukListing>> nearby(double lat, double lng) async {
+  Future<List<YukListing>> nearby(double lat, double lng, {int radiusKm = 100}) async {
     return _parse(await client.post(Uri.parse(baseUrl + '/api/ai/nearby'),
       headers: const {'Content-Type': 'application/json', 'Origin': baseUrl},
-      body: jsonEncode({'latitude': lat, 'longitude': lng, 'radius_km': 100}),
+      body: jsonEncode({'latitude': lat, 'longitude': lng, 'radius_km': radiusKm}),
     ).timeout(const Duration(seconds: 15)));
   }
   List<YukListing> _parse(http.Response response) {
@@ -200,7 +204,8 @@ class _ShellState extends State<Shell> {
         Opportunities(onExplore: () => openTab(1), onNearby: () => openTab(2)),
         if (openedTabs.contains(1)) const ListingsScreen() else const SizedBox.shrink(),
         if (openedTabs.contains(2)) Nearby(onBrowse: () => openTab(1)) else const SizedBox.shrink(),
-        if (openedTabs.contains(3)) const Account() else const SizedBox.shrink(),
+        if (openedTabs.contains(3)) const RoadHelp() else const SizedBox.shrink(),
+        if (openedTabs.contains(4)) const Account() else const SizedBox.shrink(),
       ]),
     ))),
     bottomNavigationBar: NavigationBar(
@@ -211,6 +216,7 @@ class _ShellState extends State<Shell> {
         NavigationDestination(icon: Icon(Icons.work_outline_rounded), label: 'Fırsatlar'),
         NavigationDestination(icon: Icon(Icons.search_rounded), label: 'İlanlar'),
         NavigationDestination(icon: Icon(Icons.near_me_outlined), label: 'Yakınımda'),
+        NavigationDestination(icon: Icon(Icons.car_repair_outlined), label: 'Yol yardım'),
         NavigationDestination(icon: Icon(Icons.person_outline_rounded), label: 'Hesabım'),
       ],
     ),
@@ -405,15 +411,42 @@ class _NearbyState extends State<Nearby> {
   bool showAppSettings = false;
   bool showLocationSettings = false;
   List<YukListing>? items;
-  Future<void> find() async {
+  int radius = 100;
+  bool newest = false;
+  bool manual = false;
+  String category = 'all';
+  final city = TextEditingController();
+  final district = TextEditingController();
+
+  @override
+  void dispose() {
+    city.dispose();
+    district.dispose();
+    super.dispose();
+  }
+
+  Future<void> find({bool useLocation = true}) async async {
     if (loading) return;
     setState(() {
       loading = true;
+      items = null;
+      manual = !useLocation;
       error = null;
       showAppSettings = false;
       showLocationSettings = false;
     });
     try {
+      if (!useLocation) {
+        final province = city.text.trim();
+        final borough = district.text.trim();
+        if (province.isEmpty) throw StateError('İl adını yaz.');
+        final results = await api.listings(city: province, query: borough, category: category);
+        final matches = results.where((item) =>
+          regionKey(item.city) == regionKey(province) &&
+          (borough.isEmpty || regionKey(item.district) == regionKey(borough))).toList();
+        if (mounted) setState(() => items = matches);
+        return;
+      }
       if (!await Geolocator.isLocationServiceEnabled()) {
         showLocationSettings = true;
         throw StateError('Telefonunda konum hizmeti kapalı.');
@@ -432,7 +465,7 @@ class _NearbyState extends State<Nearby> {
       final p = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.medium, timeLimit: Duration(seconds: 10)));
-      final result = await api.nearby(p.latitude, p.longitude);
+      final result = await api.nearby(p.latitude, p.longitude, radiusKm: radius);
       if (mounted) setState(() => items = result);
     } catch (e) {
       if (mounted) setState(() => error =
@@ -441,7 +474,12 @@ class _NearbyState extends State<Nearby> {
       if (mounted) setState(() => loading = false);
     }
   }
-  @override Widget build(BuildContext context) => ListView(
+  @override Widget build(BuildContext context) {
+    final visible = items?.where((item) => category == 'all' || item.category == category).toList();
+    if (newest || manual) {
+      visible?.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    }
+    return ListView(
     padding: const EdgeInsets.all(18), children: [
       Spotlight(
         icon: Icons.near_me_rounded,
@@ -449,7 +487,45 @@ class _NearbyState extends State<Nearby> {
         subtitle: 'Konumunu bu aramada kullan. İlanların mesafesi yaklaşık gösterilir.',
         action: loading ? 'Aranıyor…' : 'Konumumla ara',
         actionIcon: Icons.my_location_rounded,
-        onTap: loading ? null : find,
+        onTap: loading ? null : () => find(),
+      ),
+      const SizedBox(height: 12),
+      Wrap(spacing: 8, children: [
+        for (final km in [5, 10, 25, 50, 100])
+          ChoiceChip(label: Text('$km km'), selected: km == radius,
+            onSelected: loading ? null : (selected) {
+              if (!selected) return;
+              setState(() { radius = km; if (!manual) items = null; });
+            }),
+      ]),
+      DropdownButtonFormField<String>(
+        initialValue: category,
+        decoration: const InputDecoration(labelText: 'Kategori'),
+        items: [for (final option in _ListingsState.filters.entries)
+          DropdownMenuItem(value: option.key, child: Text(option.value))],
+        onChanged: loading ? null : (value) => setState(() {
+          category = value ?? 'all';
+          if (manual) items = null;
+        }),
+      ),
+      SwitchListTile(
+        title: const Text('En yeni ilanlar önce'),
+        value: newest || manual,
+        onChanged: manual ? null : (value) => setState(() => newest = value),
+        contentPadding: EdgeInsets.zero,
+      ),
+      ExpansionTile(title: const Text('İl ve ilçeyle ara'),
+        tilePadding: EdgeInsets.zero,
+        children: [
+          TextField(controller: city, decoration: const InputDecoration(labelText: 'İl')),
+          TextField(controller: district, decoration: const InputDecoration(labelText: 'İlçe (isteğe bağlı)')),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            icon: const Icon(Icons.search),
+            onPressed: loading ? null : () => find(useLocation: false),
+            label: const Text('Bölgedeki ilanları bul'),
+          ),
+        ],
       ),
       if (loading) const Loading(),
       if (error != null) Padding(padding: const EdgeInsets.symmetric(vertical: 14),
@@ -460,21 +536,98 @@ class _NearbyState extends State<Nearby> {
       if (showLocationSettings)
         OutlinedButton(onPressed: () => Geolocator.openLocationSettings(),
           child: const Text('Konum ayarlarını aç')),
-      if (items != null) ...[
+      if (visible != null) ...[
         const SizedBox(height: 23),
-        Text('Yakındaki sonuçlar (' + items!.length.toString() + ')',
+        Text(manual ? 'Bölgedeki ilanlar (${visible.length})' : 'Yakındaki ilanlar (${visible.length})',
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: navy)),
         const SizedBox(height: 10),
-        if (items!.isEmpty) const Empty('Doğrulanmış konumlu ilan bulunamadı.'),
-        for (final item in items!) ListingCard(item: item),
+        if (visible.isEmpty) Empty(manual
+          ? 'Bu il ve ilçe için ilan bulunamadı.'
+          : 'Bu aramada doğrulanmış konumlu ilan bulunamadı. Mesafeyi artırabilir veya il ve ilçeyle arayabilirsin.'),
+        for (final item in visible) ListingCard(item: item),
       ],
       const SizedBox(height: 15),
       OutlinedButton.icon(
         onPressed: widget.onBrowse,
         icon: const Icon(Icons.location_city),
-        label: const Text('Şehre göre ara'),
+        label: const Text('Tüm Türkiye ilanları'),
       ),
     ]);
+  }
+}
+
+String regionKey(String text) => text.trim()
+    .replaceAll('İ', 'i').replaceAll('I', 'ı').toLowerCase();
+
+class RoadHelp extends StatefulWidget {
+  const RoadHelp({super.key});
+  @override
+  State<RoadHelp> createState() => _RoadHelpState();
+}
+
+class _RoadHelpState extends State<RoadHelp> {
+  String category = 'tow';
+  final city = TextEditingController();
+  late Future<List<YukListing>> results;
+
+  @override
+  void initState() {
+    super.initState();
+    results = api.listings(category: category);
+  }
+
+  Future<void> refresh() async {
+    final next = api.listings(category: category, city: city.text);
+    setState(() => results = next);
+    try { await next; } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    city.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Column(children: [
+    Padding(
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+      child: TextField(
+        controller: city,
+        textInputAction: TextInputAction.search,
+        onSubmitted: (_) => refresh(),
+        decoration: InputDecoration(
+          labelText: 'Yol yardım için il ara',
+          suffixIcon: IconButton(icon: const Icon(Icons.search),
+            tooltip: 'Ara', onPressed: refresh),
+        ),
+      ),
+    ),
+    Wrap(spacing: 8, children: [
+      for (final entry in const {'tow': 'Çekici', 'mobile_tire': 'Mobil lastik'}.entries)
+        ChoiceChip(label: Text(entry.value), selected: category == entry.key,
+          onSelected: (selected) {
+            if (!selected) return;
+            category = entry.key;
+            refresh();
+          }),
+    ]),
+    Expanded(child: FutureBuilder<List<YukListing>>(
+      future: results,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) return const Loading();
+        if (snapshot.hasError) return Retry(onTap: refresh);
+        final items = snapshot.data ?? [];
+        if (items.isEmpty) return const Empty('Bu bölgede yol yardım ilanı bulunamadı.');
+        return RefreshIndicator(onRefresh: refresh, child: ListView.builder(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(18),
+          itemCount: items.length,
+          itemBuilder: (context, index) => ListingCard(item: items[index]),
+        ));
+      },
+    )),
+  ]);
 }
 
 class Account extends StatelessWidget {
@@ -516,6 +669,26 @@ class AccountLink extends StatelessWidget {
 class ListingCard extends StatelessWidget {
   const ListingCard({super.key, required this.item});
   final YukListing item;
+
+  String get dialNumber {
+    final digits = item.phone.replaceAll(RegExp(r'[^0-9]'), '');
+    return switch (digits.length) {
+      10 => '90$digits',
+      11 when digits.startsWith('0') => '90${digits.substring(1)}',
+      12 when digits.startsWith('90') => digits,
+      _ => '',
+    };
+  }
+
+  Future<void> contact(BuildContext context, Uri uri) async {
+    try {
+      if (await launchUrl(uri, mode: LaunchMode.externalApplication)) return;
+    } catch (_) {}
+    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('İletişim bağlantısı açılamadı.')),
+    );
+  }
+
   String get categoryLabel => switch (item.category) {
     'crane' => 'VİNÇ', 'tow' => 'ÇEKİCİ', 'basket' => 'SEPETLİ PLATFORM',
     'mobile_tire' => 'MOBİL LASTİK', 'operator' => 'İŞ ARAYAN OPERATÖR',
@@ -539,6 +712,16 @@ class ListingCard extends StatelessWidget {
             ConstrainedBox(constraints: const BoxConstraints(maxHeight: 180),
               child: SingleChildScrollView(child: Text(item.description))),
             const SizedBox(height: 16),
+            if (dialNumber.isNotEmpty) Wrap(spacing: 8, children: [
+              OutlinedButton.icon(
+                icon: const Icon(Icons.call_outlined), label: const Text('Ara'),
+                onPressed: () => contact(sheet, Uri(scheme: 'tel', path: '+$dialNumber')),
+              ),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.chat_outlined), label: const Text('WhatsApp'),
+                onPressed: () => contact(sheet, Uri.https('wa.me', '/$dialNumber')),
+              ),
+            ]),
             SizedBox(width: double.infinity, child: FilledButton.icon(
               onPressed: () { Navigator.pop(sheet);
                 openSite(context, '/ilan/' + Uri.encodeComponent(item.id) + '/'); },
