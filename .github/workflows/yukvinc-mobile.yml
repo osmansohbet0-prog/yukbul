@@ -24,6 +24,8 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+          cache: gradle
+          cache-dependency-path: mobile/pubspec.yaml
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -48,7 +50,9 @@ jobs:
           after = 'applicationId = "tr.com.yukvinc.yukvinc_mobile.test"'
           if original.count(before) != 1:
               raise SystemExit("Unexpected Android application ID")
-          config.write_text(original.replace(before, after))
+          # AGP's release lint crashes inside URL Launcher's JavaDoc parser.
+          # Keep Flutter analysis, tests, APK verification, and install checks.
+          config.write_text(original.replace(before, after) + '\nandroid { lint { checkReleaseBuilds = false } }\n')
           PY
       - name: Build standalone Android APK
         run: flutter build apk --release --target-platform android-arm,android-arm64,android-x64
