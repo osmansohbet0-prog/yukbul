@@ -1,4 +1,4 @@
-name: YükVinç Android MVP
+name: YükVinç Android
 on:
   workflow_dispatch:
   push:
@@ -7,9 +7,14 @@ on:
       - "mobile/**"
       - ".github/workflows/yukvinc-mobile.yml"
 
+concurrency:
+  group: yukvinc-android-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   analyze-test-build:
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     defaults:
       run:
         working-directory: mobile
@@ -33,13 +38,53 @@ jobs:
         run: flutter analyze
       - name: Tests
         run: flutter test
-      - name: Build test APK
-        run: flutter build apk --debug
-      - name: Upload test APK (not production-signed)
+      - name: Set an independent test package ID
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          config = Path("android/app/build.gradle.kts")
+          original = config.read_text()
+          before = 'applicationId = "tr.com.yukvinc.yukvinc_mobile"'
+          after = 'applicationId = "tr.com.yukvinc.yukvinc_mobile.test"'
+          if original.count(before) != 1:
+              raise SystemExit("Unexpected Android application ID")
+          config.write_text(original.replace(before, after))
+          PY
+      - name: Build standalone Android APK
+        run: flutter build apk --release --target-platform android-arm,android-arm64,android-x64
+      - name: Verify APK signature and supported architectures
+        run: |
+          set -euo pipefail
+          apk=build/app/outputs/flutter-apk/app-release.apk
+          sdk_bin="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n1)"
+          "$sdk_bin/apksigner" verify --verbose --print-certs "$apk"
+          "$sdk_bin/zipalign" -c -P 16 -v 4 "$apk" > /dev/null
+          "$sdk_bin/aapt" dump badging "$apk" | tee /tmp/yukvinc-apk-badging
+          grep -F "package: name='tr.com.yukvinc.yukvinc_mobile.test'" /tmp/yukvinc-apk-badging
+          grep -E "native-code:.*'arm64-v8a'" /tmp/yukvinc-apk-badging
+          grep -E "native-code:.*'armeabi-v7a'" /tmp/yukvinc-apk-badging
+          grep -E "native-code:.*'x86_64'" /tmp/yukvinc-apk-badging
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Install and open APK on Android 14
+        uses: reactivecircus/android-emulator-runner@v2.34.0
+        with:
+          api-level: 34
+          arch: x86_64
+          disable-animations: true
+          script: |
+            adb install mobile/build/app/outputs/flutter-apk/app-release.apk
+            adb shell am start -W -n tr.com.yukvinc.yukvinc_mobile.test/tr.com.yukvinc.yukvinc_mobile.MainActivity
+            sleep 3
+            adb shell pidof tr.com.yukvinc.yukvinc_mobile.test
+      - name: Upload verified test APK
         uses: actions/upload-artifact@v4
         with:
           name: yukvinc-android-test-apk
-          path: mobile/build/app/outputs/flutter-apk/app-debug.apk
+          path: mobile/build/app/outputs/flutter-apk/app-release.apk
           retention-days: 14
 
   publish-test-apk:
@@ -54,21 +99,22 @@ jobs:
           name: yukvinc-android-test-apk
           path: release
       - name: Prepare public direct-download APK
-        run: mv release/app-debug.apk release/YukVinc-Android-0.1.0-Test.apk
+        run: mv release/app-release.apk release/YukVinc-Android-0.2.0-Test.apk
       - name: Publish test APK in GitHub Releases
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          tag='yukvinc-android-test-0.1.0'
-          asset='release/YukVinc-Android-0.1.0-Test.apk'
+          tag='yukvinc-android-test-0.2.0'
+          asset='release/YukVinc-Android-0.2.0-Test.apk'
+          sha256sum "$asset" | sed 's|  release/|  |' > "$asset.sha256"
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload "$tag" "$asset" --clobber --repo "$GITHUB_REPOSITORY"
+            echo "Release $tag already exists. Bump the version for a new build."
           else
-            gh release create "$tag" "$asset" \
+            gh release create "$tag" "$asset" "$asset.sha256" \
               --repo "$GITHUB_REPOSITORY" \
               --target "$GITHUB_SHA" \
-              --title 'YükVinç Android 0.1.0 — Test APK' \
-              --notes 'Test sürümüdür. İlanlar, iş fırsatları, İş İlanı Ver bağlantısı ve yaklaşık konum araması içerir. Canlı sürücü GPS, mesai, çağrı atama ve komisyon sistemi henüz bulunmaz. Android uygulaması üretim imzalı değildir.' \
+              --title 'YükVinç Android 0.2.0 — Test APK' \
+              --notes 'Tek parça test APK. Android 14 emülatöründe kurulum ve açılış kontrolünden geçti. Önceki test sürümünden bağımsız kurulur. İlanlar, konumla arama ve Hesabım içerir.' \
               --prerelease
           fi
