@@ -1,0 +1,34 @@
+name: Publish existing YükVinç APK directly
+on:
+  push:
+    branches: [feature/yukvinc-mobile-mvp]
+    paths:
+      - .github/workflows/publish-existing-yukvinc-apk.yml
+
+jobs:
+  publish-existing-apk:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Download already-tested APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: yukvinc-android-test-apk
+          run-id: 43924376314
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: release
+      - name: Publish direct APK link
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mv release/app-debug.apk release/YukVinc-Android-0.1.0-Test.apk
+          tag='yukvinc-android-test-0.1.0'
+          asset='release/YukVinc-Android-0.1.0-Test.apk'
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$tag" "$asset" --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$tag" "$asset" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "YükVinç Android 0.1.0 — Test APK" --notes "Geliştirme amaçlı Android APK. Gerçek zamanlı sürücü GPS, mesai ve çağrı tahsilat sistemi henüz aktif değil." --prerelease
+          fi
