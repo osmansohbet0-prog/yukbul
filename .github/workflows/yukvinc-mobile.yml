@@ -41,3 +41,34 @@ jobs:
           name: yukvinc-android-test-apk
           path: mobile/build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 14
+
+  publish-test-apk:
+    needs: analyze-test-build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download successfully tested APK
+        uses: actions/download-artifact@v4
+        with:
+          name: yukvinc-android-test-apk
+          path: release
+      - name: Prepare public direct-download APK
+        run: mv release/app-debug.apk release/YukVinc-Android-0.1.0-Test.apk
+      - name: Publish test APK in GitHub Releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag='yukvinc-android-test-0.1.0'
+          asset='release/YukVinc-Android-0.1.0-Test.apk'
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$tag" "$asset" --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$tag" "$asset" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title 'YükVinç Android 0.1.0 — Test APK' \
+              --notes 'Test sürümüdür. İlanlar, iş fırsatları, İş İlanı Ver bağlantısı ve yaklaşık konum araması içerir. Canlı sürücü GPS, mesai, çağrı atama ve komisyon sistemi henüz bulunmaz. Android uygulaması üretim imzalı değildir.' \
+              --prerelease
+          fi
