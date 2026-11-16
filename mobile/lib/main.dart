@@ -425,7 +425,7 @@ class _NearbyState extends State<Nearby> {
     super.dispose();
   }
 
-  Future<void> find({bool useLocation = true}) async async {
+  Future<void> find({bool useLocation = true}) async {
     if (loading) return;
     setState(() {
       loading = true;
