@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
@@ -368,18 +368,18 @@ class Account extends StatelessWidget {
       const Text('Sürücü Modu', style: TextStyle(
         fontSize: 21, fontWeight: FontWeight.w800, color: navy)),
       const SizedBox(height: 8),
-      const Card(child: Padding(padding: EdgeInsets.all(17),
+      Card(child: Padding(padding: const EdgeInsets.all(17),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Canlı mesai sistemi henüz etkin değil',
+          const Text('Canlı mesai sistemi henüz etkin değil',
             style: TextStyle(color: navy, fontWeight: FontWeight.w700)),
-          SizedBox(height: 8),
-          Text('Arka plan GPS ve çağrı kabulü için güvenli sürücü servisi hazırlanmalı. Bu test sürümü konumunu arka planda paylaşmaz.',
+          const SizedBox(height: 8),
+          const Text('Arka plan GPS ve çağrı kabulü için güvenli sürücü servisi hazırlanmalı. Bu test sürümü konumunu arka planda paylaşmaz.',
             style: TextStyle(color: Colors.black54, height: 1.5)),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           SizedBox(width: double.infinity,
             child: FilledButton.icon(onPressed: null,
-              icon: Icon(Icons.power_settings_new),
-              label: Text('Mesaiye Başla (yakında)'))),
+              icon: const Icon(Icons.power_settings_new),
+              label: const Text('Mesaiye Başla (yakında)'))),
         ]))),
       const SizedBox(height: 16),
       const Text('YükVinç Android test sürümü 0.1.0',
