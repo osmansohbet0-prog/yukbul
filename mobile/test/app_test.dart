@@ -46,9 +46,22 @@ void main() {
       final body = jsonDecode(request.body) as Map<String, dynamic>;
       expect(body['latitude'], 41.0);
       expect(body['longitude'], 29.0);
+      expect(body['radius_km'], 25);
       return http.Response('{"items":[]}', 200);
     });
-    expect(await YukApi(client: client).nearby(41.0, 29.0), isEmpty);
+    expect(await YukApi(client: client).nearby(41.0, 29.0, radiusKm: 25), isEmpty);
+  });
+
+  test('Manual search sends the city and district query on the public API', () async {
+    final client = MockClient((request) async {
+      expect(request.url.queryParameters['city'], 'Konya');
+      expect(request.url.queryParameters['q'], 'Meram');
+      expect(request.url.queryParameters['category'], 'tow');
+      return http.Response('{"items":[]}', 200);
+    });
+    expect(await YukApi(client: client).listings(
+      city: 'Konya', query: 'Meram', category: 'tow',
+    ), isEmpty);
   });
 
   test('API rejects error responses', () async {
