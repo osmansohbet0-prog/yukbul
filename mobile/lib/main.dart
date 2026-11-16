@@ -1,15 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
 const baseUrl = 'https://yukvinc.com.tr';
 const navy = Color(0xFF172D35);
-const yellow = Color(0xFFF5AD35);
-const green = Color(0xFF168256);
-const bg = Color(0xFFF5F7F8);
+const yellow = Color(0xFFFFC466);
+const green = Color(0xFF0D6D5C);
+const bg = Color(0xFFF0F5F5);
 
 class YukListing {
   const YukListing({required this.id, required this.title, required this.city,
@@ -32,6 +32,14 @@ class YukListing {
 class YukApi {
   YukApi({http.Client? client}) : client = client ?? http.Client();
   final http.Client client;
+  Future<List<YukListing>>? _firstLoad;
+
+  Future<List<YukListing>> initialListings() => _firstLoad ??= listings().catchError(
+    (Object error, StackTrace stack) {
+      _firstLoad = null;
+      Error.throwWithStackTrace(error, stack);
+    },
+  );
   Future<List<YukListing>> listings({String category = 'all', String query = ''}) async {
     final q = <String, String>{};
     if (category != 'all') q['category'] = category;
@@ -51,7 +59,7 @@ class YukApi {
     if (response.statusCode != 200) {
       throw Exception('Sunucu hatası: ' + response.statusCode.toString());
     }
-    final body = jsonDecode(response.body);
+    final body = jsonDecode(utf8.decode(response.bodyBytes));
     if (body is! Map || body['items'] is! List) {
       throw const FormatException('Beklenmeyen sunucu yanıtı');
     }
@@ -64,8 +72,10 @@ class YukApi {
 final api = YukApi();
 Future<void> openSite(BuildContext context, String path) async {
   try {
-    final ok = await launchUrl(Uri.parse(baseUrl + path),
-        mode: LaunchMode.inAppBrowserView);
+    final uri = Uri.parse(baseUrl + path);
+    final external = path == '/hesabim/' || path == '/ilan-ver/';
+    final opened = !external && await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+    final ok = opened || await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok) throw Exception('Bağlantı açılamadı');
   } catch (_) {
     if (!context.mounted) return;
@@ -100,6 +110,12 @@ class Shell extends StatefulWidget {
 }
 class _ShellState extends State<Shell> {
   int tab = 0;
+  final openedTabs = <int>{0};
+
+  void openTab(int index) => setState(() {
+    tab = index;
+    openedTabs.add(index);
+  });
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
@@ -113,12 +129,18 @@ class _ShellState extends State<Shell> {
         onPressed: () => openSite(context, '/'),
       )],
     ),
-    body: SafeArea(child: IndexedStack(index: tab, children: const [
-      Opportunities(), ListingsScreen(), Nearby(), Account(),
-    ])),
+    body: SafeArea(child: Center(child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 760),
+      child: IndexedStack(index: tab, children: [
+        Opportunities(onExplore: () => openTab(1), onNearby: () => openTab(2)),
+        if (openedTabs.contains(1)) const ListingsScreen() else const SizedBox.shrink(),
+        if (openedTabs.contains(2)) Nearby(onBrowse: () => openTab(1)) else const SizedBox.shrink(),
+        if (openedTabs.contains(3)) const Account() else const SizedBox.shrink(),
+      ]),
+    ))),
     bottomNavigationBar: NavigationBar(
       selectedIndex: tab,
-      onDestinationSelected: (v) => setState(() => tab = v),
+      onDestinationSelected: openTab,
       indicatorColor: yellow.withValues(alpha: .3),
       destinations: const [
         NavigationDestination(icon: Icon(Icons.work_outline_rounded), label: 'Fırsatlar'),
@@ -131,51 +153,38 @@ class _ShellState extends State<Shell> {
 }
 
 class Opportunities extends StatefulWidget {
-  const Opportunities({super.key});
+  const Opportunities({super.key, required this.onExplore, required this.onNearby});
+  final VoidCallback onExplore, onNearby;
   @override State<Opportunities> createState() => _OpportunitiesState();
 }
 class _OpportunitiesState extends State<Opportunities> {
   late Future<List<YukListing>> future;
-  @override void initState() { super.initState(); future = api.listings(); }
+  @override void initState() { super.initState(); future = api.initialListings(); }
   Future<void> refresh() async {
     final next = api.listings(); setState(() => future = next);
     try { await next; } catch (_) {}
   }
   @override Widget build(BuildContext context) => RefreshIndicator(
     onRefresh: refresh,
-    child: ListView(padding: const EdgeInsets.all(18), children: [
-      Container(
-        padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(
-          color: navy, borderRadius: BorderRadius.circular(24)),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('İŞ VE HİZMET FIRSATLARI',
-            style: TextStyle(color: yellow, fontSize: 12, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 12),
-          const Text('Yeni işini YükVinç’te keşfet.',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900,
-              fontSize: 27, height: 1.16)),
-          const SizedBox(height: 10),
-          const Text('Vinç, çekici, operatör ve ekipman ilanları tek yerde.',
-            style: TextStyle(color: Color(0xFFD5E0E2), height: 1.45)),
-          const SizedBox(height: 18),
-          FilledButton.icon(
-            style: FilledButton.styleFrom(backgroundColor: yellow, foregroundColor: navy),
-            onPressed: () => openSite(context, '/ilan-ver/'),
-            icon: const Icon(Icons.post_add_rounded),
-            label: const Text('İş İlanı Ver', style: TextStyle(fontWeight: FontWeight.w800)),
-          ),
-        ]),
+    child: ListView(physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.all(18), children: [
+      Spotlight(
+        icon: Icons.construction_rounded,
+        title: 'İşine uygun\nekipmanı bul.',
+        subtitle: 'Vinç, platform, yol yardım ve operatör ilanları.',
+        action: 'İlanları keşfet', actionIcon: Icons.arrow_forward_rounded,
+        onTap: widget.onExplore,
       ),
-      const SizedBox(height: 15),
+      const SizedBox(height: 14),
       Row(children: [
-        Expanded(child: ShortcutCard(icon: Icons.engineering_outlined,
-          title: 'İş ilanları', subtitle: 'Operatör ilanları',
-          onTap: () => openSite(context, '/kategori/operator-is-ilanlari/'))),
+        Expanded(child: ShortcutCard(
+          icon: Icons.near_me_outlined, title: 'Yakınımda',
+          subtitle: 'Konuma göre ara', onTap: widget.onNearby,
+        )),
         const SizedBox(width: 10),
-        Expanded(child: ShortcutCard(icon: Icons.local_shipping_outlined,
-          title: 'Yol yardım', subtitle: 'Çekici hizmetleri',
-          onTap: () => openSite(context, '/kategori/oto-kurtarici/'))),
+        Expanded(child: ShortcutCard(
+          icon: Icons.add_circle_outline, title: 'İlan ver',
+          subtitle: 'İlanını oluştur', onTap: () => openSite(context, '/ilan-ver/'),
+        )),
       ]),
       const SizedBox(height: 24),
       const Text('Güncel ilanlar', style: TextStyle(fontSize: 21,
@@ -194,6 +203,49 @@ class _OpportunitiesState extends State<Opportunities> {
         ]);
       }),
     ]),
+  );
+}
+
+class Spotlight extends StatelessWidget {
+  const Spotlight({super.key, required this.icon, required this.title,
+    required this.subtitle, required this.action, required this.actionIcon,
+    required this.onTap});
+
+  final IconData icon, actionIcon;
+  final String title, subtitle, action;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => ClipRRect(
+    borderRadius: BorderRadius.circular(28),
+    child: DecoratedBox(
+      decoration: const BoxDecoration(gradient: LinearGradient(
+        begin: Alignment.topLeft, end: Alignment.bottomRight,
+        colors: [Color(0xFF10272C), Color(0xFF18434A)],
+      )),
+      child: Stack(children: [
+        Positioned(top: -24, right: -23,
+          child: ExcludeSemantics(child: Icon(icon, size: 156, color: const Color(0x224EF0CC)))),
+        Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Icon(icon, color: const Color(0xFF94FFE4), size: 28),
+            const SizedBox(height: 16),
+            Text(title, style: const TextStyle(color: Colors.white,
+              fontSize: 32, height: 1.08, fontWeight: FontWeight.w800, letterSpacing: -.8)),
+            const SizedBox(height: 10),
+            Text(subtitle, style: const TextStyle(color: Color(0xFFD1E6E4), height: 1.4)),
+            const SizedBox(height: 20),
+            FilledButton.icon(
+              style: FilledButton.styleFrom(backgroundColor: yellow, foregroundColor: navy,
+                disabledBackgroundColor: const Color(0x334EF0CC),
+                disabledForegroundColor: const Color(0xFFD1E6E4), minimumSize: const Size(0, 48)),
+              onPressed: onTap, icon: Icon(actionIcon), label: Text(action),
+            ),
+          ]),
+        ),
+      ]),
+    ),
   );
 }
 
@@ -227,9 +279,9 @@ class _ListingsState extends State<ListingsScreen> {
   static const filters = <String, String>{
     'all': 'Tümü', 'crane': 'Vinç', 'tow': 'Çekici',
     'basket': 'Sepetli', 'mobile_tire': 'Lastik', 'manlift': 'Manlift',
-    'machine': 'Makine', 'operator': 'Operatör',
+    'machine': 'Makine', 'lift': 'Asansör', 'operator': 'Operatör',
   };
-  @override void initState() { super.initState(); future = api.listings(); }
+  @override void initState() { super.initState(); future = api.initialListings(); }
   void load() => setState(() =>
     future = api.listings(query: search.text, category: category));
   Future<void> refresh() async { load(); try { await future; } catch (_) {} }
@@ -254,7 +306,12 @@ class _ListingsState extends State<ListingsScreen> {
         Padding(padding: const EdgeInsets.only(right: 7),
           child: ChoiceChip(label: Text(filter.value),
             selected: category == filter.key,
-            onSelected: (_) { category = filter.key; load(); }))])),
+            onSelected: (selected) {
+              if (!selected || category == filter.key) return;
+              timer?.cancel();
+              category = filter.key;
+              load();
+            }))])),
     Expanded(child: FutureBuilder<List<YukListing>>(
       future: future, builder: (context, snap) {
         if (!snap.hasData && !snap.hasError) return const Loading();
@@ -263,6 +320,7 @@ class _ListingsState extends State<ListingsScreen> {
         if (items.isEmpty) return const Empty('Bu aramaya uygun ilan yok.');
         return RefreshIndicator(onRefresh: refresh, child: ListView.builder(
           padding: const EdgeInsets.fromLTRB(18, 4, 18, 20),
+          physics: const AlwaysScrollableScrollPhysics(),
           itemCount: items.length,
           itemBuilder: (context, i) => ListingCard(item: items[i]),
         ));
@@ -272,62 +330,71 @@ class _ListingsState extends State<ListingsScreen> {
 }
 
 class Nearby extends StatefulWidget {
-  const Nearby({super.key});
+  const Nearby({super.key, required this.onBrowse});
+  final VoidCallback onBrowse;
   @override State<Nearby> createState() => _NearbyState();
 }
 class _NearbyState extends State<Nearby> {
   bool loading = false;
   String? error;
+  bool showAppSettings = false;
+  bool showLocationSettings = false;
   List<YukListing>? items;
   Future<void> find() async {
     if (loading) return;
-    setState(() { loading = true; error = null; });
+    setState(() {
+      loading = true;
+      error = null;
+      showAppSettings = false;
+      showLocationSettings = false;
+    });
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
-        throw StateError('Telefonunda konum hizmetini etkinleştir.');
+        showLocationSettings = true;
+        throw StateError('Telefonunda konum hizmeti kapalı.');
       }
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
+      if (permission == LocationPermission.deniedForever) {
+        showAppSettings = true;
+        throw StateError('YükVinç için konum iznini uygulama ayarlarından açabilirsin.');
+      }
+      if (permission != LocationPermission.whileInUse && permission != LocationPermission.always) {
         throw StateError('Konum izni verilmedi. Şehir bazlı arama yapabilirsin.');
       }
       final p = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high, timeLimit: Duration(seconds: 20)));
+          accuracy: LocationAccuracy.medium, timeLimit: Duration(seconds: 10)));
       final result = await api.nearby(p.latitude, p.longitude);
       if (mounted) setState(() => items = result);
     } catch (e) {
       if (mounted) setState(() => error =
-        e is StateError ? e.message : 'Konum alınamadı. Tekrar deneyebilirsin.');
+        e is StateError ? e.message : 'Arama tamamlanamadı. Tekrar deneyebilir veya şehir seçebilirsin.');
     } finally {
       if (mounted) setState(() => loading = false);
     }
   }
   @override Widget build(BuildContext context) => ListView(
     padding: const EdgeInsets.all(18), children: [
-      Container(padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(color: navy, borderRadius: BorderRadius.circular(24)),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Icon(Icons.near_me_rounded, size: 32, color: yellow),
-          const SizedBox(height: 12),
-          const Text('Yakınımdaki ilanları bul', style: TextStyle(
-            color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900)),
-          const SizedBox(height: 9),
-          const Text('Tek dokunuşla konumunu paylaş. Sonuçlar doğrulanmış ilan adreslerine göre yaklaşık mesafedir; henüz canlı çekici takibi değildir.',
-            style: TextStyle(color: Color(0xFFCFDCE0), height: 1.5)),
-          const SizedBox(height: 18),
-          FilledButton.icon(
-            style: FilledButton.styleFrom(backgroundColor: yellow, foregroundColor: navy),
-            onPressed: loading ? null : find, icon: const Icon(Icons.my_location),
-            label: Text(loading ? 'Konum aranıyor...' : 'Konumumla İlan Bul'),
-          ),
-        ])),
+      Spotlight(
+        icon: Icons.near_me_rounded,
+        title: 'Yakınımdaki ilanlar',
+        subtitle: 'Konumunu bu aramada kullan. İlanların mesafesi yaklaşık gösterilir.',
+        action: loading ? 'Aranıyor…' : 'Konumumla ara',
+        actionIcon: Icons.my_location_rounded,
+        onTap: loading ? null : find,
+      ),
       if (loading) const Loading(),
       if (error != null) Padding(padding: const EdgeInsets.symmetric(vertical: 14),
         child: Text(error!, style: const TextStyle(color: Colors.red))),
+      if (showAppSettings)
+        OutlinedButton(onPressed: () => Geolocator.openAppSettings(),
+          child: const Text('Uygulama ayarlarını aç')),
+      if (showLocationSettings)
+        OutlinedButton(onPressed: () => Geolocator.openLocationSettings(),
+          child: const Text('Konum ayarlarını aç')),
       if (items != null) ...[
         const SizedBox(height: 23),
         Text('Yakındaki sonuçlar (' + items!.length.toString() + ')',
@@ -338,7 +405,7 @@ class _NearbyState extends State<Nearby> {
       ],
       const SizedBox(height: 15),
       OutlinedButton.icon(
-        onPressed: () => openSite(context, '/'),
+        onPressed: widget.onBrowse,
         icon: const Icon(Icons.location_city),
         label: const Text('Şehre göre ara'),
       ),
@@ -355,35 +422,15 @@ class Account extends StatelessWidget {
       const Text('Mevcut YükVinç hesabınla devam et.',
         style: TextStyle(color: Colors.black54)),
       const SizedBox(height: 17),
-      AccountLink(icon: Icons.login_rounded, title: 'Giriş Yap',
-        subtitle: 'Hesabına güvenli şekilde eriş',
-        onTap: () => openSite(context, '/giris/')),
-      AccountLink(icon: Icons.post_add_rounded, title: 'İş İlanı Ver',
-        subtitle: 'İş ve operatör ilanı oluşturma formu',
+      AccountLink(icon: Icons.person_outline_rounded, title: 'Hesabımı aç',
+        subtitle: 'Giriş yap, profilini ve ilanlarını yönet',
+        onTap: () => openSite(context, '/hesabim/')),
+      AccountLink(icon: Icons.add_circle_outline, title: 'İlan ver',
+        subtitle: 'Hizmetini veya operatör ilanını yayınla',
         onTap: () => openSite(context, '/ilan-ver/')),
-      AccountLink(icon: Icons.add_circle_outline, title: 'Vinç veya Çekici İlanı Ver',
-        subtitle: 'Araç bilgilerini ve fotoğraflarını ekle',
-        onTap: () => openSite(context, '/ilan-ver/')),
-      const SizedBox(height: 19),
-      const Text('Sürücü Modu', style: TextStyle(
-        fontSize: 21, fontWeight: FontWeight.w800, color: navy)),
-      const SizedBox(height: 8),
-      Card(child: Padding(padding: const EdgeInsets.all(17),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Canlı mesai sistemi henüz etkin değil',
-            style: TextStyle(color: navy, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 8),
-          const Text('Arka plan GPS ve çağrı kabulü için güvenli sürücü servisi hazırlanmalı. Bu test sürümü konumunu arka planda paylaşmaz.',
-            style: TextStyle(color: Colors.black54, height: 1.5)),
-          const SizedBox(height: 12),
-          SizedBox(width: double.infinity,
-            child: FilledButton.icon(onPressed: null,
-              icon: const Icon(Icons.power_settings_new),
-              label: const Text('Mesaiye Başla (yakında)'))),
-        ]))),
-      const SizedBox(height: 16),
-      const Text('YükVinç Android test sürümü 0.1.0',
-        style: TextStyle(color: Colors.black45, fontSize: 12)),
+      AccountLink(icon: Icons.work_outline_rounded, title: 'İş talepleri',
+        subtitle: 'Yayındaki talepleri incele',
+        onTap: () => openSite(context, '/is-talepleri/')),
     ]);
 }
 
@@ -407,7 +454,7 @@ class ListingCard extends StatelessWidget {
   String get categoryLabel => switch (item.category) {
     'crane' => 'VİNÇ', 'tow' => 'ÇEKİCİ', 'basket' => 'SEPETLİ PLATFORM',
     'mobile_tire' => 'MOBİL LASTİK', 'operator' => 'İŞ ARAYAN OPERATÖR',
-    'manlift' => 'MANLİFT', 'machine' => 'İŞ MAKİNESİ', _ => 'İLAN',
+    'manlift' => 'MANLİFT', 'machine' => 'İŞ MAKİNESİ', 'lift' => 'NAKLİYAT ASANSÖRÜ', _ => 'İLAN',
   };
   @override Widget build(BuildContext context) => Card(
     margin: const EdgeInsets.only(bottom: 10),
@@ -439,6 +486,7 @@ class ListingCard extends StatelessWidget {
             child: SizedBox(width: 80, height: 80,
               child: item.photoUrl != null && item.photoUrl!.startsWith('/')
                 ? Image.network(baseUrl + item.photoUrl!, fit: BoxFit.cover,
+                    cacheWidth: 240,
                     errorBuilder: (context, err, trace) => const ListingPlaceholder())
                 : const ListingPlaceholder())),
           const SizedBox(width: 13),
