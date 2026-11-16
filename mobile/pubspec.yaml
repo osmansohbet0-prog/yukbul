@@ -1,7 +1,7 @@
 name: yukvinc_mobile
 description: "YükVinç mobil uygulaması: ilanlar, iş fırsatları ve yakındaki hizmetler."
 publish_to: none
-version: 0.3.0+3
+version: 0.4.0+4
 
 environment:
   sdk: ">=3.13.0 <4.0.0"
