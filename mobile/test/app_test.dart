@@ -56,16 +56,27 @@ void main() {
     await expectLater(YukApi(client: client).listings(), throwsException);
   });
 
-  testWidgets('Account includes İş İlanı Ver but no fake active GPS tracking',
+  test('Home and listings tabs share the initial request', () async {
+    var calls = 0;
+    final client = MockClient((_) async {
+      calls++;
+      return http.Response('{"items":[]}', 200);
+    });
+    final api = YukApi(client: client);
+    await Future.wait([api.initialListings(), api.initialListings()]);
+    expect(calls, 1);
+    await api.listings(query: 'Konya');
+    expect(calls, 2);
+  });
+
+  testWidgets('Account shows working entry points for profile and listings',
       (tester) async {
     await tester.pumpWidget(const MaterialApp(
       home: Scaffold(body: Account()),
     ));
-    expect(find.text('İş İlanı Ver'), findsOneWidget);
-    expect(find.text('Vinç veya Çekici İlanı Ver'), findsOneWidget);
-    expect(find.text('Mesaiye Başla (yakında)'), findsOneWidget);
-    final button = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, 'Mesaiye Başla (yakında)'));
-    expect(button.onPressed, isNull);
+    expect(find.text('Hesabımı aç'), findsOneWidget);
+    expect(find.text('İlan ver'), findsOneWidget);
+    expect(find.text('İş talepleri'), findsOneWidget);
+    expect(find.text('Mesaiye Başla (yakında)'), findsNothing);
   });
 }
