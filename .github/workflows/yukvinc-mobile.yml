@@ -1,0 +1,41 @@
+name: YükVinç Android MVP
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/yukvinc-mobile-mvp]
+    paths:
+      - "mobile/**"
+      - ".github/workflows/yukvinc-mobile.yml"
+
+jobs:
+  analyze-test-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Generate Flutter Android runner
+        run: flutter create --platforms android --org tr.com.yukvinc --project-name yukvinc_mobile .
+      - name: Resolve dependencies
+        run: flutter pub get
+      - name: Static analysis
+        run: flutter analyze
+      - name: Tests
+        run: flutter test
+      - name: Build test APK
+        run: flutter build apk --debug
+      - name: Upload test APK (not production-signed)
+        uses: actions/upload-artifact@v4
+        with:
+          name: yukvinc-android-test-apk
+          path: mobile/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 14
