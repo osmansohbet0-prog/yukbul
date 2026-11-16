@@ -43,7 +43,7 @@ class YukApi {
   }
   Future<List<YukListing>> nearby(double lat, double lng) async {
     return _parse(await client.post(Uri.parse(baseUrl + '/api/ai/nearby'),
-      headers: const {'Content-Type': 'application/json'},
+      headers: const {'Content-Type': 'application/json', 'Origin': baseUrl},
       body: jsonEncode({'latitude': lat, 'longitude': lng, 'radius_km': 100}),
     ).timeout(const Duration(seconds: 15)));
   }
