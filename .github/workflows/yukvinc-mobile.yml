@@ -2,7 +2,7 @@ name: YükVinç Android
 on:
   workflow_dispatch:
   push:
-    branches: [feature/yukvinc-mobile-mvp, feature/android-v060-in-app-installer-20261117]
+    branches: [feature/yukvinc-mobile-mvp, feature/android-v060-in-app-installer-20261117, feature/android-v08-release]
     paths:
       - "mobile/**"
       - ".github/workflows/yukvinc-mobile.yml"
