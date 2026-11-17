@@ -22,7 +22,7 @@ export async function onRequestGet({ params, env }) {
 
   try {
     const item = await env.DB.prepare(
-      "SELECT id,(SELECT source FROM listing_directory directory_public WHERE directory_public.listing_id=listings.id) AS public_source,listing_type,COALESCE(service_category,category_detail,category) AS category,title,description,city,district,price_amount,price_unit,contact_phone,created_at,updated_at,(SELECT id FROM listing_photos p WHERE p.listing_id=listings.id ORDER BY sort_order LIMIT 1) photo_id FROM listings WHERE id=? AND status='approved' AND (category='operator' OR EXISTS(SELECT 1 FROM users u WHERE u.id=listings.user_id AND u.role='admin') OR trial_expires_at>unixepoch() OR paid_until>unixepoch())"
+      "SELECT id,(SELECT source FROM listing_directory directory_public WHERE directory_public.listing_id=listings.id) AS public_source,listing_type,COALESCE(service_category,category_detail,category) AS category,title,description,city,district,price_amount,price_unit,contact_phone,created_at,updated_at,(SELECT id FROM listing_photos p WHERE p.listing_id=listings.id ORDER BY sort_order LIMIT 1) photo_id FROM listings WHERE id=? AND status='approved' AND NOT EXISTS(SELECT 1 FROM listing_directory hidden WHERE hidden.listing_id=listings.id AND hidden.removed_at IS NOT NULL) AND (category='operator' OR EXISTS(SELECT 1 FROM users u WHERE u.id=listings.user_id AND u.role='admin') OR trial_expires_at>unixepoch() OR paid_until>unixepoch())"
     ).bind(id).first();
 
     if (!item) return new Response('İlan bulunamadı', {

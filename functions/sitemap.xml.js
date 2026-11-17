@@ -26,7 +26,7 @@ export async function onRequestGet({ env }) {
 
   try {
     const { results = [] } = await env.DB.prepare(
-      "SELECT id,title,COALESCE(service_category,category_detail,category) AS category,city,district,updated_at,(SELECT id FROM listing_photos p WHERE p.listing_id=listings.id ORDER BY sort_order LIMIT 1) photo_id FROM listings WHERE status='approved' AND (category='operator' OR EXISTS(SELECT 1 FROM users u WHERE u.id=listings.user_id AND u.role='admin') OR trial_expires_at>unixepoch() OR paid_until>unixepoch()) ORDER BY updated_at DESC LIMIT 45000"
+      "SELECT id,title,COALESCE(service_category,category_detail,category) AS category,city,district,updated_at,(SELECT id FROM listing_photos p WHERE p.listing_id=listings.id ORDER BY sort_order LIMIT 1) photo_id FROM listings WHERE status='approved' AND NOT EXISTS(SELECT 1 FROM listing_directory hidden WHERE hidden.listing_id=listings.id AND hidden.removed_at IS NOT NULL) AND (category='operator' OR EXISTS(SELECT 1 FROM users u WHERE u.id=listings.user_id AND u.role='admin') OR trial_expires_at>unixepoch() OR paid_until>unixepoch()) ORDER BY updated_at DESC LIMIT 45000"
     ).all();
 
     const urls = new Map([

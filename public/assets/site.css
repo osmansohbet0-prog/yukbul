@@ -397,3 +397,8 @@ body>header .brand{gap:10px;flex-shrink:0;letter-spacing:-.035em}body>header .br
  #yukusta-widget{right:12px;bottom:calc(74px + env(safe-area-inset-bottom))}
  #yukusta-panel{position:fixed;left:12px;right:12px;bottom:calc(124px + env(safe-area-inset-bottom));width:auto;max-width:440px;height:min(420px,calc(100dvh - 150px));max-height:calc(100dvh - 150px);margin-inline:auto;transform:none}
 }
+/* Direct owner-contact actions on both SSR and filtered cards. */
+.card-contact-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.card-contact-actions a{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:8px 13px;border:1px solid var(--ink,#172d35);border-radius:9px;color:var(--ink,#172d35);font-weight:750;font-size:.84rem;text-decoration:none}
+.card-contact-actions a[href^="https://wa.me/"]{background:var(--ink,#172d35);color:#fff}
+.card-contact-actions a:hover,.card-contact-actions a:focus-visible{outline:2px solid var(--orange,#f6a13b);outline-offset:2px}
