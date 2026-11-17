@@ -35,6 +35,36 @@ jobs:
           cache: true
       - name: Generate Flutter Android runner
         run: flutter create --platforms android --org tr.com.yukvinc --project-name yukvinc_mobile .
+      - name: Configure secure sign-in app return
+        run: |
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          path = Path("android/app/src/main/AndroidManifest.xml")
+          ns = "http://schemas.android.com/apk/res/android"
+          ET.register_namespace("android", ns)
+          tree = ET.parse(path)
+          root = tree.getroot()
+          activities = root.findall(".//activity")
+          activity = next((node for node in activities if node.get(f"{{{ns}}}name") in (".MainActivity", "tr.com.yukvinc.yukvinc_mobile.MainActivity")), None)
+          if activity is None:
+              raise SystemExit("Flutter MainActivity missing from Android manifest")
+          for node in activity.findall("intent-filter"):
+              data = node.find("data")
+              if data is not None and data.get(f"{{{ns}}}scheme") == "yukvinc" and data.get(f"{{{ns}}}host") == "auth":
+                  break
+          else:
+              intent = ET.SubElement(activity, "intent-filter")
+              ET.SubElement(intent, "action", {f"{{{ns}}}name": "android.intent.action.VIEW"})
+              ET.SubElement(intent, "category", {f"{{{ns}}}name": "android.intent.category.DEFAULT"})
+              ET.SubElement(intent, "category", {f"{{{ns}}}name": "android.intent.category.BROWSABLE"})
+              ET.SubElement(intent, "data", {
+                  f"{{{ns}}}scheme": "yukvinc",
+                  f"{{{ns}}}host": "auth",
+                  f"{{{ns}}}pathPrefix": "/callback",
+              })
+          tree.write(path, encoding="utf-8", xml_declaration=True)
+          PY
       - name: Remove Flutter template test (project has custom tests)
         run: rm -f test/widget_test.dart
       - name: Resolve dependencies
