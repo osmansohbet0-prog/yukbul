@@ -1,7 +1,7 @@
 /* Additive YükVinç V222 experience — no base page replacements. */
 (()=>{'use strict';
 if(window.__yv2Ready)return;window.__yv2Ready=true;document.documentElement.dataset.yv2Script='loaded';
-const BASE='/api/yukusta-v2',APK='https://github.com/osmansohbet0-prog/yukbul/releases/download/yukvinc-android-v0.5.0/YukVinc-Android-0.5.0.apk';
+const BASE='/api/yukusta-v2',APK='https://github.com/osmansohbet0-prog/yukbul/releases/download/yukvinc-android-v0.6.0/YukVinc-Android-0.6.0.apk';
 const e=(tag,cls,txt)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(txt!==undefined)n.textContent=txt;return n};
 const add=(node,tag,cls,txt)=>{const n=e(tag,cls,txt);node.append(n);return n};
 const scroll=node=>{node.scrollTop=node.scrollHeight};
