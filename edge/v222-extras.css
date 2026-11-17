@@ -1,0 +1,57 @@
+/* Scoped YükVinç V222 UI additions: no existing site rules overwritten. */
+#yv2-chat{position:fixed;right:16px;bottom:20px;z-index:2147480000;font-family:Inter,system-ui,-apple-system,Arial,sans-serif;color:#162c39;box-sizing:border-box}
+#yv2-chat *,#yv2-chat *::before,#yv2-chat *::after{box-sizing:border-box}
+#yv2-chat button,#yv2-chat textarea{font:inherit}
+#yv2-chat .yv2-launch{display:flex;align-items:center;gap:9px;border:0;background:#123c51;color:#fff;padding:12px 17px;border-radius:30px;font-size:14px;font-weight:800;box-shadow:0 8px 28px rgba(10,44,62,.24);cursor:pointer;min-height:48px}
+#yv2-chat .yv2-mark{width:29px;height:29px;border-radius:50%;display:grid;place-items:center;color:#112f42;background:#ffcc6f;font-size:19px;font-weight:900;flex-shrink:0}
+#yv2-chat .yv2-panel{position:absolute;right:0;bottom:0;width:min(410px,calc(100vw - 20px));height:min(680px,calc(100dvh - 32px));max-height:calc(100dvh - 32px);border-radius:19px;background:#fff;box-shadow:0 12px 56px rgba(14,41,55,.24);display:flex;flex-direction:column;overflow:hidden;border:1px solid #d8e4ea}
+#yv2-chat .yv2-panel[hidden],#yv2-chat .yv2-launch[hidden],#yv2-chat .yv2-report[hidden]{display:none!important}
+#yv2-chat .yv2-head{display:flex;gap:10px;align-items:center;padding:14px 14px 12px;background:#123c51;color:#fff;flex:0 0 auto}
+#yv2-chat .yv2-name{font-size:15px;font-weight:850;line-height:1.1}
+#yv2-chat .yv2-sub{font-size:11px;color:#d5eaf3;margin-top:4px}
+#yv2-chat .yv2-head-right{margin-left:auto;display:flex;gap:6px}
+#yv2-chat .yv2-head-right button{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:9px;min-width:34px;height:34px;color:#fff;cursor:pointer;font-size:18px}
+#yv2-chat .yv2-head-right button:first-child{font-size:11px;font-weight:750;padding:0 9px}
+#yv2-chat .yv2-messages{flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain;scroll-behavior:smooth;padding:15px 13px 18px;display:flex;flex-direction:column;gap:11px;background:#f6f9fb;min-height:0}
+#yv2-chat .yv2-bubble{max-width:89%;border-radius:15px;padding:11px 13px;font-size:13.5px;line-height:1.53;white-space:pre-wrap;overflow-wrap:anywhere}
+#yv2-chat .yv2-from-agent{align-self:flex-start;background:#fff;color:#153241;border:1px solid #e3eaee;border-top-left-radius:5px}
+#yv2-chat .yv2-from-user{align-self:flex-end;background:#cfe9f4;color:#143d53;border-top-right-radius:5px}
+#yv2-chat .yv2-typing{color:#57768a;font-size:12px}
+#yv2-chat .yv2-cards{display:grid;gap:7px;width:95%;margin-top:0}
+#yv2-chat .yv2-result{display:block;border:1px solid #cfe0e7;border-radius:11px;background:#fff;padding:11px;text-decoration:none;color:#17394a}
+#yv2-chat .yv2-result strong{display:block;font-size:12px}
+#yv2-chat .yv2-result small{display:block;font-size:11px;color:#516c7c;margin-top:4px}
+#yv2-chat .yv2-tools{display:flex;gap:7px;overflow-x:auto;scrollbar-width:thin;overscroll-behavior-x:contain;padding:10px 13px 9px;background:#fff;flex:0 0 auto}
+#yv2-chat .yv2-tools button{flex:0 0 auto;font-size:11.5px;font-weight:700;background:#eef5f8;color:#173f52;border:1px solid #d4e4eb;border-radius:20px;padding:8px 12px;cursor:pointer;white-space:nowrap;min-height:34px}
+#yv2-chat .yv2-send-form{border-top:1px solid #e3ebee;background:#fff;padding:10px 12px 8px;flex:0 0 auto}
+#yv2-chat .yv2-compose{display:flex;gap:7px;align-items:flex-end}
+#yv2-chat textarea{width:100%;min-height:43px;max-height:110px;resize:none;border:1px solid #c8dbe4;border-radius:13px;padding:11px;font-size:13px;background:#fff;color:#17394a;overflow-y:auto}
+#yv2-chat textarea:focus-visible,#yv2-chat button:focus-visible{outline:2px solid #e6a542;outline-offset:2px}
+#yv2-chat .yv2-send{border:0;background:#123c51;color:#fff;border-radius:12px;min-height:43px;padding:0 13px;font-size:14px;font-weight:800;cursor:pointer}
+#yv2-chat button:disabled{opacity:.55;cursor:not-allowed}
+#yv2-chat .yv2-fine{margin:7px 3px 1px;font-size:10px;color:#70818e;line-height:1.4}
+#yv2-chat .yv2-report{padding:12px;background:#fff;border-top:1px solid #dbe7eb;display:grid;gap:7px}
+#yv2-chat .yv2-report label{font-size:12px;font-weight:800}
+#yv2-chat .yv2-report .yv2-report-actions{display:flex;gap:7px;justify-content:flex-end}
+#yv2-chat .yv2-report button{border:1px solid #cedfe5;background:#eff5f8;color:#163f51;border-radius:8px;padding:8px 10px;font-weight:750;cursor:pointer}
+#yv2-chat .yv2-report button[type=submit]{background:#143d51;border-color:#143d51;color:#fff}
+.yv2-app-card{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;border:1px solid #c8dee9;background:#f1f8fb;border-radius:15px;padding:17px;margin:15px 0 22px;font-family:Inter,system-ui,Arial,sans-serif}
+.yv2-app-card strong{display:block;font-size:15px;color:#193f51}
+.yv2-app-card p{margin:4px 0;color:#526b79;font-size:12px;line-height:1.45}
+.yv2-app-card a{display:inline-flex;align-items:center;justify-content:center;background:#133f56;color:#fff!important;text-decoration:none;border-radius:11px;padding:11px 14px;min-height:44px;font-weight:800;font-size:13px}
+.yv2-tender-badge{display:inline-flex;align-items:center;padding:3px 7px;font:800 10px/1.4 Inter,system-ui,Arial,sans-serif;border-radius:8px;background:#b4232c;color:#fff;margin-left:8px;vertical-align:middle;animation:yv2-badge-pulse 2.8s ease-in-out infinite}
+.yv2-tender-stars{color:#c38109;font-weight:900;margin-left:6px}
+@keyframes yv2-badge-pulse{50%{box-shadow:0 0 0 4px rgba(180,35,44,.12)}}
+@media(prefers-reduced-motion:reduce){#yv2-chat .yv2-messages{scroll-behavior:auto}.yv2-tender-badge{animation:none}}
+@media(max-width:640px){#yv2-chat{right:10px;bottom:calc(70px + env(safe-area-inset-bottom,0px))}#yv2-chat .yv2-panel{width:calc(100vw - 20px);height:min(570px,calc(100dvh - 91px));border-radius:15px}#yv2-chat .yv2-launch{padding:10px 13px;font-size:13px}#yv2-chat .yv2-bubble{font-size:13px}}
+/* Dedicated mobile-first chat route; independent of the protected V222 homepage */
+body.yv2-standalone{margin:0;background:linear-gradient(180deg,#eef5f8,#fafcfd);min-height:100dvh;font-family:Inter,system-ui,Arial,sans-serif}
+body.yv2-standalone .yv2-site-head{height:62px;background:#123c51;display:flex;align-items:center;justify-content:space-between;padding:0 max(12px,calc((100vw - 710px)/2));gap:12px;color:#fff}
+body.yv2-standalone .yv2-site-head a{color:#fff;text-decoration:none;font-weight:800}
+body.yv2-standalone #yv2-chat{position:relative;right:auto;bottom:auto;margin:12px auto;width:min(710px,calc(100vw - 20px));height:calc(100dvh - 88px);max-height:890px;z-index:1}
+body.yv2-standalone #yv2-chat .yv2-launch{display:none!important}
+body.yv2-standalone #yv2-chat .yv2-panel{position:relative;right:auto;bottom:auto;width:100%;height:100%;max-height:100%;border-radius:17px}
+body.yv2-standalone #yv2-chat .yv2-panel[hidden]{display:none!important}
+body.yv2-standalone #yv2-chat .yv2-messages{padding:20px clamp(12px,3vw,24px)}
+body.yv2-standalone #yv2-chat .yv2-bubble{max-width:83%;font-size:14px}
+@media(max-width:640px){body.yv2-standalone .yv2-site-head{height:53px;padding:0 12px}body.yv2-standalone #yv2-chat{margin:0;width:100%;height:calc(100dvh - 53px)}body.yv2-standalone #yv2-chat .yv2-panel{border-radius:0;border:0;height:100%}}
