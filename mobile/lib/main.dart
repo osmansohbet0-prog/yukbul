@@ -330,6 +330,13 @@ class YukApi {
     final response=await client.patch(Uri.parse(baseUrl+'/api/listings/'+Uri.encodeComponent(id)),headers:memberHeaders(jsonBody:true),body:jsonEncode(payload)).timeout(const Duration(seconds:30));
     return memberBody(response);
   }
+  Future<void> appealListing(String id, String message) async {
+    final response=await client.patch(Uri.parse(baseUrl+'/api/listings/'+Uri.encodeComponent(id)),
+      headers:memberHeaders(jsonBody:true),body:jsonEncode({'action':'appeal','message':message}))
+      .timeout(const Duration(seconds:15));
+    memberBody(response);
+  }
+
   Future<void> deleteListing(String id) async {
     final response=await client.delete(Uri.parse(baseUrl+'/api/listings/'+Uri.encodeComponent(id)),headers:memberHeaders()).timeout(const Duration(seconds:15));
     memberBody(response);
@@ -1242,6 +1249,21 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
       builder:(_)=>ListingEditorScreen(existing:item)));
     if(changed==true && mounted) await refresh();
   }
+  Future<void> appeal(Map<String,dynamic> item) async {
+    final controller=TextEditingController();
+    final message=await showDialog<String>(context:context,builder:(dialog)=>AlertDialog(
+      title:const Text('İlan incelemesine itiraz'),
+      content:TextField(controller:controller,minLines:3,maxLines:6,maxLength:1000,
+        decoration:const InputDecoration(hintText:'En az 10 karakterle açıklamanı yaz.')),
+      actions:[TextButton(onPressed:()=>Navigator.pop(dialog),child:const Text('Vazgeç')),
+        FilledButton(onPressed:()=>Navigator.pop(dialog,controller.text.trim()),child:const Text('Gönder'))]));
+    controller.dispose();
+    if(message==null||message.trim().length<10)return;
+    try{
+      await api.appealListing((item['id']??'').toString(),message.trim());
+      if(mounted){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('İtirazın iletildi.')));await refresh();}
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(e.toString().replaceFirst('Bad state: ',''))));}
+  }
   Future<void> remove(Map<String,dynamic> item) async {
     final yes=await showDialog<bool>(context:context,builder:(d)=>AlertDialog(
       title:const Text('İlanı kaldır?'),
@@ -1282,10 +1304,14 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
             title:Text((item['title']??'').toString(),maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.w800)),
             subtitle:Text(loc+' · '+statusLabel((item['status']??'').toString())),
             trailing:PopupMenuButton<String>(onSelected:(value){
-              if(value=='edit')unawaited(edit(item));if(value=='remove')unawaited(remove(item));
-            },itemBuilder:(_)=>const[
-              PopupMenuItem(value:'edit',child:Text('Düzenle')),
-              PopupMenuItem(value:'remove',child:Text('İlanı kaldır'))]),
+              if(value=='edit')unawaited(edit(item));
+              if(value=='appeal')unawaited(appeal(item));
+              if(value=='remove')unawaited(remove(item));
+            },itemBuilder:(_)=>[
+              const PopupMenuItem(value:'edit',child:Text('Düzenle')),
+              if(['flagged','rejected','pending'].contains(item['status']))
+                const PopupMenuItem(value:'appeal',child:Text('İtiraz et')),
+              const PopupMenuItem(value:'remove',child:Text('İlanı kaldır'))]),
             onTap:()=>unawaited(edit(item))));
         }));
     }));
