@@ -55,3 +55,34 @@ body.yv2-standalone #yv2-chat .yv2-panel[hidden]{display:none!important}
 body.yv2-standalone #yv2-chat .yv2-messages{padding:20px clamp(12px,3vw,24px)}
 body.yv2-standalone #yv2-chat .yv2-bubble{max-width:83%;font-size:14px}
 @media(max-width:640px){body.yv2-standalone .yv2-site-head{height:53px;padding:0 12px}body.yv2-standalone #yv2-chat{margin:0;width:100%;height:calc(100dvh - 53px)}body.yv2-standalone #yv2-chat .yv2-panel{border-radius:0;border:0;height:100%}}
+
+/* Mobile navigation: no permanent active highlight on "İlan ver". */
+.yv-mobile-nav a,
+.yv-mobile-nav .yv-mobile-post{
+  background:transparent!important;
+  background-image:none!important;
+  color:#587181!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+  font-weight:650!important;
+}
+.yv-mobile-nav a[aria-current="page"],
+.yv-mobile-nav a.yv2-nav-active,
+.yv-mobile-nav .yv-mobile-post[aria-current="page"]{
+  background:#123f55!important;
+  background-image:none!important;
+  color:#fff!important;
+  border:1px solid #24607a!important;
+  border-radius:12px!important;
+  box-shadow:0 3px 12px rgba(18,63,85,.16)!important;
+  font-weight:850!important;
+}
+.yv-mobile-nav a:focus-visible{outline:2px solid #ecb55d;outline-offset:2px}
+#yv2-chat .yv2-panel{overscroll-behavior:contain;touch-action:pan-y}
+#yv2-chat .yv2-messages{overflow-y:auto!important;min-height:0!important;overscroll-behavior-y:contain!important;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+html.yv2-chat-scroll-lock{overscroll-behavior:none;overflow:hidden}
+@media(max-width:640px){
+ #yv2-chat .yv2-panel{height:min(700px,calc(100dvh - 85px))!important;display:flex!important;flex-direction:column!important}
+ #yv2-chat .yv2-panel[hidden]{display:none!important}
+ #yv2-chat .yv2-messages{flex:1 1 0!important;overflow-y:scroll!important}
+}
