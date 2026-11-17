@@ -149,7 +149,10 @@ export default {
       if(path==='/assets/sidebar.js'||path==='/assets/job-board-v20261102private.js'){
         // Preserve 100% of original V222 file bytes, then append only isolated new features.
         // Existing JS URLs are CSP-approved and execute reliably with the site's normal loader.
-        const source=env.ORIGIN?await env.ORIGIN.fetch(request):await fetch(request);
+        const requestHeaders=new Headers(request.headers);
+        requestHeaders.delete('if-none-match');requestHeaders.delete('if-modified-since');
+        const cleanRequest=new Request(request.url,{method:request.method,headers:requestHeaders});
+        const source=env.ORIGIN?await env.ORIGIN.fetch(cleanRequest):await fetch(cleanRequest);
         if(!source.ok)return source;
         const original=await source.text();
         if(!original||!original.includes('document'))return new Response(original,{status:source.status,headers:source.headers});
@@ -158,6 +161,7 @@ export default {
         headers.set('cache-control','no-store');
         headers.delete('content-length');
         headers.delete('content-encoding');
+        headers.delete('etag');headers.delete('last-modified');
         return new Response(original+'\n;\n'+CLIENT_JS,{status:source.status,headers});
       }
       if(path===CLIENT_ROUTE)return new Response(CLIENT_JS,{headers:{'content-type':'application/javascript; charset=utf-8','cache-control':'public,max-age=300','x-content-type-options':'nosniff'}});
