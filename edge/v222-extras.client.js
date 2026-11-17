@@ -135,6 +135,7 @@ function createChat(){
   finally{reportSubmit.disabled=false;reportSubmit.textContent='Şikâyeti gönder';scroll(messages)}
  });
  welcome();
+ if(location.pathname==='/yukusta/'||location.pathname==='/yukusta')show(true);
  function openHash(){
   if(location.hash==='#yukusta-chat'){show(true)}
   if(location.hash==='#yukusta-support'){show(true);showReport()}
