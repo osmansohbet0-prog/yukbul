@@ -3,7 +3,7 @@
 const CLIENT_JS = '__INJECT_CLIENT_JS__';
 const CLIENT_CSS = '__INJECT_CLIENT_CSS__';
 const CORS_ORIGIN = 'https://yukvinc.com.tr';
-const VERSION = 'v222-extras-20261117.14';
+const VERSION = 'v222-extras-20261117.15';
 const CLIENT_ROUTE = '/assets/yv-v222-extras.js';
 const CSS_ROUTE = '/assets/yv-v222-extras.css';
 const API_PREFIX = '/api/yukusta-v2/';
@@ -48,8 +48,21 @@ async function rate(env,request,action,max,windowSeconds){
   }catch{return {blocked:true,actor}}
 }
 async function publicTenders(env){
-  const row=await env.DB.prepare("SELECT COUNT(*) AS n FROM lead_radar_leads WHERE status='approved' AND public_at IS NOT NULL AND public_at >= unixepoch()-172800 AND (public_expires_at IS NULL OR public_expires_at>unixepoch())").first();
-  return {ok:true,new_count:Number(row?.n||0)};
+  // Only public, approved and non-expired records. Sorted by YükVinç's actual publication time.
+  const now=Math.floor(Date.now()/1000);
+  const result=await env.DB.prepare(
+    "SELECT id, title, source_url, public_at FROM lead_radar_leads "+
+    "WHERE status='approved' AND public_at IS NOT NULL AND public_at<=? "+
+    "AND (public_expires_at IS NULL OR public_expires_at>?) "+
+    "ORDER BY public_at DESC, id ASC LIMIT 200"
+  ).bind(now,now).all();
+  const items=(result.results||[]).map(row=>({
+    id:String(row.id||''),title:String(row.title||'').slice(0,240),
+    source_url:String(row.source_url||'').slice(0,700),
+    published_at:Number(row.public_at||0),
+    is_new:Number(row.public_at||0)>=now-172800
+  }));
+  return {ok:true,new_count:items.filter(x=>x.is_new).length,items};
 }
 async function report(request,env){
   if(request.method!=='POST')return error('Yöntem desteklenmiyor.',405);
@@ -136,17 +149,16 @@ async function passthrough(request,env){
   if(path.startsWith('/is-talepleri')){
     try{hasTender=(await publicTenders(env)).new_count>0}catch{}
   }
-  const style='<style id="yv2-static-style">#yv2-float{position:fixed;right:14px;bottom:20px;z-index:2147480000;display:inline-flex;align-items:center;gap:8px;padding:13px 17px;background:#123c51;color:#fff!important;font:800 14px system-ui,Arial,sans-serif;text-decoration:none;border-radius:30px;box-shadow:0 9px 26px #123c5140}#yv2-float:focus-visible{outline:3px solid #f7b852;outline-offset:3px}#yukusta-widget{display:none!important}.yv2-tender-new{background:#b4232c;color:#fff;border-radius:7px;padding:3px 7px;margin-left:7px;font:800 10px system-ui;vertical-align:middle}.yv2-tender-star{color:#e3a52a;font-weight:900;margin-left:6px}@media(max-width:640px){#yv2-float{bottom:calc(77px + env(safe-area-inset-bottom,0px));right:10px;padding:10px 13px;font-size:12px}}</style>';
+  const style='<style id="yv2-static-style">#yv2-float{position:fixed;right:14px;bottom:20px;z-index:2147480000;display:inline-flex;align-items:center;gap:8px;padding:13px 17px;background:#123c51;color:#fff!important;font:800 14px system-ui,Arial,sans-serif;text-decoration:none;border-radius:30px;box-shadow:0 9px 26px #123c5140}#yv2-float:focus-visible{outline:3px solid #f7b852;outline-offset:3px}#yukusta-widget{display:none!important}#yv2-tender-top{display:none!important}.offer-tabs a.yv2-tender-tab{position:relative;overflow:visible!important;white-space:nowrap}.offer-tabs a .yv2-tender-new{position:absolute;top:-10px;right:-6px;padding:2px 6px;font:800 10px system-ui,Arial;background:#b4232c;color:#fff;border-radius:7px;line-height:1.2;z-index:2}.offer-tabs{overflow:visible!important}.yv2-tender-new{background:#b4232c;color:#fff;border-radius:7px;padding:3px 7px;margin-left:7px;font:800 10px system-ui;vertical-align:middle}.yv2-tender-star{color:#e3a52a;font-weight:900;margin-left:6px}@media(max-width:640px){#yv2-float{bottom:calc(77px + env(safe-area-inset-bottom,0px));right:10px;padding:10px 13px;font-size:12px}}</style>';
   const float='<a id="yv2-float" href="/yukusta/" aria-label="Yük Usta ile sohbet et">✦ Yük Usta ile sohbet</a>';
   const apk='<section id="yv2-apk" class="yv2-app-card" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;border:1px solid #c8dee9;border-radius:14px;background:#f1f8fb;padding:16px;margin:16px 0;font-family:system-ui,Arial,sans-serif"><div><strong style="display:block;color:#193f51">📲 YükVinç Android uygulaması</strong><small style="color:#526b79">Android 0.6.0 · Resmî GitHub APK dosyası</small></div><a href="https://github.com/osmansohbet0-prog/yukbul/releases/download/yukvinc-android-v0.6.0/YukVinc-Android-0.6.0.apk" target="_blank" rel="noopener noreferrer" style="background:#133f56;color:#fff;text-decoration:none;font-weight:800;border-radius:10px;padding:11px 14px">Uygulamayı indir</a></section>';
-  const tag='<span class="yv2-tender-star" aria-hidden="true">✦ ✦</span><small class="yv2-tender-new">Yeni eklendi</small>';
-  const banner='<aside id="yv2-tender-top" style="padding:10px;text-align:center;background:#fff8e9;border-bottom:1px solid #f4ddaf"><a href="/ihale-duyurulari/" style="font:800 13px system-ui,Arial;color:#123c51;text-decoration:none">✦ ✦ İhale duyurularına git <small style="background:#b4232c;color:white;padding:3px 7px;border-radius:8px">Yeni eklendi</small></a></aside>';
+  const tag='<span class="yv2-tender-new" aria-label="Yeni ihale">Yeni ihale</span>';
   const rewriter=new HTMLRewriter()
-    .on('head',{element(e){e.append(style+'<script defer src="/assets/yv-v222-extras.js?v=14"></script>',{html:true})}})
-    .on('body',{element(e){e.append(float,{html:true});if(hasTender)e.prepend(banner,{html:true})}})
+    .on('head',{element(e){e.append(style+'<script defer src="/assets/yv-v222-extras.js?v=15"></script>',{html:true})}})
+    .on('body',{element(e){e.append(float,{html:true})}})
     .on('#yv-buyer-cta-v191',{element(e){if(path==='/')e.remove()}})
     .on('#account-view',{element(e){if(path.startsWith('/hesabim'))e.prepend(apk,{html:true})}})
-    .on('a[href*="ihale-duyurulari"]',{element(e){if(hasTender)e.append(tag,{html:true})}});
+    .on('.offer-tabs a[href*="ihale-duyurulari"]',{element(e){if(hasTender){e.setAttribute('class', 'yv2-tender-tab');e.setAttribute('aria-label','İhaleler — yeni ihale var');e.setInnerContent('İhaleler',{html:false});e.append(tag,{html:true});}}});
   return rewriter.transform(source);
 }
 export default {
