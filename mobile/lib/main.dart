@@ -773,7 +773,7 @@ class _ListingsState extends State<ListingsScreen> {
   Timer? timer;
   String category='all';
   String? cursor;
-  bool hasMore=true,loadingMore=false;
+  bool hasMore=true,loadingMore=false,offline=false;
   late Future<List<YukListing>> future;
   static const filters=<String,String>{
     'all':'Tümü','crane':'Vinç','tow':'Çekici','basket':'Sepetli',
@@ -788,7 +788,7 @@ class _ListingsState extends State<ListingsScreen> {
   }
   Future<List<YukListing>> firstPage()async{
     final page=await api.listingPage(query:search.text,category:category);
-    if(mounted){cursor=page.nextCursor;hasMore=cursor!=null;}
+    if(mounted)setState((){cursor=page.nextCursor;hasMore=cursor!=null;offline=page.offline;});
     return page.items;
   }
   void load(){
@@ -815,7 +815,7 @@ class _ListingsState extends State<ListingsScreen> {
       setState((){
         appended.addAll(page.items);
         cursor=page.nextCursor;
-        hasMore=cursor!=null;
+        hasMore=cursor!=null;offline=page.offline;
       });
     }catch(_){
       if(mounted)ScaffoldMessenger.of(context).showSnackBar(
@@ -840,6 +840,8 @@ class _ListingsState extends State<ListingsScreen> {
           if(!selected||category==filter.key)return;
           category=filter.key;load();
         }))])),
+    if(offline)const Padding(padding:EdgeInsets.symmetric(horizontal:18,vertical:4),
+      child:Align(alignment:Alignment.centerLeft,child:Text('Çevrimdışısın · kaydedilmiş ilanlar gösteriliyor.'))),
     Expanded(child:FutureBuilder<List<YukListing>>(future:future,builder:(context,snap){
       if(!snap.hasData&&!snap.hasError)return const Loading();
       if(snap.hasError)return Retry(onTap:refresh);
