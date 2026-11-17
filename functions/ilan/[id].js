@@ -22,7 +22,7 @@ export async function onRequestGet({ params, env }) {
 
   try {
     const item = await env.DB.prepare(
-      "SELECT id,(SELECT source FROM listing_directory directory_public WHERE directory_public.listing_id=listings.id) AS public_source,listing_type,COALESCE(service_category,category_detail,category) AS category,title,description,city,district,price_amount,price_unit,contact_phone,created_at,updated_at,(SELECT id FROM listing_photos p WHERE p.listing_id=listings.id ORDER BY sort_order LIMIT 1) photo_id FROM listings WHERE id=? AND status='approved' AND (category='operator' OR EXISTS(SELECT 1 FROM users u WHERE u.id=listings.user_id AND u.role='admin') OR trial_expires_at>unixepoch() OR paid_until>unixepoch())"
+      "SELECT id,(SELECT source FROM listing_directory directory_public WHERE directory_public.listing_id=listings.id) AS public_source,business_name,listing_type,COALESCE(service_category,category_detail,category) AS category,title,description,city,district,price_amount,price_unit,contact_phone,created_at,updated_at,(SELECT id FROM listing_photos p WHERE p.listing_id=listings.id ORDER BY sort_order LIMIT 1) photo_id FROM listings WHERE id=? AND status='approved' AND (category='operator' OR EXISTS(SELECT 1 FROM users u WHERE u.id=listings.user_id AND u.role='admin') OR trial_expires_at>unixepoch() OR paid_until>unixepoch())"
     ).bind(id).first();
 
     if (!item) return new Response('İlan bulunamadı', {
@@ -93,9 +93,15 @@ export async function onRequestGet({ params, env }) {
     const photoMeta = photoUrl
       ? '<meta property="og:image" content="' + esc(photoUrl) + '"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="' + esc(photoUrl) + '">'
       : '<meta name="twitter:card" content="summary">';
-    const photoHtml = photoUrl
-      ? '<img class="detail-photo" src="' + esc(photoUrl) + '" alt="' + esc(item.title + ' — ' + area) + '" loading="eager">'
-      : (item.public_source&&item.public_source!=='owner'?'<div class="seo-list-photo-placeholder" aria-label="Hizmet kategori simgesi">⚙ '+esc(categoryLabel)+'</div>':'');
+    const photos = item.photo_id ? (await env.DB.prepare(
+      'SELECT id FROM listing_photos WHERE listing_id=? ORDER BY sort_order,id'
+    ).bind(id).all()).results : [];
+    const images = photos.map((photo, index) => {
+      const src = '/api/listing-photo/' + encodeURIComponent(photo.id) + '?v=2';
+      return '<a href="'+src+'" aria-label="Fotoğraf '+(index+1)+' büyüt"><img width="800" height="600" src="'+src+'" alt="'+esc(item.title)+' · '+(index+1)+'" loading="'+(index?'lazy':'eager')+'"></a>';
+    }).join('');
+    const controls = photos.length > 1 ? '<button type="button" data-step="-1" aria-label="Önceki fotoğraf">‹</button><output aria-live="polite">1/'+photos.length+'</output><button type="button" data-step="1" aria-label="Sonraki fotoğraf">›</button>' : '';
+    const photoHtml = photos.length ? '<section class="listing-gallery" aria-label="İlan fotoğrafları"><div class="photo-strip">'+images+'</div><div class="photo-controls">'+controls+'</div><dialog aria-label="Tam ekran fotoğraf"><div class="photo-stage"><img alt=""></div><div class="photo-controls">'+controls+'<button data-zoom type="button" aria-pressed="false">Yakınlaştır</button><button data-close type="button">Kapat</button></div></dialog></section>' : '';
 
     const categoryPath = categoryPaths[item.category];
     const related = '<nav aria-label="İlgili ilanlar">' + (item.city ? '<a href="'+esc(cityUrl)+'">'+esc(item.city)+' ilanları</a> · ' : '') + (categoryPath ? '<a href="/kategori/'+categoryPath+'/">'+esc(categoryNames[item.category])+'</a>' : '') + '</nav>';
@@ -108,17 +114,17 @@ export async function onRequestGet({ params, env }) {
       '<meta property="og:title" content="' + esc(title) + '"><meta property="og:description" content="' + esc(description) + '">' +
       '<meta property="og:url" content="' + esc(url) + '">' + photoMeta +
       '<link rel="stylesheet" href="/assets/site.css">' +
-      '<script type="application/ld+json">' + jsonLd + '</script></head><body>' +
+      '<link rel="stylesheet" href="/assets/gallery.css"><script defer src="/assets/detail-gallery.js"></script><script type="application/ld+json">' + jsonLd + '</script></head><body>' +
       '<header><div class="nav wrap"><a class="brand" href="/">YükVinç</a><a class="post-btn" href="/ilan-ver/">İlan ver</a></div></header>' +
       '<main class="wrap section narrow"><p class="eyebrow">' + esc(type) + ' · ' + esc(area) + '</p>' +
-      related + '<h1>' + esc(item.title) + '</h1><p class="lead">' + esc(item.description || '') + '</p>' +
-      (item.public_source&&item.public_source!=='owner'?'<p class="directory-notice">Firma bilgileri kamuya açık kaynaklardan derlenmiştir. Düzeltme veya kaldırma için iletişime geçin. <a href="/iletisim/">İletişim</a></p>':'')+'<p><strong>' + esc(price) + '</strong></p>' + photoHtml +
+      photoHtml + '<h1>' + esc(item.title) + '</h1><p>'+esc(item.business_name || '')+'</p><p class="lead">' + esc(item.description || '') + '</p>' +
+      (item.public_source&&item.public_source!=='owner'?'<p class="directory-notice">Firma bilgileri kamuya açık kaynaklardan derlenmiştir. Düzeltme veya kaldırma için iletişime geçin. <a href="/iletisim/">İletişim</a></p>':'')+'<p><strong>' + esc(price) + '</strong></p>' +
       (item.contact_phone && /^[+0-9 ()-]{7,20}$/.test(item.contact_phone)
         ? '<p><a class="button" data-metric="phone" href="tel:' + esc(item.contact_phone.replace(/[^+0-9]/g, '')) + '">İlan sahibini ara</a></p>'
         : '<p>Bu ilanda telefon paylaşılmamış.</p>') +
       (item.contact_phone?'<p><a class="button secondary" data-metric="whatsapp" rel="noopener" href="https://wa.me/'+esc(item.contact_phone.replace(/\D/g,'').replace(/^0/,'90'))+'">WhatsApp ile iletişime geç</a></p>':'')+'<p>İlanın güncelliğini ve uygunluğunu ilan sahibiyle doğrulayın.</p>' +
       '<p><a class="button secondary" href="/">Tüm ilanlara dön</a></p>' +
-      '<details><summary>Şikayet et</summary><form id="report-form">' +
+      related + '<details><summary>Şikayet et</summary><form id="report-form">' +
       '<label>Şikayet sebebi<textarea name="reason" minlength="5" maxlength="300" required></textarea></label>' +
       '<button class="reset-btn" type="submit">Yöneticiye bildir</button><p id="report-status" role="status"></p>' +
       '</form></details></main><script src="/assets/detail.js" defer></script><script src="/assets/sidebar.js" defer></script></body></html>';
