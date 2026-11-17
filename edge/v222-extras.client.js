@@ -51,7 +51,7 @@ async function tenderBadge(){
     const badge=link.querySelector('.yv2-tender-new');
     if(recent){
      if(!badge)add(link,'span','yv2-tender-new','Yeni ihale');
-     else badge.textContent='Yeni ihale';
+     else if(badge.textContent!=='Yeni ihale')badge.textContent='Yeni ihale';
      link.setAttribute('aria-label','İhaleler, yeni ihale var');
     }else{
      badge?.remove();
