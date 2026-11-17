@@ -1,4 +1,4 @@
-import {fail,limited,currentMember,randomId} from '../../_lib/member.js';
+import {fail,isAllowedOrigin,limited,currentMember,randomId} from '../../_lib/member.js';
 
 const STATE = /^[A-Za-z0-9_-]{43,128}$/;
 const CHALLENGE = /^[A-Za-z0-9_-]{43}$/;
