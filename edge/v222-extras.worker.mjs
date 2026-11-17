@@ -3,7 +3,7 @@
 const CLIENT_JS = '__INJECT_CLIENT_JS__';
 const CLIENT_CSS = '__INJECT_CLIENT_CSS__';
 const CORS_ORIGIN = 'https://yukvinc.com.tr';
-const VERSION = 'v222-extras-20261117.13';
+const VERSION = 'v222-extras-20261117.14';
 const CLIENT_ROUTE = '/assets/yv-v222-extras.js';
 const CSS_ROUTE = '/assets/yv-v222-extras.css';
 const API_PREFIX = '/api/yukusta-v2/';
@@ -138,11 +138,11 @@ async function passthrough(request,env){
   }
   const style='<style id="yv2-static-style">#yv2-float{position:fixed;right:14px;bottom:20px;z-index:2147480000;display:inline-flex;align-items:center;gap:8px;padding:13px 17px;background:#123c51;color:#fff!important;font:800 14px system-ui,Arial,sans-serif;text-decoration:none;border-radius:30px;box-shadow:0 9px 26px #123c5140}#yv2-float:focus-visible{outline:3px solid #f7b852;outline-offset:3px}#yukusta-widget{display:none!important}.yv2-tender-new{background:#b4232c;color:#fff;border-radius:7px;padding:3px 7px;margin-left:7px;font:800 10px system-ui;vertical-align:middle}.yv2-tender-star{color:#e3a52a;font-weight:900;margin-left:6px}@media(max-width:640px){#yv2-float{bottom:calc(77px + env(safe-area-inset-bottom,0px));right:10px;padding:10px 13px;font-size:12px}}</style>';
   const float='<a id="yv2-float" href="/yukusta/" aria-label="Yük Usta ile sohbet et">✦ Yük Usta ile sohbet</a>';
-  const apk='<section id="yv2-apk" class="yv2-app-card" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;border:1px solid #c8dee9;border-radius:14px;background:#f1f8fb;padding:16px;margin:16px 0;font-family:system-ui,Arial,sans-serif"><div><strong style="display:block;color:#193f51">📲 YükVinç Android uygulaması</strong><small style="color:#526b79">Android 0.5.0 · Resmî GitHub APK dosyası</small></div><a href="https://github.com/osmansohbet0-prog/yukbul/releases/download/yukvinc-android-v0.5.0/YukVinc-Android-0.5.0.apk" target="_blank" rel="noopener noreferrer" style="background:#133f56;color:#fff;text-decoration:none;font-weight:800;border-radius:10px;padding:11px 14px">Uygulamayı indir</a></section>';
+  const apk='<section id="yv2-apk" class="yv2-app-card" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;border:1px solid #c8dee9;border-radius:14px;background:#f1f8fb;padding:16px;margin:16px 0;font-family:system-ui,Arial,sans-serif"><div><strong style="display:block;color:#193f51">📲 YükVinç Android uygulaması</strong><small style="color:#526b79">Android 0.6.0 · Resmî GitHub APK dosyası</small></div><a href="https://github.com/osmansohbet0-prog/yukbul/releases/download/yukvinc-android-v0.6.0/YukVinc-Android-0.6.0.apk" target="_blank" rel="noopener noreferrer" style="background:#133f56;color:#fff;text-decoration:none;font-weight:800;border-radius:10px;padding:11px 14px">Uygulamayı indir</a></section>';
   const tag='<span class="yv2-tender-star" aria-hidden="true">✦ ✦</span><small class="yv2-tender-new">Yeni eklendi</small>';
   const banner='<aside id="yv2-tender-top" style="padding:10px;text-align:center;background:#fff8e9;border-bottom:1px solid #f4ddaf"><a href="/ihale-duyurulari/" style="font:800 13px system-ui,Arial;color:#123c51;text-decoration:none">✦ ✦ İhale duyurularına git <small style="background:#b4232c;color:white;padding:3px 7px;border-radius:8px">Yeni eklendi</small></a></aside>';
   const rewriter=new HTMLRewriter()
-    .on('head',{element(e){e.append(style+'<script defer src="/assets/yv-v222-extras.js?v=13"></script>',{html:true})}})
+    .on('head',{element(e){e.append(style+'<script defer src="/assets/yv-v222-extras.js?v=14"></script>',{html:true})}})
     .on('body',{element(e){e.append(float,{html:true});if(hasTender)e.prepend(banner,{html:true})}})
     .on('#yv-buyer-cta-v191',{element(e){if(path==='/')e.remove()}})
     .on('#account-view',{element(e){if(path.startsWith('/hesabim'))e.prepend(apk,{html:true})}})
