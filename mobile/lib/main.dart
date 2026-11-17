@@ -13,6 +13,7 @@ import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 const baseUrl = 'https://yukvinc.com.tr';
@@ -295,6 +296,42 @@ class YukApi {
         .where((path) => path.startsWith('/api/listing-photo/') && !path.contains('..'))
         .toList(growable: false);
     return (listing: listing, photos: photos);
+  }
+
+  Map<String, String> memberHeaders({bool jsonBody = false}) {
+    final cookie = MemberAuth._cookie;
+    if (cookie == null || cookie.isEmpty) throw StateError('Önce hesabına giriş yap.');
+    return {'Accept':'application/json','Origin':baseUrl,'Cookie':'__Host-yv_member=' + cookie,
+      if (jsonBody) 'Content-Type':'application/json'};
+  }
+
+  Map<String, dynamic> memberBody(http.Response response) {
+    Map<String, dynamic> body = {};
+    try { final d = jsonDecode(utf8.decode(response.bodyBytes)); if (d is Map) body = Map<String,dynamic>.from(d); } catch (_) {}
+    if (response.statusCode < 200 || response.statusCode >= 300)
+      throw StateError((body['error'] ?? body['message'] ?? 'İşlem tamamlanamadı.').toString());
+    return body;
+  }
+
+  Future<List<Map<String,dynamic>>> myListings() async {
+    final response = await client.get(Uri.parse(baseUrl + '/api/listings/mine'),headers:memberHeaders()).timeout(const Duration(seconds:15));
+    final items = memberBody(response)['items'];
+    if (items is! List) throw const FormatException('İlan yanıtı geçersiz.');
+    return items.whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList(growable:false);
+  }
+  Future<Map<String,dynamic>> createListing(Map<String,dynamic> listing,List<Map<String,dynamic>> photos) async {
+    final response=await client.post(Uri.parse(baseUrl+'/api/listings'),headers:memberHeaders(jsonBody:true),
+      body:jsonEncode({'listing':listing,'photos':photos,'privacy_ok':true,'hp':''})).timeout(const Duration(seconds:30));
+    return memberBody(response);
+  }
+  Future<Map<String,dynamic>> updateListing(String id,Map<String,dynamic> listing,List<Map<String,dynamic>>? photos) async {
+    final payload=<String,dynamic>{'listing':listing,'privacy_ok':true}; if(photos!=null) payload['photos']=photos;
+    final response=await client.patch(Uri.parse(baseUrl+'/api/listings/'+Uri.encodeComponent(id)),headers:memberHeaders(jsonBody:true),body:jsonEncode(payload)).timeout(const Duration(seconds:30));
+    return memberBody(response);
+  }
+  Future<void> deleteListing(String id) async {
+    final response=await client.delete(Uri.parse(baseUrl+'/api/listings/'+Uri.encodeComponent(id)),headers:memberHeaders()).timeout(const Duration(seconds:15));
+    memberBody(response);
   }
 
   Future<List<YukListing>> savedListings(Iterable<String> ids) async {
