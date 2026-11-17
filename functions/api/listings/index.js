@@ -36,6 +36,8 @@ export async function onRequestPost(context){
     if(data.privacy_ok!==true)return listingError('VALIDATION_FAILED',request,400,'privacy_ok');
     if(typeof data.hp==='string'&&data.hp.trim())return listingError('VALIDATION_FAILED',request,400);
     const photos=data.photos||[];
+    // Enforce on the server: bypassing the browser wizard must never create photo-free ads.
+    if(!Array.isArray(photos)||photos.length===0)return listingError('PHOTO_REQUIRED',request,400,'photos');
     try{validatePhotoPayloads(photos)}catch(error){return listingFailure(error,request,'photo-validation',400);}
 
     const kind=input.category==='operator'?'operator_job':'equipment';

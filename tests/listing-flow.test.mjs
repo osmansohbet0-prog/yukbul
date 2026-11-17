@@ -25,6 +25,7 @@ class FakeD1{
       if(this.sql.includes('FROM user_sessions'))return{id:'member-1',email:'test@example.test',role:'member'};
       if(this.sql.includes('COUNT(*) n')&&this.sql.includes('user_login_attempts'))return{n:0};
       if(this.sql.includes('SELECT id,status FROM listings'))return{id:this.args[0],status:'pending'};
+      if(this.sql.includes('COUNT(*) AS photo_count FROM listing_photos'))return{photo_count:1};
       if(this.sql.includes('SELECT id FROM listings WHERE content_hash'))return null;
       return null;
     },async all(){return{results:[]}},async run(){
@@ -42,7 +43,8 @@ function context(body,method='POST',id,authenticated=true){
   const waiting=[];
   return{request,env:{DB:new FakeD1(),AI_ENABLED:'false'},params:id?{id}:{},ctx:{waitUntil(p){waiting.push(p)}},waiting};
 }
-function payload(input=listing(),photos=[]){return{listing:input,photos,privacy_ok:true,hp:''}}
+const VALID_PHOTO={mime_type:'image/webp',data:Buffer.from([0x52,0x49,0x46,0x46,0,0,0,0,0x57,0x45,0x42,0x50]).toString('base64')};
+function payload(input=listing(),photos=[VALID_PHOTO]){return{listing:input,photos,privacy_ok:true,hp:''}}
 async function json(response){return response.json()}
 
 test('listing validation accepts a complete equipment ad and rejects an unselected city',()=>{
@@ -102,6 +104,25 @@ test('up to three compressed photos are accepted and a fourth is rejected',()=>{
   assert.equal(validatePhotoPayloads([photo,photo,photo]),true);
   assert.throws(()=>validatePhotoPayloads([photo,photo,photo,photo]),/en fazla 3/);
 });
+
+test('all new user listings, especially cranes, require a real photo on the server',async()=>{
+  for(const category of ['crane','basket','manlift','tow','operator']){
+    const data=listing({category,listing_type:category==='operator'?'operator_job':'equipment',price_amount:category==='operator'?null:5000,contact_phone:category==='operator'?'':'05451234567'});
+    const response=await onRequestPost(context(payload(data,[])));
+    assert.equal(response.status,400,'category '+category+' must reject missing images');
+    const result=await response.json();
+    assert.equal(result.code,'PHOTO_REQUIRED');
+    assert.equal(result.field,'photos');
+  }
+});
+test('editing cannot delete the last image; retaining an image is allowed',async()=>{
+  const resp=await onRequestPatch(context(payload(listing(),[]),'PATCH','listing_123456'));
+  assert.equal(resp.status,400);
+  const result=await resp.json();
+  assert.equal(result.code,'PHOTO_REQUIRED');
+  assert.equal(result.field,'photos');
+});
+
 test('unauthenticated create, edit and delete are denied',async()=>{
   const created=await onRequestPost(context(payload(), 'POST', undefined, false));
   assert.equal(created.status,401);
