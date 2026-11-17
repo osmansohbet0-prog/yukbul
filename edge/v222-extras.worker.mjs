@@ -2,8 +2,9 @@
    Package step replaces the two placeholder JS string literals with repo edge assets. */
 const CLIENT_JS = '__INJECT_CLIENT_JS__';
 const CLIENT_CSS = '__INJECT_CLIENT_CSS__';
+const AUTO_REVIEW = '__INJECT_AUTO_REVIEW__';
 const CORS_ORIGIN = 'https://yukvinc.com.tr';
-const VERSION = 'v222-extras-20261117.16';
+const VERSION = 'v222-extras-20261117.17';
 const CLIENT_ROUTE = '/assets/yv-v222-extras.js';
 const CSS_ROUTE = '/assets/yv-v222-extras.css';
 const API_PREFIX = '/api/yukusta-v2/';
@@ -154,7 +155,7 @@ async function passthrough(request,env){
   const apk='<section id="yv2-apk" class="yv2-app-card" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;border:1px solid #c8dee9;border-radius:14px;background:#f1f8fb;padding:16px;margin:16px 0;font-family:system-ui,Arial,sans-serif"><div><strong style="display:block;color:#193f51">📲 YükVinç Android uygulaması</strong><small style="color:#526b79">Android 0.6.0 · Resmî GitHub APK dosyası</small></div><a href="https://github.com/osmansohbet0-prog/yukbul/releases/download/yukvinc-android-v0.6.0/YukVinc-Android-0.6.0.apk" target="_blank" rel="noopener noreferrer" style="background:#133f56;color:#fff;text-decoration:none;font-weight:800;border-radius:10px;padding:11px 14px">Uygulamayı indir</a></section>';
   const tag='<span class="yv2-tender-new" aria-label="Yeni ihale">Yeni ihale</span>';
   const rewriter=new HTMLRewriter()
-    .on('head',{element(e){e.append(style+'<script defer src="/assets/yv-v222-extras.js?v=16"></script>',{html:true})}})
+    .on('head',{element(e){e.append(style+'<script defer src="/assets/yv-v222-extras.js?v=17"></script>',{html:true})}})
     .on('body',{element(e){e.append(float,{html:true})}})
     .on('#yv-buyer-cta-v191',{element(e){if(path==='/')e.remove()}})
     .on('#account-view',{element(e){if(path.startsWith('/hesabim'))e.prepend(apk,{html:true})}})
@@ -162,12 +163,13 @@ async function passthrough(request,env){
   return rewriter.transform(source);
 }
 export default {
-  async fetch(request,env){
+  async fetch(request,env,context){
     try{
       const u=new URL(request.url),path=u.pathname;
       if(path==='/yukusta'||path==='/yukusta/')return chatPage();
       if(path===CLIENT_ROUTE)return new Response(CLIENT_JS,{headers:{'content-type':'application/javascript; charset=utf-8','cache-control':'public,max-age=300','x-content-type-options':'nosniff'}});
       if(path===CSS_ROUTE)return new Response(CLIENT_CSS,{headers:{'content-type':'text/css; charset=utf-8','cache-control':'public,max-age=300','x-content-type-options':'nosniff'}});
+      if(path.startsWith('/api/listings'))return AUTO_REVIEW.handle(request,env,context);
       if(path.startsWith(API_PREFIX)){
         if(!env.DB)return error('Yük Usta veritabanına ulaşılamıyor.',503);
         const name=path.slice(API_PREFIX.length);
@@ -180,5 +182,9 @@ export default {
       if(request.method==='GET'||request.method==='HEAD')return passthrough(request,env);
       return env.ORIGIN?env.ORIGIN.fetch(request):fetch(request);
     }catch(err){console.error('yv2 route error',err?.name||'Error');return error('Yük Usta geçici olarak kullanılamıyor.',503)}
+  },
+  async scheduled(event,env,ctx){
+    if(!env.DB||!env.AI)return;
+    ctx.waitUntil(AUTO_REVIEW.scheduled(env));
   }
 };
