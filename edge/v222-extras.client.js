@@ -7,7 +7,7 @@ const add=(node,tag,cls,txt)=>{const n=e(tag,cls,txt);node.append(n);return n};
 const scroll=node=>{node.scrollTop=node.scrollHeight};
 function start(){
  document.documentElement.dataset.yv2Start='run';
- const link=e('link');link.id='yv2-css';link.rel='stylesheet';link.href='/assets/yv-v222-extras.css?v=18';document.head.append(link);
+ const link=e('link');link.id='yv2-css';link.rel='stylesheet';link.href='/assets/yv-v222-extras.css?v=19';document.head.append(link);
  fixActiveMobileNav();
  if(location.pathname==='/')document.getElementById('yv-buyer-cta-v191')?.remove();
  if(location.pathname.startsWith('/hesabim'))apkCard();
