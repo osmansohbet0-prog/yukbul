@@ -1430,7 +1430,7 @@ class _ListingEditorScreenState extends State<ListingEditorScreen>{
         value:cityNames.contains(city.text)?city.text:null,
         decoration:const InputDecoration(labelText:'İl'),
         items:cityNames.map((v)=>DropdownMenuItem(value:v,child:Text(v))).toList(growable:false),
-        onChanged:busy||cityNames.isEmpty?null:(v){if(v!=null)setState(()=>{city.text=v;district.clear();});},
+        onChanged:busy||cityNames.isEmpty?null:(v){if(v!=null)setState(() { city.text=v; district.clear(); });},
         validator:(v)=>v==null?'İl seç.':null),
       DropdownButtonFormField<String>(
         value:districtNames.contains(district.text)?district.text:null,
