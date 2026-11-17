@@ -1,24 +1,18 @@
-# YükVinç Android — çalışma kaydı
+# Android 0.6.0 geliştirme kaydı
 
-## Bu döngü
+**Tamamlanan iş:** Uygulama içinde güncel ilan detayları, kaydırılabilir ve yakınlaştırılabilir fotoğraf galerisi, kaldırılan ilan ve hatalı sunucu yanıtlarında tekrar deneme.
 
-- **Tamamlanan kod:** İlan kartlarına favori düğmesi; Favorilerim ekranı; favorilerin cihazda kalıcı saklanması.
-- **Görünür sınır:** Sunucuda web ve Android arasında ortak favori API'si yok. Favoriler bu sürümde yalnızca kullanılan Android cihazda tutulur. Favoriler ekranı halen yayındaki ilanları sunucudan yeniden alır.
-- **Sürüm:** `mobile/pubspec.yaml` 0.5.0+5. Güncelleme denetleyicisinin yerel varsayılan sürümü de 0.5.0.
-- **Kontrol:** `FavoritesStore` için ekleme, tekrar okuma ve kaldırma birim testleri eklendi. GitHub Actions commit `6580973dc4eff0966c747c7aa45df61211278952` üzerinde analiz, test, imzalama ve Android 14 emulator kurulumunu yürütüyor. Sonuç bekleniyor.
-- **Yayın:** Üretim sitesi değiştirilmedi. İmzalı APK oluşturulması mevcut Android workflow'unun yetkili release davranışıdır.
+**Değiştirilen dosyalar:** mobile/lib/main.dart, mobile/test/listing_detail_test.dart, mobile/pubspec.yaml, .github/workflows/yukvinc-mobile.yml.
 
-## Sıradaki işler
+**Test sonucu:** Flutter analiz ve testler, APK derleme, kalıcı imza/mimari doğrulaması, Android 14 emülatöründe önceki sürüm üzerine kurulum ve açılış geçti. Test APK artifact olarak kaydedildi. Public yayın işi bu geliştirme dalında atlandı.
+https://github.com/osmansohbet0-prog/yukbul/actions/runs/44121795128
 
-1. **Giriş ve oturum:** Mevcut Google uç noktası Google ID token'ı ile birlikte Turnstile doğrulaması ister ve HttpOnly oturum çerezi döndürür. Android istemcisi için Turnstile'ı atlamadan doğrulama akışını tasarla; çerezleri cihazda güvenli sakla, yenileme/çıkış davranışını test et. Giriş yapılandırması yoksa açıkça hata göster.
-2. **Hesabım ve profil:** Kullanıcı adı/şirket bilgisi, fotoğraf ve mevcut profil API sözleşmelerini doğrula; sadece gerçek API ile çalışan işlevleri göster.
-3. **İlan yönetimi:** Fotoğraf boyut/format sınırlarına göre sıkıştırma, taslak, oluşturma ve düzenleme uç noktalarını test et; sunucudaki moderasyon kuyruğunu koru.
-4. **Teklifler ve iş talepleri:** Mevcut yetkili API ve roller bulunmadan yerel sahte kayıt üretme. Önce backend sözleşmesini ve admin onay durumlarını doğrula.
-5. **Ortak favoriler:** Web hesabı ve Android arasında senkron için yetkilendirilmiş, sahiplik kontrolü olan API ve testleri ekle.
-6. **UX ve performans:** Filtre/konum hata durumları, erişilebilirlik, zayıf bağlantı ve düşük bellek cihazları için ölçülebilir testler.
+**Commit:** e196074901e3392d0c1c0ed3c6d9356d6b1452f2
 
-## Güvenli yayın sınırı
+**PR:** https://github.com/osmansohbet0-prog/yukbul/pull/74
 
-- Android geliştirmesi `feature/yukvinc-mobile-mvp` dalında kalır.
-- `main` canlı Cloudflare Worker ve statik varlıklarla sürüm farkı taşıyabilir; site paketini bu daldan doğrudan dağıtma veya birleştirme.
-- Her APK sürümünde CI analiz/test, imza, sabit paket kimliği, yükseltme, mimari ve emulator açılış kontrolleri başarılı olmalı.
+**Sıradaki görev:** Google oturum akışını mevcut Turnstile ve HttpOnly çerez sözleşmesiyle güvenli biçimde Android'e entegre etmek. Mevcut profil ve ilan yönetimi API'lerini tekrar kullanarak yerel ekranlara bağlamak. Backend sözleşmeleri eksikse ayrı dalda eklemek ve test etmek.
+
+Telefon API yanıtında bulunursa iletişim düğmeleri gösterilir. Mevcut ilan detay API'si çoğu ilanda telefon alanı döndürmez. Gerçek cihazda galeri hareketleri ve canlı API bağlantısı henüz doğrulanmadı. Hesap, profil, ilan oluşturma/düzenleme, fotoğraf yükleme, teklifler ve iş talebi akışları açık iş olarak devam eder.
+
+0.5.0'daki cihazda kalıcı favoriler korunur. Web ile favori eşitleme API'si geliştirilmelidir. Canlı site dağıtımı ayrı onaya bağlıdır.
