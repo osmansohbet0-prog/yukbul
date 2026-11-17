@@ -62,6 +62,29 @@ class YukApi {
       body: jsonEncode({'latitude': lat, 'longitude': lng, 'radius_km': radiusKm}),
     ).timeout(const Duration(seconds: 15)));
   }
+  Future<({YukListing listing, List<String> photos})> detail(String id) async {
+    final response = await client.get(
+      Uri.parse('$baseUrl/api/listings/${Uri.encodeComponent(id)}'),
+      headers: const {'Accept': 'application/json'},
+    ).timeout(const Duration(seconds: 15));
+    if (response.statusCode == 404) {
+      throw StateError('İlan artık yayında değil.');
+    }
+    if (response.statusCode != 200) throw StateError('İlan yüklenemedi.');
+    final body = jsonDecode(utf8.decode(response.bodyBytes));
+    if (body is! Map || body['listing'] is! Map || body['photos'] is! List) {
+      throw const FormatException('Geçersiz ilan yanıtı');
+    }
+    final listing = YukListing.fromJson(Map<String, dynamic>.from(body['listing'] as Map));
+    if (listing.id != id || listing.title.isEmpty) {
+      throw const FormatException('İlan bilgileri uyuşmuyor');
+    }
+    final photos = (body['photos'] as List).whereType<String>()
+        .where((path) => path.startsWith('/api/listing-photo/') && !path.contains('..'))
+        .toList(growable: false);
+    return (listing: listing, photos: photos);
+  }
+
   List<YukListing> _parse(http.Response response) {
     if (response.statusCode != 200) {
       throw Exception('Sunucu hatası: ' + response.statusCode.toString());
@@ -757,37 +780,9 @@ class ListingCard extends StatelessWidget {
   @override Widget build(BuildContext context) => Card(
     margin: const EdgeInsets.only(bottom: 10),
     child: InkWell(borderRadius: BorderRadius.circular(18),
-      onTap: () => showModalBottomSheet<void>(context: context, showDragHandle: true,
-        isScrollControlled: true,
-        builder: (sheet) => SafeArea(child: Padding(
-          padding: const EdgeInsets.fromLTRB(22, 10, 22, 24),
-          child: Column(mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(item.title, style: const TextStyle(fontSize: 22,
-              color: navy, fontWeight: FontWeight.w900)),
-            const SizedBox(height: 7),
-            Text(item.city + ' / ' + item.district,
-              style: const TextStyle(color: Colors.black54)),
-            const SizedBox(height: 12),
-            ConstrainedBox(constraints: const BoxConstraints(maxHeight: 180),
-              child: SingleChildScrollView(child: Text(item.description))),
-            const SizedBox(height: 16),
-            if (dialNumber.isNotEmpty) Wrap(spacing: 8, children: [
-              OutlinedButton.icon(
-                icon: const Icon(Icons.call_outlined), label: const Text('Ara'),
-                onPressed: () => contact(sheet, Uri(scheme: 'tel', path: '+$dialNumber')),
-              ),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.chat_outlined), label: const Text('WhatsApp'),
-                onPressed: () => contact(sheet, Uri.https('wa.me', '/$dialNumber')),
-              ),
-            ]),
-            SizedBox(width: double.infinity, child: FilledButton.icon(
-              onPressed: () { Navigator.pop(sheet);
-                openSite(context, '/ilan/' + Uri.encodeComponent(item.id) + '/'); },
-              icon: const Icon(Icons.open_in_browser),
-              label: const Text('İlan detayını aç'))),
-          ])))),
+      onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => ListingDetail(itemId: item.id),
+      )),
       child: Padding(padding: const EdgeInsets.all(13),
         child: Row(children: [
           ClipRRect(borderRadius: BorderRadius.circular(12),
@@ -817,6 +812,113 @@ class ListingCard extends StatelessWidget {
         ])),
     ));
 }
+
+class ListingDetail extends StatefulWidget {
+  const ListingDetail({super.key, required this.itemId, this.client});
+  final String itemId;
+  final YukApi? client;
+
+  @override
+  State<ListingDetail> createState() => _ListingDetailState();
+}
+
+class _ListingDetailState extends State<ListingDetail> {
+  late Future<({YukListing listing, List<String> photos})> future;
+  int photoIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    future = (widget.client ?? api).detail(widget.itemId);
+  }
+
+  Future<void> refresh() async {
+    final next = (widget.client ?? api).detail(widget.itemId);
+    setState(() { future = next; photoIndex = 0; });
+    try { await next; } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(
+      title: const Text('İlan detayı'),
+      actions: [FavoriteButton(itemId: widget.itemId)],
+    ),
+    body: FutureBuilder<({YukListing listing, List<String> photos})>(
+      future: future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) return const Loading();
+        if (snapshot.hasError) {
+          return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(snapshot.error is StateError
+                ? (snapshot.error as StateError).message.toString()
+                : 'İlan yüklenemedi. Bağlantını kontrol et.'),
+            const SizedBox(height: 12),
+            OutlinedButton(onPressed: refresh, child: const Text('Tekrar dene')),
+          ]));
+        }
+        final detail = snapshot.data!;
+        final item = detail.listing;
+        final card = ListingCard(item: item);
+        return RefreshIndicator(
+          onRefresh: refresh,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(18),
+            children: [
+              if (detail.photos.isNotEmpty) ...[
+                SizedBox(height: 280, child: ClipRRect(
+                  borderRadius: BorderRadius.circular(22),
+                  child: PageView.builder(
+                    key: ValueKey(future),
+                    itemCount: detail.photos.length,
+                    onPageChanged: (index) => setState(() => photoIndex = index),
+                    itemBuilder: (context, index) => InteractiveViewer(
+                      minScale: 1, maxScale: 3,
+                      child: Image.network(
+                        baseUrl + detail.photos[index],
+                        fit: BoxFit.contain, cacheWidth: 1200,
+                        semanticLabel: '${item.title}, fotoğraf ${index + 1}',
+                        errorBuilder: (_, error, stack) => const ListingPlaceholder(),
+                      ),
+                    ),
+                  ),
+                )),
+                const SizedBox(height: 8),
+                Text('${photoIndex + 1} / ${detail.photos.length}',
+                  textAlign: TextAlign.center),
+                const SizedBox(height: 18),
+              ],
+              Text(card.categoryLabel, style: const TextStyle(color: green,
+                fontWeight: FontWeight.w800)),
+              const SizedBox(height: 8),
+              Text(item.title, style: const TextStyle(fontSize: 25,
+                fontWeight: FontWeight.w800)),
+              const SizedBox(height: 8),
+              Text([item.city, item.district].where((v) => v.isNotEmpty).join(' / ')),
+              const SizedBox(height: 24),
+              SelectableText(item.description, style: const TextStyle(height: 1.6)),
+              const SizedBox(height: 24),
+              if (card.dialNumber.isNotEmpty) Wrap(spacing: 12, children: [
+                FilledButton.icon(
+                  onPressed: () => card.contact(context,
+                    Uri(scheme: 'tel', path: '+${card.dialNumber}')),
+                  icon: const Icon(Icons.call_outlined), label: const Text('Ara'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => card.contact(context,
+                    Uri.https('wa.me', '/${card.dialNumber}')),
+                  icon: const Icon(Icons.chat_outlined), label: const Text('WhatsApp'),
+                ),
+              ]),
+            ],
+          ),
+        );
+      },
+    ),
+  );
+}
+
 class FavoriteButton extends StatefulWidget {
   const FavoriteButton({super.key, required this.itemId, this.onChanged});
   final String itemId;
