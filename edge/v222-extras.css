@@ -81,3 +81,15 @@ body.yv2-chat-open #yv2-chat{touch-action:auto}
 }
 #yv2-chat .yv2-panel{overscroll-behavior:contain!important}
 #yv2-chat .yv2-report textarea{min-height:100px}
+
+/* Premium four-stage listing form, only scoped to its wizard */
+
+/* Wizard-only feedback; unrelated site and admin layouts are untouched. */
+.wizard-wrap .wizard-panel[hidden]{display:none!important}
+.wizard-wrap .wizard-panel{border-left:3px solid transparent;padding-left:clamp(0px,1vw,14px)}
+.wizard-wrap [aria-invalid="true"]{border:2px solid #bf2727!important;background:#fff2f1!important;box-shadow:0 0 0 3px rgba(191,39,39,.12);outline-color:#bf2727!important}
+.wizard-wrap .yv-field-error{display:block;margin:6px 0 0;color:#aa1c1c;font-size:.82rem;font-weight:750;line-height:1.45}
+.wizard-wrap #photo-dropzone.yv-invalid{border:2px dashed #bf2727!important;background:#fff2f1}
+.wizard-wrap #wizard-step-error{padding:12px 14px;border-left:4px solid #bf2727;background:#fff2f1;color:#9d1c1c;border-radius:8px;font-weight:700}
+.wizard-wrap .wizard-panel:has([aria-invalid="true"]){border-left-color:#bf2727}
+.wizard-wrap .wizard-panel:not(:first-child){margin-top:16px}
