@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
-import 'dart:typed_data';
 import 'package:app_links/app_links.dart';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:flutter/foundation.dart';
@@ -1369,7 +1368,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
       if(rows.isEmpty)return const Center(child:Empty('Henüz ilan vermedin.'));
       return RefreshIndicator(onRefresh:refresh,child:ListView.separated(
         padding:const EdgeInsets.fromLTRB(16,16,16,96),itemCount:rows.length,
-        separatorBuilder:(_,__)=>const SizedBox(height:10),
+        separatorBuilder:(_,_)=>const SizedBox(height:10),
         itemBuilder:(context,index){
           final item=rows[index],loc=[item['city'],item['district']].where((v)=>v!=null&&v.toString().isNotEmpty).join(' / ');
           return Card(child:ListTile(
@@ -1490,7 +1489,7 @@ class _ListingEditorScreenState extends State<ListingEditorScreen>{
   @override Widget build(BuildContext context)=>Scaffold(
     appBar:AppBar(title:Text(widget.existing==null?'Yeni ilan':'İlanı düzenle')),
     body:Form(key:form,child:ListView(padding:const EdgeInsets.all(18),children:[
-      DropdownButtonFormField<String>(value:category,decoration:const InputDecoration(labelText:'Kategori'),
+      DropdownButtonFormField<String>(initialValue:category,decoration:const InputDecoration(labelText:'Kategori'),
         items:categories.entries.map((e)=>DropdownMenuItem(value:e.key,child:Text(e.value))).toList(),
         onChanged:busy?null:(v){if(v!=null)setState(()=>category=v);}),
       const SizedBox(height:12),
@@ -1499,13 +1498,13 @@ class _ListingEditorScreenState extends State<ListingEditorScreen>{
       TextFormField(controller:description,maxLength:3000,minLines:4,maxLines:8,decoration:const InputDecoration(labelText:'Açıklama'),
         validator:(v)=>validateText(v,'Açıklama',20,3000)),
       DropdownButtonFormField<String>(
-        value:cityNames.contains(city.text)?city.text:null,
+        initialValue:cityNames.contains(city.text)?city.text:null,
         decoration:const InputDecoration(labelText:'İl'),
         items:cityNames.map((v)=>DropdownMenuItem(value:v,child:Text(v))).toList(growable:false),
         onChanged:busy||cityNames.isEmpty?null:(v){if(v!=null)setState(() { city.text=v; district.clear(); });},
         validator:(v)=>v==null?'İl seç.':null),
       DropdownButtonFormField<String>(
-        value:districtNames.contains(district.text)?district.text:null,
+        initialValue:districtNames.contains(district.text)?district.text:null,
         decoration:InputDecoration(labelText:'İlçe',helperText:city.text.isEmpty?'Önce il seç.':null),
         items:districtNames.map((v)=>DropdownMenuItem(value:v,child:Text(v))).toList(growable:false),
         onChanged:busy||city.text.isEmpty?null:(v){if(v!=null)setState(()=>district.text=v);},
@@ -1517,7 +1516,7 @@ class _ListingEditorScreenState extends State<ListingEditorScreen>{
       const SizedBox(height:14),
       OutlinedButton.icon(onPressed:busy?null:choosePhotos,icon:const Icon(Icons.add_a_photo_outlined),label:Text('Fotoğraf ekle ('+photos.length.toString()+'/3)')),
       if(photos.isNotEmpty)SizedBox(height:110,child:ListView.separated(scrollDirection:Axis.horizontal,itemCount:photos.length,
-        separatorBuilder:(_,__)=>const SizedBox(width:8),itemBuilder:(_,i)=>ClipRRect(borderRadius:BorderRadius.circular(10),
+        separatorBuilder:(_,_)=>const SizedBox(width:8),itemBuilder:(_,i)=>ClipRRect(borderRadius:BorderRadius.circular(10),
           child:Image.memory(photos[i].bytes,width:140,height:100,fit:BoxFit.cover)))),
       const SizedBox(height:10),
       const Text('İlan, YükVinç’in mevcut doğrulama ve inceleme kurallarından geçer. Değişiklikler tekrar incelemeye alınır.'),
