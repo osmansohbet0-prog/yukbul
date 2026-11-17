@@ -40,7 +40,7 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
       - name: Backend API regression tests
-        working-directory: ..
+        working-directory: .
         run: npm test
       - name: Static analysis
         run: flutter analyze
