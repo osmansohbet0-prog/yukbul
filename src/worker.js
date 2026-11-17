@@ -33,6 +33,8 @@ import * as r13 from "../functions/api/auth/me.js";
 import * as r14 from "../functions/api/auth/password.js";
 import * as r15 from "../functions/api/auth/register.js";
 import * as r27 from "../functions/api/auth/google.js";
+import * as mobileHandoff from "../functions/api/auth/mobile-handoff.js";
+import * as mobileExchange from "../functions/api/auth/mobile-exchange.js";
 import * as r16 from "../functions/api/listing-photo/[id].js";
 import * as r17 from "../functions/api/listings/[id]/report.js";
 import * as r18 from "../functions/api/listings/[id].js";
@@ -71,6 +73,8 @@ const ROUTES = [
   { path: '/api/ai/suggest', params: [], handlers: r10 },
   { path: '/api/auth/login', params: [], handlers: r11 },
   { path: '/api/auth/google', params: [], handlers: r27 },
+  { path: '/api/auth/mobile-handoff', params: [], handlers: mobileHandoff },
+  { path: '/api/auth/mobile-exchange', params: [], handlers: mobileExchange },
   { path: '/api/auth/logout', params: [], handlers: r12 },
   { path: '/api/auth/me', params: [], handlers: r13 },
   { path: '/api/auth/password', params: [], handlers: r14 },

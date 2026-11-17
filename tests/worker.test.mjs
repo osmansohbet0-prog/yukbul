@@ -35,3 +35,12 @@ test('worker adds security headers and keeps API responses out of search indexes
   assert.match(response.headers.get('content-security-policy'), /frame-ancestors 'none'/);
   assert.equal(response.headers.get('x-robots-tag'), 'noindex, nofollow');
 });
+
+
+test('worker routes native authentication handoff endpoints', async () => {
+  const handoff = await worker.fetch(new Request('https://yukvinc.com.tr/api/auth/mobile-handoff', { method: 'POST' }), { ASSETS: assets });
+  const exchange = await worker.fetch(new Request('https://yukvinc.com.tr/api/auth/mobile-exchange'), { ASSETS: assets });
+  assert.equal(handoff.status, 405);
+  assert.equal(exchange.status, 405);
+  assert.match(handoff.headers.get('allow') || '', /GET/);
+});
