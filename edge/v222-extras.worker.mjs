@@ -1,9 +1,12 @@
+import {runAutoReview,validPhone} from './v222-auto-review.mjs';
 /* YükVinç V222 additive Worker. Primary 'yukbul' script and admin/radar routing stay untouched.
    Package step replaces the two placeholder JS string literals with repo edge assets. */
 const CLIENT_JS = '__INJECT_CLIENT_JS__';
 const CLIENT_CSS = '__INJECT_CLIENT_CSS__';
+const FORM_SCRIPT = '__INJECT_FORM_SCRIPT__';
+const FORM_ROUTE = '/assets/yv-v222-listing-form.js';
 const CORS_ORIGIN = 'https://yukvinc.com.tr';
-const VERSION = 'v222-extras-20261117.16';
+const VERSION = 'v222-extras-20261118.17';
 const CLIENT_ROUTE = '/assets/yv-v222-extras.js';
 const CSS_ROUTE = '/assets/yv-v222-extras.css';
 const API_PREFIX = '/api/yukusta-v2/';
@@ -141,6 +144,33 @@ function chatPage(){
   const html='<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Yük Usta ile sohbet | YükVinç</title><link rel="stylesheet" href="/assets/yv-v222-extras.css?v=8"></head><body class="yv2-standalone"><header class="yv2-site-head"><a href="/">‹ YükVinç ana sayfa</a><strong>Yük Usta ✦</strong></header><main></main><script>' + CLIENT_JS + '</script></body></html>';
   return new Response(html,{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}});
 }
+async function proxyListingWrite(request,env){
+ // The original V222 Worker still authenticates and validates each write.
+ // This edge gate only blocks photo-free submissions and incomplete phone numbers.
+ let data;
+ try{data=await request.clone().json()}catch{return error('İlan bilgileri okunamadı.',400)}
+ const method=request.method;
+ const category=String(data?.listing?.category||'');
+ if(method==='POST'&&(!Array.isArray(data.photos)||data.photos.length<1))
+  return respond({ok:false,code:'PHOTO_REQUIRED',field:'photos',message:'İlan yayınlamak için en az bir ekipman veya hizmet fotoğrafı eklemelisin.'},400);
+ if(method==='PATCH'&&Array.isArray(data.photos)&&data.photos.length===0)
+  return respond({ok:false,code:'PHOTO_REQUIRED',field:'photos',message:'Son fotoğrafı kaldıramazsın; yeni bir fotoğraf ekle.'},400);
+ if((method==='POST'||method==='PATCH')&&data?.listing){
+  const phone=data.listing.contact_phone;
+  if(!validPhone(phone,category==='operator'))
+   return respond({ok:false,code:'VALIDATION_FAILED',field:'contact_phone',message:'İletişim telefonunu eksiksiz gir.'},400);
+ }
+ const base=env.ORIGIN?await env.ORIGIN.fetch(request):await fetch(request);
+ if(!base.ok||!String(base.headers.get('content-type')||'').includes('application/json'))return base;
+ try{
+  const data=await base.clone().json();
+  if(data?.status==='pending'||data?.status==='flagged'){
+   const headers=new Headers(base.headers);headers.delete('content-length');headers.set('cache-control','no-store');
+   return new Response(JSON.stringify({...data,message:'İlanın kaydedildi ve kontrol ediliyor. Bilgiler uygun olduğunda kısa sürede yayına alınır.'}),{status:base.status,headers});
+  }
+ }catch{}
+ return base;
+}
 async function passthrough(request,env){
   const source=env.ORIGIN?await env.ORIGIN.fetch(request):await fetch(request);
   if(!source.ok||!String(source.headers.get('content-type')||'').includes('text/html'))return source;
@@ -149,16 +179,23 @@ async function passthrough(request,env){
   if(path.startsWith('/is-talepleri')){
     try{hasTender=(await publicTenders(env)).new_count>0}catch{}
   }
+  const wizardStyle=path.startsWith('/ilan-ver')?'<style id="yv2-premium-wizard">.wizard-wrap{max-width:980px!important}.wizard-head{padding:20px 22px;border-radius:18px;background:linear-gradient(135deg,#f4faff,#fff);border:1px solid #dbe9f0;box-shadow:0 10px 36px rgba(11,53,79,.06)}.wizard-panel{border:1px solid #e0eaf0;background:#fff;border-radius:18px;padding:20px;margin-top:14px;box-shadow:0 7px 26px rgba(18,57,80,.05)}.wizard-panel[hidden]{display:none!important}.wizard-actions{gap:10px}.wizard-actions .button,#submit-listing{border-radius:12px;min-height:46px;font-weight:800}.wizard-progress{height:7px;border-radius:8px;overflow:hidden}.wizard-wrap [aria-invalid="true"]{border:2px solid #c12b31!important;background:#fff4f4!important;box-shadow:0 0 0 3px #c12b3119}.wizard-wrap .yv-field-error{display:block;color:#b4232c;font-size:12px;font-weight:750;margin-top:5px}#photo-dropzone.yv-invalid{border:2px dashed #c12b31!important;background:#fff4f4!important}.wizard-head .lead{max-width:55ch}</style>':'';
   const style='<style id="yv2-static-style">#yv2-float{position:fixed;right:14px;bottom:20px;z-index:2147480000;display:inline-flex;align-items:center;gap:8px;padding:13px 17px;background:#123c51;color:#fff!important;font:800 14px system-ui,Arial,sans-serif;text-decoration:none;border-radius:30px;box-shadow:0 9px 26px #123c5140}#yv2-float:focus-visible{outline:3px solid #f7b852;outline-offset:3px}#yukusta-widget{display:none!important}#yv2-tender-top{display:none!important}.offer-tabs a.yv2-tender-tab{position:relative;overflow:visible!important;white-space:nowrap}.offer-tabs a .yv2-tender-new{position:absolute;top:-10px;right:-6px;padding:2px 6px;font:800 10px system-ui,Arial;background:#b4232c;color:#fff;border-radius:7px;line-height:1.2;z-index:2}.offer-tabs{overflow:visible!important}.yv2-tender-new{background:#b4232c;color:#fff;border-radius:7px;padding:3px 7px;margin-left:7px;font:800 10px system-ui;vertical-align:middle}.yv2-tender-star{color:#e3a52a;font-weight:900;margin-left:6px}@media(max-width:640px){#yv2-float{bottom:calc(77px + env(safe-area-inset-bottom,0px));right:10px;padding:10px 13px;font-size:12px}}</style>';
   const float='<a id="yv2-float" href="/yukusta/" aria-label="Yük Usta ile sohbet et">✦ Yük Usta ile sohbet</a>';
   const apk='<section id="yv2-apk" class="yv2-app-card" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;border:1px solid #c8dee9;border-radius:14px;background:#f1f8fb;padding:16px;margin:16px 0;font-family:system-ui,Arial,sans-serif"><div><strong style="display:block;color:#193f51">📲 YükVinç Android uygulaması</strong><small style="color:#526b79">Android 0.6.0 · Resmî GitHub APK dosyası</small></div><a href="https://github.com/osmansohbet0-prog/yukbul/releases/download/yukvinc-android-v0.6.0/YukVinc-Android-0.6.0.apk" target="_blank" rel="noopener noreferrer" style="background:#133f56;color:#fff;text-decoration:none;font-weight:800;border-radius:10px;padding:11px 14px">Uygulamayı indir</a></section>';
   const tag='<span class="yv2-tender-new" aria-label="Yeni ihale">Yeni ihale</span>';
   const rewriter=new HTMLRewriter()
-    .on('head',{element(e){e.append(style+'<script defer src="/assets/yv-v222-extras.js?v=16"></script>',{html:true})}})
+    .on('head',{element(e){e.append(style+wizardStyle+'<script defer src="/assets/yv-v222-extras.js?v=17"></script>',{html:true})}})
     .on('body',{element(e){e.append(float,{html:true})}})
     .on('#yv-buyer-cta-v191',{element(e){if(path==='/')e.remove()}})
     .on('#account-view',{element(e){if(path.startsWith('/hesabim'))e.prepend(apk,{html:true})}})
-    .on('.offer-tabs a[href*="ihale-duyurulari"]',{element(e){e.setAttribute('class',[(e.getAttribute('class')||''),'yv2-tender-tab'].filter(Boolean).join(' '));e.setInnerContent('İhaleler',{html:false});if(hasTender){e.setAttribute('aria-label','İhaleler — yeni ihale var');e.append(tag,{html:true});}}});
+    .on('.offer-tabs a[href*="ihale-duyurulari"]',{element(e){e.setAttribute('class',[(e.getAttribute('class')||''),'yv2-tender-tab'].filter(Boolean).join(' '));e.setInnerContent('İhaleler',{html:false});if(hasTender){e.setAttribute('aria-label','İhaleler — yeni ihale var');e.append(tag,{html:true});}}})
+    .on('.wizard-head h1',{element(e){if(path.startsWith('/ilan-ver'))e.setInnerContent('İlanını 4 kolay adımda yayınla.') }})
+    .on('.wizard-head .lead',{element(e){if(path.startsWith('/ilan-ver'))e.setInnerContent('Bilgilerini ekle, net fotoğraflarını yükle ve ilanını gönder. Kontrolü geçen ilanlar kısa sürede yayına alınır.') }})
+    .on('#step-title',{element(e){if(path.startsWith('/ilan-ver'))e.setInnerContent('1 / 4 · Tür ve konum') }})
+    .on('#submit-listing',{element(e){if(path.startsWith('/ilan-ver'))e.setInnerContent('İlanı gönder ↗') }})
+    .on('#photo-dropzone .optional-tag',{element(e){if(path.startsWith('/ilan-ver'))e.setInnerContent('1–3 fotoğraf · zorunlu') }})
+    .on('script[src="/assets/listing-form.js"]',{element(e){if(path.startsWith('/ilan-ver'))e.setAttribute('src','/assets/yv-v222-listing-form.js?v=17') }});
   return rewriter.transform(source);
 }
 export default {
@@ -168,6 +205,7 @@ export default {
       if(path==='/yukusta'||path==='/yukusta/')return chatPage();
       if(path===CLIENT_ROUTE)return new Response(CLIENT_JS,{headers:{'content-type':'application/javascript; charset=utf-8','cache-control':'public,max-age=300','x-content-type-options':'nosniff'}});
       if(path===CSS_ROUTE)return new Response(CLIENT_CSS,{headers:{'content-type':'text/css; charset=utf-8','cache-control':'public,max-age=300','x-content-type-options':'nosniff'}});
+      if(path===FORM_ROUTE)return new Response(FORM_SCRIPT,{headers:{'content-type':'application/javascript; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}});
       if(path.startsWith(API_PREFIX)){
         if(!env.DB)return error('Yük Usta veritabanına ulaşılamıyor.',503);
         const name=path.slice(API_PREFIX.length);
@@ -177,8 +215,12 @@ export default {
         if(name==='chat')return chat(request,env);
         return error('Adres bulunamadı.',404);
       }
+      if((request.method==='POST'&&path==='/api/listings')||(request.method==='PATCH'&&/^\/api\/listings\/[A-Za-z0-9_-]{8,80}$/.test(path)))return proxyListingWrite(request,env);
       if(request.method==='GET'||request.method==='HEAD')return passthrough(request,env);
       return env.ORIGIN?env.ORIGIN.fetch(request):fetch(request);
     }catch(err){console.error('yv2 route error',err?.name||'Error');return error('Yük Usta geçici olarak kullanılamıyor.',503)}
+  },
+  async scheduled(_controller,env,ctx){
+    ctx.waitUntil(runAutoReview(env).catch(e=>console.error('listing-auto-review',e?.name||'Error')));
   }
 };
