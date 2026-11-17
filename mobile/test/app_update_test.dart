@@ -14,6 +14,11 @@ Map<String, dynamic> release(String version,
       'state': 'uploaded',
       'browser_download_url': 'https://example.org/ignored.apk',
     },
+    if (hasApk) {
+      'name': 'YukVinc-Android-$version.apk.sha256',
+      'size': 92,
+      'state': 'uploaded',
+    },
   ],
 };
 
@@ -28,6 +33,8 @@ void main() {
     expect(update.notes, 'Sürüm notları');
     expect(update.download.host, 'github.com');
     expect(update.download.path, endsWith('YukVinc-Android-0.11.0.apk'));
+    expect(update.checksum.path,
+        endsWith('YukVinc-Android-0.11.0.apk.sha256'));
   });
 
   test('ignores installed and older releases', () {
