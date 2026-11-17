@@ -4,12 +4,14 @@ Bu dizin, YükVinç ana sitesinden **ayrı** Flutter Android başlangıç uygula
 Ana siteye, D1 verilerine, canlı üyelik tablolarına veya yayınlanan Worker'a değişiklik yapılmamıştır.
 
 ## Gerçekte çalışan ilk akışlar
-- Açık ilanlar, arama ve kategori filtreleri: `GET https://yukvinc.com.tr/api/listings`.
+- Açık ilanlar, arama ve kategori filtreleri: aynı YükVinç API'si; cursor sayfalaması, aşağı kaydırma ve çevrimdışı son sayfa önbelleği.
 - İlan detayını ve ilan kartlarını uygulama içinde görüntüleme.
+- Kaynak incelemesi ve robots/kullanım durumu: [SOURCE_ANALYSIS.md](SOURCE_ANALYSIS.md).
 - Google oturumuyla kendi ilanlarını uygulama içinde listeleme, düzenleme ve kaldırma.
 - Yeni ilan formu, doğrulanmış il/ilçe seçimi, fotoğraf ekleme (en fazla 3), oluşturma ve durum takibi; sunucu doğrulaması ve moderasyon kuralları korunur.
 - İncelemede, işaretli veya reddedilmiş ilan için uygulama içinden itiraz gönderme.
 - Konum izni sonrası doğrulanmış ilana göre **yaklaşık** mesafe sorgulama: `POST /api/ai/nearby`.
+- Yeni ilan push bildirimi ve kayıtlı arama eşleşmeleri için FCM backend/cihaz kaydı henüz yok.
 - İşveren iş talebi, teklif verme, profil/firma bilgilerini düzenleme ve yol yardımı işlemleri henüz tam yerel ekran ve doğrulanmış API bağlantısına sahip değil.
 - İş ve hizmet ilanlarının öne çıkarıldığı sade ana sayfa.
 
