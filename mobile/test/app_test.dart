@@ -87,6 +87,8 @@ void main() {
     await tester.pumpWidget(const MaterialApp(
       home: Scaffold(body: Account()),
     ));
+    expect(find.text('Google ile devam et'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Hesabımı aç'), 150);
     expect(find.text('Hesabımı aç'), findsOneWidget);
     expect(find.text('İlan ver'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('İş talepleri'), 150);
