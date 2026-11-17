@@ -1332,6 +1332,7 @@ class _ListingEditorScreenState extends State<ListingEditorScreen>{
   final picker=ImagePicker();
   late final TextEditingController title,description,city,district,address,price,phone,business;
   final photos=<({Uint8List bytes,String mime})>[];
+  List<Map<String,dynamic>> locations=[];
   String category='crane';
   bool busy=false;
   @override void initState(){
@@ -1346,6 +1347,23 @@ class _ListingEditorScreenState extends State<ListingEditorScreen>{
     price=TextEditingController(text:(d['price_amount']??'').toString());
     phone=TextEditingController(text:(d['contact_phone']??'').toString());
     business=TextEditingController(text:(d['business_name']??'').toString());
+    unawaited(loadLocations());
+  }
+  Future<void> loadLocations() async {
+    try {
+      final decoded=jsonDecode(await rootBundle.loadString('assets/turkey-locations.json'));
+      if(decoded is List&&mounted)setState(()=>locations=decoded.whereType<Map>()
+        .map((v)=>Map<String,dynamic>.from(v)).toList(growable:false));
+    } catch (_) {
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content:Text('İl ve ilçe listesi yüklenemedi. Uygulamayı güncelle.')));
+    }
+  }
+  List<String> get cityNames=>locations.map((v)=>(v['name']??'').toString()).where((v)=>v.isNotEmpty).toList(growable:false);
+  List<String> get districtNames {
+    final match=locations.where((v)=>v['name']==city.text);
+    if(match.isEmpty)return const <String>[];
+    return (match.first['districts'] as List).map((v)=>v.toString()).toList(growable:false);
   }
   @override void dispose(){
     for(final c in [title,description,city,district,address,price,phone,business]){c.dispose();}
@@ -1408,10 +1426,18 @@ class _ListingEditorScreenState extends State<ListingEditorScreen>{
         validator:(v)=>validateText(v,'Başlık',5,120)),
       TextFormField(controller:description,maxLength:3000,minLines:4,maxLines:8,decoration:const InputDecoration(labelText:'Açıklama'),
         validator:(v)=>validateText(v,'Açıklama',20,3000)),
-      TextFormField(controller:city,textCapitalization:TextCapitalization.words,decoration:const InputDecoration(labelText:'İl (81 ilden biri)'),
-        validator:(v)=>validateText(v,'İl',2,80)),
-      TextFormField(controller:district,textCapitalization:TextCapitalization.words,decoration:const InputDecoration(labelText:'İlçe'),
-        validator:(v)=>validateText(v,'İlçe',2,100)),
+      DropdownButtonFormField<String>(
+        value:cityNames.contains(city.text)?city.text:null,
+        decoration:const InputDecoration(labelText:'İl'),
+        items:cityNames.map((v)=>DropdownMenuItem(value:v,child:Text(v))).toList(growable:false),
+        onChanged:busy||cityNames.isEmpty?null:(v){if(v!=null)setState(()=>{city.text=v;district.clear();});},
+        validator:(v)=>v==null?'İl seç.':null),
+      DropdownButtonFormField<String>(
+        value:districtNames.contains(district.text)?district.text:null,
+        decoration:InputDecoration(labelText:'İlçe',helperText:city.text.isEmpty?'Önce il seç.':null),
+        items:districtNames.map((v)=>DropdownMenuItem(value:v,child:Text(v))).toList(growable:false),
+        onChanged:busy||city.text.isEmpty?null:(v){if(v!=null)setState(()=>district.text=v);},
+        validator:(v)=>v==null?'İlçe seç.':null),
       TextFormField(controller:address,maxLength:300,decoration:const InputDecoration(labelText:'Adres (isteğe bağlı)')),
       if(category!='operator')TextFormField(controller:price,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'Fiyat (isteğe bağlı)')),
       TextFormField(controller:phone,keyboardType:TextInputType.phone,decoration:const InputDecoration(labelText:'İletişim telefonu')),
