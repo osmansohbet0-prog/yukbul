@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {Script} from 'node:vm';
 import worker from '../edge/v222-extras.worker.mjs';
 
 const api='https://yukvinc.com.tr/api/yukusta-v2/';
@@ -65,4 +66,9 @@ test('chat interface includes scroller, complaint sender, APK and fresh tender e
  const css=readFileSync(new URL('../edge/v222-extras.css',import.meta.url),'utf8');
  for(const token of ['yv2-messages','yv2-report','/report','/tenders','yukvinc-android-v0.5.0','yv-buyer-cta-v191'])assert.ok(js.includes(token),token);
  assert.match(css,/overflow-y:auto/);assert.match(css,/yv2-tender-badge/);
+});
+
+test('shipped browser-side Yük Usta code must actually parse as JavaScript',()=>{
+  const script=readFileSync(new URL('../edge/v222-extras.client.js',import.meta.url),'utf8');
+  assert.doesNotThrow(()=>new Script(script,{filename:'v222-extras.client.js'}));
 });
