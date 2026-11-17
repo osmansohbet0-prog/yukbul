@@ -24,7 +24,7 @@ function apkCard(){
  add(copy,'p',null,'Sürüm 0.5.0 · Resmî GitHub APK dosyası');
  const anchor=add(card,'a',null,'Uygulamayı indir');
  anchor.href=APK;anchor.target='_blank';anchor.rel='noopener noreferrer';
- const anchor=target.querySelector('#my-listings');if(anchor?.parentElement)anchor.parentElement.insertBefore(card,anchor);else target.prepend(card);
+ const listingAnchor=target.querySelector('#my-listings');if(listingAnchor?.parentElement)listingAnchor.parentElement.insertBefore(card,listingAnchor);else target.prepend(card);
 }
 async function tenderBadge(){
  try{
