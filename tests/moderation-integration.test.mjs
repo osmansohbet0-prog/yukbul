@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {sqliteD1} from './fixtures/sqlite-d1.mjs';
 import {digest} from '../functions/_lib/member.js';
 import {onRequestPost as create} from '../functions/api/listings/index.js';
@@ -8,6 +9,7 @@ import {onRequestGet as adminQueue,onRequestPatch as moderate} from '../function
 import {onRequestPatch as adminDecision,onRequestPost as adminCreate} from '../functions/api/admin-listings.js';
 import {onRequestPost as priceCheck} from '../functions/api/listings/price-check.js';
 import {publicItems} from '../functions/_lib/listings.js';
+const VALID_PHOTO={mime_type:'image/png',data:readFileSync(new URL('../public/assets/yuk-vinc-logo-192.png',import.meta.url)).toString('base64')};
 const listing={category:'crane',listing_type:'equipment',title:'25 ton mobil vinç kiralama',description:'Konya Meram ilçesinde mobil vinç kiralama hizmeti veriyoruz.',city:'Konya',district:'Meram',price_amount:1,price_unit:'günlük',contact_phone:'05551234567'};
 async function setup(){const db=sqliteD1();db.sqlite.exec("INSERT INTO users(id,email,email_norm,role) VALUES('member_123456','member@example.test','member@example.test','member'),('admin_123456','admin@example.test','admin@example.test','admin');");
  await db.prepare('INSERT INTO user_sessions(token_hash,user_id,expires_at) VALUES(?,?,unixepoch()+3600)').bind(await digest('member-session'),'member_123456').run();await db.prepare('INSERT INTO admin_sessions(token_hash,user_id,expires_at) VALUES(?,?,unixepoch()+3600)').bind(await digest('admin-session'),'admin_123456').run();return{DB:db,ADMIN_EMAIL:'admin@example.test',AI_ENABLED:'false'};
@@ -17,7 +19,7 @@ function context(env,path,body,admin=false,method=body?'POST':'GET'){
 }
 test('real SQLite contract: low price is accepted privately, appeal and admin decision are audited',async()=>{
  const env=await setup();try{
- const ctx=context(env,'/api/listings',{listing,privacy_ok:true,photos:[]});const response=await create(ctx);await Promise.all(ctx.waiting);assert.equal(response.status,201);const data=await response.json();assert.equal(data.status,'flagged');
+ const ctx=context(env,'/api/listings',{listing,privacy_ok:true,photos:[VALID_PHOTO]});const response=await create(ctx);await Promise.all(ctx.waiting);assert.equal(response.status,201);const data=await response.json();assert.equal(data.status,'flagged');
  const saved=env.DB.sqlite.prepare('SELECT * FROM listings WHERE id=?').get(data.id);assert.equal(saved.price_amount,1);assert.equal(saved.status,'flagged');
  const queue=await (await adminQueue(context(env,'/api/admin-moderation',null,true))).json();assert.equal(queue.items.length,1);assert.ok(queue.items[0].risk_score>=40);assert.match(queue.items[0].owner_email,/\*\*\*/);assert.doesNotMatch(JSON.stringify(queue),/05551234567|member@example/);
  const appealed=await edit(context(env,'/api/listings/'+data.id,{action:'appeal',message:'Bu fiyatı yanlış yazdım, düzelteceğim.'},false,'PATCH'));assert.equal(appealed.status,200);
@@ -30,7 +32,7 @@ test('price checks use separate quota and do not consume listing submissions',as
 });
 test('manlift survives the legacy production constraint and is returned under its own category',async()=>{
  const env=await setup();try{
- const ctx=context(env,'/api/listings',{listing:{...listing,category:'manlift',title:'12 metre makaslı manlift',description:'Konya Meram ilçesinde makaslı manlift kiralama hizmeti.',price_amount:5000},privacy_ok:true,photos:[]});const r=await create(ctx);await Promise.all(ctx.waiting);assert.equal(r.status,201);const data=await r.json();
+ const ctx=context(env,'/api/listings',{listing:{...listing,category:'manlift',title:'12 metre makaslı manlift',description:'Konya Meram ilçesinde makaslı manlift kiralama hizmeti.',price_amount:5000},privacy_ok:true,photos:[VALID_PHOTO]});const r=await create(ctx);await Promise.all(ctx.waiting);assert.equal(r.status,201);const data=await r.json();
  const stored=env.DB.sqlite.prepare('SELECT category,category_detail FROM listings WHERE id=?').get(data.id);assert.equal(stored.category,'machine');assert.equal(stored.category_detail,'manlift');
  const approved=await adminDecision(context(env,'/api/admin-listings',{id:data.id,status:'approved',note:'Kontrol edildi.'},true,'PATCH'));assert.equal(approved.status,200);
  const items=await publicItems(env.DB,{category:'manlift'});assert.equal(items.length,1);assert.equal(items[0].category,'manlift');assert.equal((await publicItems(env.DB,{category:'machine'})).length,0);
