@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'app_update.dart';
 import 'favorites.dart';
+import 'appearance.dart';
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
@@ -68,7 +70,7 @@ class YukApi {
       headers: const {'Accept': 'application/json'},
     ).timeout(const Duration(seconds: 15));
     if (response.statusCode == 404) {
-      throw StateError('İlan artık yayında değil.');
+      throw ListingUnavailable();
     }
     if (response.statusCode != 200) throw StateError('İlan yüklenemedi.');
     final body = jsonDecode(utf8.decode(response.bodyBytes));
@@ -83,6 +85,30 @@ class YukApi {
         .where((path) => path.startsWith('/api/listing-photo/') && !path.contains('..'))
         .toList(growable: false);
     return (listing: listing, photos: photos);
+  }
+
+  Future<List<YukListing>> savedListings(Iterable<String> ids) async {
+    final pendingIds = ids.toList();
+    final results = <YukListing>[];
+    for (var offset = 0; offset < pendingIds.length; offset += 4) {
+      final batch = pendingIds.skip(offset).take(4);
+      final items = await Future.wait(batch.map((id) async {
+        try {
+          final result = await detail(id);
+          return YukListing.fromJson({
+            'id': result.listing.id, 'title': result.listing.title,
+            'city': result.listing.city, 'district': result.listing.district,
+            'category': result.listing.category,
+            'description': result.listing.description,
+            'photo_url': result.photos.isEmpty ? null : result.photos.first,
+          });
+        } on ListingUnavailable {
+          return null;
+        }
+      }));
+      results.addAll(items.whereType<YukListing>());
+    }
+    return results;
   }
 
   List<YukListing> _parse(http.Response response) {
@@ -114,24 +140,29 @@ Future<void> openSite(BuildContext context, String path) async {
   }
 }
 
-void main() => runApp(const YukVincApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try { await AppAppearance.load(); } catch (_) {}
+  runApp(const YukVincApp());
+}
+
 class YukVincApp extends StatelessWidget {
   const YukVincApp({super.key});
   @override
-  Widget build(BuildContext context) => MaterialApp(
-    title: 'YükVinç', debugShowCheckedModeBanner: false,
-    theme: ThemeData(
-      useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(seedColor: navy)
-          .copyWith(primary: navy, secondary: yellow, tertiary: green),
-      scaffoldBackgroundColor: bg,
-      appBarTheme: const AppBarTheme(backgroundColor: bg, foregroundColor: navy),
-      cardTheme: CardThemeData(
-        color: Colors.white, elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
+  Widget build(BuildContext context) => ValueListenableBuilder<ThemeMode>(
+    valueListenable: AppAppearance.mode,
+    builder: (context, mode, child) => MaterialApp(
+      title: 'YükVinç', debugShowCheckedModeBanner: false,
+      theme: AppAppearance.theme(Brightness.light),
+      darkTheme: AppAppearance.theme(Brightness.dark),
+      themeMode: mode,
+      home: const Shell(),
     ),
-    home: const Shell(),
   );
+}
+
+class ListingUnavailable extends StateError {
+  ListingUnavailable() : super('İlan artık yayında değil.');
 }
 
 class Shell extends StatefulWidget {
@@ -207,7 +238,7 @@ class _ShellState extends State<Shell> {
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
       title: const Row(children: [
-        Icon(Icons.local_shipping_rounded, size: 29, color: navy),
+        Icon(Icons.local_shipping_rounded, size: 29),
         SizedBox(width: 10),
         Text('YükVinç', style: TextStyle(fontWeight: FontWeight.w900)),
       ]),
@@ -235,10 +266,9 @@ class _ShellState extends State<Shell> {
     bottomNavigationBar: NavigationBar(
       selectedIndex: tab,
       onDestinationSelected: openTab,
-      indicatorColor: yellow.withValues(alpha: .3),
       destinations: const [
-        NavigationDestination(icon: Icon(Icons.work_outline_rounded), label: 'Fırsatlar'),
-        NavigationDestination(icon: Icon(Icons.search_rounded), label: 'İlanlar'),
+        NavigationDestination(icon: Icon(Icons.work_outline_rounded), label: 'Ana Sayfa'),
+        NavigationDestination(icon: Icon(Icons.search_rounded), label: 'Keşfet'),
         NavigationDestination(icon: Icon(Icons.near_me_outlined), label: 'Yakınımda'),
         NavigationDestination(icon: Icon(Icons.car_repair_outlined), label: 'Yol yardım'),
         NavigationDestination(icon: Icon(Icons.person_outline_rounded), label: 'Hesabım'),
@@ -269,6 +299,35 @@ class _OpportunitiesState extends State<Opportunities> {
         action: 'İlanları keşfet', actionIcon: Icons.arrow_forward_rounded,
         onTap: widget.onExplore,
       ),
+      const SizedBox(height: 18),
+      TextField(
+        textInputAction: TextInputAction.search,
+        decoration: const InputDecoration(
+          hintText: 'Şehir veya ekipman ara', prefixIcon: Icon(Icons.search_rounded),
+        ),
+        onSubmitted: (query) {
+          if (query.trim().isEmpty) return;
+          Navigator.of(context).push(MaterialPageRoute<void>(
+            builder: (_) => Scaffold(
+              appBar: AppBar(title: const Text('Keşfet')),
+              body: ListingsScreen(initialQuery: query.trim()),
+            ),
+          ));
+        },
+      ),
+      const SizedBox(height: 12),
+      Wrap(spacing: 8, children: [
+        ActionChip(avatar: const Icon(Icons.bookmark_outline, size: 18),
+          label: const Text('Favorilerim'),
+          onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+            builder: (_) => const FavoriteListings(),
+          ))),
+        ActionChip(avatar: const Icon(Icons.history, size: 18),
+          label: const Text('Son baktıklarım'),
+          onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+            builder: (_) => const FavoriteListings(recent: true),
+          ))),
+      ]),
       const SizedBox(height: 14),
       Row(children: [
         Expanded(child: ShortcutCard(
@@ -283,10 +342,10 @@ class _OpportunitiesState extends State<Opportunities> {
       ]),
       const SizedBox(height: 24),
       const Text('Güncel ilanlar', style: TextStyle(fontSize: 21,
-        fontWeight: FontWeight.w800, color: navy)),
+        fontWeight: FontWeight.w800)),
       const SizedBox(height: 5),
       const Text('Onaylı ilanlar gösterilir. Operatör ilanları iş arayan kişilere aittir.',
-        style: TextStyle(fontSize: 12, color: Colors.black54)),
+        style: TextStyle(fontSize: 12)),
       const SizedBox(height: 12),
       FutureBuilder<List<YukListing>>(future: future, builder: (context, snap) {
         if (!snap.hasData && !snap.hasError) return const Loading();
@@ -354,16 +413,17 @@ class ShortcutCard extends StatelessWidget {
     child: InkWell(borderRadius: BorderRadius.circular(18), onTap: onTap,
       child: Padding(padding: const EdgeInsets.all(15),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Icon(icon, size: 27, color: navy), const SizedBox(height: 12),
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w800, color: navy)),
+          Icon(icon, size: 27), const SizedBox(height: 12),
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
           const SizedBox(height: 3),
-          Text(subtitle, style: const TextStyle(fontSize: 11, color: Colors.black54)),
+          Text(subtitle, style: const TextStyle(fontSize: 11)),
         ]))),
   );
 }
 
 class ListingsScreen extends StatefulWidget {
-  const ListingsScreen({super.key});
+  const ListingsScreen({super.key, this.initialQuery = ''});
+  final String initialQuery;
   @override State<ListingsScreen> createState() => _ListingsState();
 }
 class _ListingsState extends State<ListingsScreen> {
@@ -376,7 +436,11 @@ class _ListingsState extends State<ListingsScreen> {
     'basket': 'Sepetli', 'mobile_tire': 'Lastik', 'manlift': 'Manlift',
     'machine': 'Makine', 'lift': 'Asansör', 'operator': 'Operatör',
   };
-  @override void initState() { super.initState(); future = api.initialListings(); }
+  @override void initState() {
+    super.initState();
+    search.text = widget.initialQuery;
+    future = search.text.isEmpty ? api.initialListings() : api.listings(query: search.text);
+  }
   void load() => setState(() =>
     future = api.listings(query: search.text, category: category));
   Future<void> refresh() async { load(); try { await future; } catch (_) {} }
@@ -388,7 +452,7 @@ class _ListingsState extends State<ListingsScreen> {
         decoration: InputDecoration(
           hintText: 'Şehir, ilan veya ekipman ara',
           prefixIcon: const Icon(Icons.search),
-          filled: true, fillColor: Colors.white,
+          filled: true,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(15),
             borderSide: BorderSide.none)),
         onSubmitted: (_) { timer?.cancel(); load(); },
@@ -563,7 +627,7 @@ class _NearbyState extends State<Nearby> {
       if (visible != null) ...[
         const SizedBox(height: 23),
         Text(manual ? 'Bölgedeki ilanlar (${visible.length})' : 'Yakındaki ilanlar (${visible.length})',
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: navy)),
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
         const SizedBox(height: 10),
         if (visible.isEmpty) Empty(manual
           ? 'Bu il ve ilçe için ilan bulunamadı.'
@@ -655,7 +719,8 @@ class _RoadHelpState extends State<RoadHelp> {
 }
 
 class FavoriteListings extends StatefulWidget {
-  const FavoriteListings({super.key});
+  const FavoriteListings({super.key, this.recent = false});
+  final bool recent;
   @override State<FavoriteListings> createState() => _FavoriteListingsState();
 }
 
@@ -669,10 +734,8 @@ class _FavoriteListingsState extends State<FavoriteListings> {
   }
 
   Future<List<YukListing>> _load() async {
-    final ids = await FavoritesStore.load();
-    if (ids.isEmpty) return const [];
-    final listings = await api.listings();
-    return listings.where((item) => ids.contains(item.id)).toList(growable: false);
+    final ids = widget.recent ? await RecentListingsStore.load() : await FavoritesStore.load();
+    return api.savedListings(ids);
   }
 
   Future<void> _refresh() async {
@@ -683,14 +746,30 @@ class _FavoriteListingsState extends State<FavoriteListings> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Favorilerim')),
+    appBar: AppBar(title: Text(widget.recent ? 'Son görüntülenenler' : 'Favorilerim'),
+      actions: [
+        if (widget.recent) IconButton(
+          tooltip: 'Geçmişi temizle', icon: const Icon(Icons.delete_outline),
+          onPressed: () async {
+            try {
+              await RecentListingsStore.clear();
+              if (mounted) await _refresh();
+            } catch (_) {
+              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Geçmiş temizlenemedi.')),
+              );
+            }
+          },
+        ),
+      ],
+    ),
     body: FutureBuilder<List<YukListing>>(
       future: future,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) return const Loading();
         if (snapshot.hasError) return Retry(onTap: _refresh);
         final items = snapshot.data ?? const <YukListing>[];
-        if (items.isEmpty) return const Empty('Kaydedilmiş ilan yok. Kaldırılmış ilanlar burada gösterilmez.');
+        if (items.isEmpty) return const Empty('Gösterilecek ilan yok. İlanları keşfederek başlayabilirsin.');
         return RefreshIndicator(
           onRefresh: _refresh,
           child: ListView.builder(
@@ -712,11 +791,38 @@ class Account extends StatelessWidget {
   @override Widget build(BuildContext context) => ListView(
     padding: const EdgeInsets.all(18), children: [
       const Text('Hesabım', style: TextStyle(
-        color: navy, fontSize: 25, fontWeight: FontWeight.w900)),
+        fontSize: 25, fontWeight: FontWeight.w900)),
       const SizedBox(height: 7),
       const Text('Mevcut YükVinç hesabınla devam et.',
         style: TextStyle(color: Colors.black54)),
       const SizedBox(height: 17),
+      Card(child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: ValueListenableBuilder<ThemeMode>(
+          valueListenable: AppAppearance.mode,
+          builder: (context, mode, child) => DropdownButtonFormField<ThemeMode>(
+            initialValue: mode, decoration: const InputDecoration(labelText: 'Görünüm'),
+            items: const [
+              DropdownMenuItem(value: ThemeMode.system, child: Text('Telefon ayarı')),
+              DropdownMenuItem(value: ThemeMode.light, child: Text('Aydınlık')),
+              DropdownMenuItem(value: ThemeMode.dark, child: Text('Karanlık')),
+            ],
+            onChanged: (value) async {
+              if (value == null) return;
+              try { await AppAppearance.save(value); } catch (_) {
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Görünüm kaydedilemedi.')),
+                );
+              }
+            },
+          ),
+        ),
+      )),
+      AccountLink(icon: Icons.history_rounded, title: 'Son görüntülenenler',
+        subtitle: 'Bu cihazda baktığın son 12 ilan',
+        onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => const FavoriteListings(recent: true),
+        ))),
       AccountLink(icon: Icons.bookmark_outline_rounded, title: 'Favorilerim',
         subtitle: 'Bu cihazda kaydettiğin ilanlar',
         onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
@@ -741,7 +847,7 @@ class AccountLink extends StatelessWidget {
   final VoidCallback onTap;
   @override Widget build(BuildContext context) => Card(
     child: ListTile(
-      leading: CircleAvatar(backgroundColor: bg, child: Icon(icon, color: navy)),
+      leading: CircleAvatar(backgroundColor: Theme.of(context).colorScheme.primaryContainer, child: Icon(icon)),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
       subtitle: Text(subtitle), trailing: const Icon(Icons.chevron_right),
       onTap: onTap,
@@ -777,41 +883,57 @@ class ListingCard extends StatelessWidget {
     'mobile_tire' => 'MOBİL LASTİK', 'operator' => 'İŞ ARAYAN OPERATÖR',
     'manlift' => 'MANLİFT', 'machine' => 'İŞ MAKİNESİ', 'lift' => 'NAKLİYAT ASANSÖRÜ', _ => 'İLAN',
   };
-  @override Widget build(BuildContext context) => Card(
-    margin: const EdgeInsets.only(bottom: 10),
-    child: InkWell(borderRadius: BorderRadius.circular(18),
-      onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-        builder: (_) => ListingDetail(itemId: item.id),
-      )),
-      child: Padding(padding: const EdgeInsets.all(13),
-        child: Row(children: [
-          ClipRRect(borderRadius: BorderRadius.circular(12),
-            child: SizedBox(width: 80, height: 80,
-              child: item.photoUrl != null && item.photoUrl!.startsWith('/')
-                ? Image.network(baseUrl + item.photoUrl!, fit: BoxFit.cover,
-                    cacheWidth: 240,
-                    errorBuilder: (context, err, trace) => const ListingPlaceholder())
-                : const ListingPlaceholder())),
-          const SizedBox(width: 13),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-            Text(categoryLabel, style: const TextStyle(color: green,
-              fontWeight: FontWeight.w900, fontSize: 10)),
-            const SizedBox(height: 5),
-            Text(item.title, maxLines: 2, overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: navy, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 7),
-            Text(item.city + ' / ' + item.district,
-              maxLines: 1, overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.black54, fontSize: 11)),
-            if (item.distanceKm != null)
-              Text('Yaklaşık ' + item.distanceKm.toString() + ' km',
-                style: const TextStyle(color: green, fontSize: 11)),
-          ])),
-          FavoriteButton(itemId: item.id, onChanged: onFavoriteChanged),
-        ])),
-    ));
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final photo = item.photoUrl;
+    final uri = photo == null ? null : Uri.tryParse(photo);
+    final imageUrl = uri != null && photo!.startsWith('/api/listing-photo/')
+        ? baseUrl + photo
+        : uri != null && uri.scheme == 'https' && uri.host == 'yukvinc.com.tr'
+            ? uri.toString() : null;
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => ListingDetail(itemId: item.id),
+        )),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          AspectRatio(aspectRatio: 16 / 9, child: imageUrl == null
+            ? const ListingPlaceholder()
+            : Image.network(imageUrl, fit: BoxFit.cover, cacheWidth: 900,
+                semanticLabel: item.title,
+                errorBuilder: (_, error, stack) => const ListingPlaceholder())),
+          Padding(padding: const EdgeInsets.all(18), child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Expanded(child: Text(categoryLabel,
+                  style: TextStyle(color: colors.primary,
+                    fontWeight: FontWeight.w800, fontSize: 11))),
+                FavoriteButton(key: ValueKey(item.id),
+                  itemId: item.id, onChanged: onFavoriteChanged),
+              ]),
+              Text(item.title, maxLines: 2, overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800)),
+              const SizedBox(height: 10),
+              Row(children: [
+                Icon(Icons.location_on_outlined, size: 17, color: colors.onSurfaceVariant),
+                const SizedBox(width: 5),
+                Expanded(child: Text(
+                  [item.city, item.district].where((value) => value.isNotEmpty).join(' / '),
+                  style: TextStyle(color: colors.onSurfaceVariant))),
+                if (item.distanceKm != null)
+                  Text('${item.distanceKm} km', style: TextStyle(color: colors.primary)),
+              ]),
+            ],
+          )),
+        ]),
+      ),
+    );
+  }
 }
+
 
 class ListingDetail extends StatefulWidget {
   const ListingDetail({super.key, required this.itemId, this.client});
@@ -829,7 +951,10 @@ class _ListingDetailState extends State<ListingDetail> {
   @override
   void initState() {
     super.initState();
-    future = (widget.client ?? api).detail(widget.itemId);
+    future = (widget.client ?? api).detail(widget.itemId).then((value) {
+      unawaited(RecentListingsStore.record(widget.itemId).catchError((Object error) {}));
+      return value;
+    });
   }
 
   Future<void> refresh() async {
@@ -842,7 +967,24 @@ class _ListingDetailState extends State<ListingDetail> {
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
       title: const Text('İlan detayı'),
-      actions: [FavoriteButton(itemId: widget.itemId)],
+      actions: [
+        IconButton(tooltip: 'Bağlantıyı kopyala', icon: const Icon(Icons.link),
+          onPressed: () async {
+            try {
+              await Clipboard.setData(ClipboardData(
+                text: '$baseUrl/ilan/${Uri.encodeComponent(widget.itemId)}/'));
+              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('İlan bağlantısı kopyalandı.')),
+              );
+            } catch (_) {
+              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Bağlantı kopyalanamadı.')),
+              );
+            }
+          },
+        ),
+        FavoriteButton(itemId: widget.itemId),
+      ],
     ),
     body: FutureBuilder<({YukListing listing, List<String> photos})>(
       future: future,
@@ -897,6 +1039,14 @@ class _ListingDetailState extends State<ListingDetail> {
               const SizedBox(height: 8),
               Text([item.city, item.district].where((v) => v.isNotEmpty).join(' / ')),
               const SizedBox(height: 24),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.share_outlined),
+                label: const Text('WhatsApp’ta paylaş'),
+                onPressed: () => card.contact(context, Uri.https('wa.me', '/', {
+                  'text': '${item.title}\n$baseUrl/ilan/${Uri.encodeComponent(item.id)}/',
+                })),
+              ),
+              const SizedBox(height: 16),
               SelectableText(item.description, style: const TextStyle(height: 1.6)),
               const SizedBox(height: 24),
               if (card.dialNumber.isNotEmpty) Wrap(spacing: 12, children: [
@@ -936,9 +1086,34 @@ class _FavoriteButtonState extends State<FavoriteButton> {
   @override
   void initState() {
     super.initState();
-    FavoritesStore.contains(widget.itemId).then((value) {
-      if (mounted) setState(() { favorite = value; ready = true; });
+    FavoritesStore.changes.addListener(reload);
+    reload();
+  }
+
+  void reload() {
+    final id = widget.itemId;
+    FavoritesStore.contains(id).then((value) {
+      if (mounted && widget.itemId == id) {
+        setState(() { favorite = value; ready = true; });
+      }
+    }).catchError((Object error) {
+      if (mounted) setState(() => ready = true);
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant FavoriteButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.itemId != widget.itemId) {
+      ready = false;
+      reload();
+    }
+  }
+
+  @override
+  void dispose() {
+    FavoritesStore.changes.removeListener(reload);
+    super.dispose();
   }
 
   Future<void> toggle() async {
@@ -964,15 +1139,15 @@ class _FavoriteButtonState extends State<FavoriteButton> {
     icon: saving ? const SizedBox(
       width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2),
     ) : Icon(favorite ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-        color: favorite ? green : Colors.black45),
+        color: favorite ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant),
   );
 }
 
 class ListingPlaceholder extends StatelessWidget {
   const ListingPlaceholder({super.key});
   @override Widget build(BuildContext context) => Container(
-    color: const Color(0xFFEAF0F1),
-    child: const Icon(Icons.local_shipping_outlined, size: 32, color: navy));
+    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+    child: const Icon(Icons.local_shipping_outlined, size: 32));
 }
 class Loading extends StatelessWidget {
   const Loading({super.key});
@@ -985,7 +1160,7 @@ class Empty extends StatelessWidget {
   @override Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.all(30),
     child: Center(child: Text(label, textAlign: TextAlign.center,
-      style: const TextStyle(color: Colors.black54))));
+      style: Theme.of(context).textTheme.bodyMedium)));
 }
 class Retry extends StatelessWidget {
   const Retry({super.key, required this.onTap});
