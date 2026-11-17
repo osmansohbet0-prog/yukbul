@@ -10,7 +10,7 @@ function start(){
  const link=e('link');link.id='yv2-css';link.rel='stylesheet';link.href='/assets/yv-v222-extras.css?v=1';document.head.append(link);
  if(location.pathname==='/')document.getElementById('yv-buyer-cta-v191')?.remove();
  if(location.pathname.startsWith('/hesabim'))apkCard();
- if(location.pathname.startsWith('/is-talepleri'))tenderBadge();
+ if(location.pathname.startsWith('/is-talepleri')||location.pathname.startsWith('/ihale-duyurulari'))tenderBadge();
  if(location.pathname.startsWith('/admin'))return;
  createChat();
  if(document.getElementById('yv2-chat'))document.getElementById('yv2-float')?.style.setProperty('display','none','important');
@@ -22,7 +22,7 @@ function apkCard(){
  const card=e('section','yv2-app-card');card.id='yv2-apk';
  const copy=add(card,'div');
  add(copy,'strong',null,'📲 YükVinç Android uygulaması');
- add(copy,'p',null,'Sürüm 0.5.0 · Resmî GitHub APK dosyası');
+ add(copy,'p',null,'Sürüm 0.6.0 · Resmî GitHub APK dosyası');
  const anchor=add(card,'a',null,'Uygulamayı indir');
  anchor.href=APK;anchor.target='_blank';anchor.rel='noopener noreferrer';
  const listingAnchor=target.querySelector('#my-listings');if(listingAnchor?.parentElement)listingAnchor.parentElement.insertBefore(card,listingAnchor);else target.prepend(card);
@@ -30,22 +30,93 @@ function apkCard(){
 async function tenderBadge(){
  try{
   const response=await fetch(BASE+'/tenders',{cache:'no-store',credentials:'same-origin'});
-  if(!response.ok)return;const data=await response.json();
-  if(!Number(data.new_count))return;
-  function apply(){
-   const links=[...document.querySelectorAll('a[href*="ihale-duyurulari"]')];
-   const link=links.find(x=>/ihale duyurular/i.test(x.textContent))||links[0];
-   if(!link)return;
-   if(link.querySelector('.yv2-tender-badge, .yv2-tender-new'))return;
-   const stars=add(link,'span','yv2-tender-stars',' ✦ ✦');stars.setAttribute('aria-hidden','true');
-   add(link,'span','yv2-tender-badge','Yeni eklendi');
-   link.setAttribute('aria-label','İhale duyurularına git; yeni ihale yayımlandı');
+  if(!response.ok)return;
+  const data=await response.json();
+  const recent=Number(data.new_count||0)>0;
+  // One small badge on the existing tab, never an additional top-of-page ribbon.
+  function updateTabs(){
+   document.getElementById('yv2-tender-top')?.remove();
+   for(const link of document.querySelectorAll('.offer-tabs a[href*="ihale-duyurulari"], nav a[href*="ihale-duyurulari"]')){
+    if(link.closest('#yv2-chat'))continue;
+    const tab=link.closest('.offer-tabs');
+    if(tab){
+     link.classList.add('yv2-tender-tab');
+     // Preserve the existing clickable route while keeping the tab short.
+     const label=link.querySelector('.yv2-tender-new');
+     const actual=link.textContent.replace(/Yeni (ihale|eklendi)/gi,'').trim();
+     if(!actual.startsWith('İhaleler'))link.textContent='İhaleler';
+     else if(label&&label.textContent!=='Yeni ihale')label.remove();
+    }
+    link.querySelectorAll('.yv2-tender-badge,.yv2-tender-stars,.yv2-tender-star').forEach(n=>n.remove());
+    const badge=link.querySelector('.yv2-tender-new');
+    if(recent){
+     if(!badge)add(link,'span','yv2-tender-new','Yeni ihale');
+     else badge.textContent='Yeni ihale';
+     link.setAttribute('aria-label','İhaleler, yeni ihale var');
+    }else{
+     badge?.remove();
+     link.removeAttribute('aria-label');
+    }
+   }
   }
+  const sorted=(Array.isArray(data.items)?data.items:[])
+   .filter(x=>x&&typeof x.title==='string'&&Number(x.published_at)>0)
+   .sort((a,b)=>Number(b.published_at)-Number(a.published_at));
+  const canon=v=>String(v||'').toLocaleLowerCase('tr-TR').replace(/\s+/g,' ').trim();
+  const exactUrl=v=>{try{return new URL(v,location.origin).href.replace(/#.*$/,'').replace(/\/$/,'')}catch{return''}};
+  const byUrl=new Map(sorted.filter(x=>x.source_url).map(x=>[exactUrl(x.source_url),x]));
+  const matchCard=node=>{
+   const key=node.dataset?.leadId||node.dataset?.tenderId||node.dataset?.id;
+   if(key){const byId=sorted.find(x=>String(x.id)===key);if(byId)return byId}
+   for(const link of node.querySelectorAll('a[href]')){
+    const byLink=byUrl.get(exactUrl(link.href));
+    if(byLink)return byLink;
+   }
+   const txt=canon(node.textContent);
+   if(!txt||txt.length>4000)return null;
+   return sorted.find(x=>canon(x.title).length>=16&&txt.includes(canon(x.title)))||null;
+  };
+  function prioritizeTenderCards(){
+   if(!location.pathname.startsWith('/ihale-duyurulari'))return;
+   const nodes=[...document.querySelectorAll('.tender-card,.ihale-card,.radar-card,.job-card,article[data-lead-id],article[data-tender-id],article,li[data-id]')];
+   const matched=nodes.filter(n=>n.parentElement&&matchCard(n));
+   const groups=new Map();
+   for(const node of matched){
+    const parent=node.parentElement;
+    const entries=groups.get(parent)||[];
+    if(!entries.includes(node))entries.push(node);
+    groups.set(parent,entries);
+   }
+   for(const [parent,entries] of groups){
+    if(entries.length<2)continue;
+    const before=[...parent.children];
+    const positions=new Set(entries);
+    const candidates=entries.slice().sort((a,b)=>Number(matchCard(b)?.published_at||0)-Number(matchCard(a)?.published_at||0));
+    let k=0;
+    const target=before.map(n=>positions.has(n)?candidates[k++]:n);
+    if(target.every((n,i)=>n===before[i]))continue;
+    for(let i=0;i<target.length;i++){
+     if(parent.children[i]!==target[i])parent.insertBefore(target[i],parent.children[i]||null);
+    }
+   }
+   // Mark only verified recent published tenders; never infer from a raw record date.
+   for(const node of matched){
+    const item=matchCard(node);
+    if(item?.is_new)node.dataset.yv2NewTender='true';
+    else delete node.dataset.yv2NewTender;
+   }
+  }
+  function apply(){updateTabs();prioritizeTenderCards()}
   apply();
-  const root=document.getElementById('app')||document.querySelector('main')||document.body;
   let queued=false;
-  const observer=new MutationObserver(()=>{if(!queued){queued=true;queueMicrotask(()=>{queued=false;apply()})}});
-  observer.observe(root,{subtree:true,childList:true});setTimeout(()=>observer.disconnect(),90000);
+  const observer=new MutationObserver(()=>{
+   if(queued)return;
+   queued=true;
+   requestAnimationFrame(()=>{queued=false;apply()});
+  });
+  const root=document.getElementById('app')||document.querySelector('main')||document.body;
+  observer.observe(root,{subtree:true,childList:true});
+  setTimeout(()=>observer.disconnect(),90000);
  }catch{}
 }
 function createChat(){
