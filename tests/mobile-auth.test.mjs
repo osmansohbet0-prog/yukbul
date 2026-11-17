@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {onRequestPost as handoff} from '../functions/api/auth/mobile-handoff.js';
+import {onRequestGet as handoff} from '../functions/api/auth/mobile-handoff.js';
 import {onRequestPost as exchange} from '../functions/api/auth/mobile-exchange.js';
 
 const origin='https://yukvinc.com.tr';
@@ -39,12 +39,14 @@ function fakeDb() {
   }};
   return {DB,calls};
 }
-const request=(path,body,{cookie=false,originHeader=origin}={})=>new Request(origin+path,{
-  method:'POST',
-  headers:{Origin:originHeader,'Content-Type':'application/json','CF-Connecting-IP':'203.0.113.10',
-    ...(cookie?{Cookie:'__Host-yv_member=browser-session'}:{})},
-  body:JSON.stringify(body),
-});
+const request=(path,body,{cookie=false,originHeader=origin,method='POST',fetchSite}={})=>{
+  const headers={'CF-Connecting-IP':'203.0.113.10'};
+  if(originHeader)headers.Origin=originHeader;
+  if(body!==undefined&&body!==null)headers['Content-Type']='application/json';
+  if(cookie)headers.Cookie='__Host-yv_member=browser-session';
+  if(fetchSite)headers['Sec-Fetch-Site']=fetchSite;
+  return new Request(origin+path,{method,headers,body:body==null?undefined:JSON.stringify(body)});
+};
 async function challenge(verifier){
   return Buffer.from(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier))).toString('base64url');
 }
@@ -52,11 +54,17 @@ async function challenge(verifier){
 test('mobile Google handoff consumes a short-lived PKCE code exactly once',async()=>{
   const {DB,calls}=fakeDb(),env={DB};
   const state='s'.repeat(43),verifier='v'.repeat(43),codeChallenge=await challenge(verifier);
-  const start=await handoff({request:request('/api/auth/mobile-handoff',{
-    state,code_challenge:codeChallenge,code_challenge_method:'S256',
-  },{cookie:true}),env});
-  assert.equal(start.status,201);
-  const {code}=await start.json();
+  const path='/api/auth/mobile-handoff?app=android&state='+state+
+    '&code_challenge='+codeChallenge+'&code_challenge_method=S256';
+  const start=await handoff({request:request(path,null,{cookie:true,method:'GET',fetchSite:'same-origin'}),env});
+  assert.equal(start.status,200);
+  assert.equal(start.headers.get('cache-control'),'no-store, no-cache, must-revalidate');
+  const html=await start.text();
+  const callbackHref=/href="(yukvinc:\/\/auth\/callback\?[^"]+)"/.exec(html)?.[1]?.replaceAll('&amp;','&');
+  assert.ok(callbackHref);
+  const callback=new URL(callbackHref);
+  assert.equal(callback.searchParams.get('state'),state);
+  const code=callback.searchParams.get('code');
   assert.match(code,/^[A-Za-z0-9_-]{43}$/);
   const stored=calls.find(x=>x.sql.startsWith('INSERT INTO mobile_auth_codes'));
   assert.ok(stored);
@@ -73,9 +81,10 @@ test('mobile Google handoff consumes a short-lived PKCE code exactly once',async
   assert.equal((await finish()).status,401);
 });
 
-test('mobile Google handoff rejects untrusted origins and missing browser sessions',async()=>{
+test('mobile Google handoff rejects cross-site, untrusted and unauthenticated requests',async()=>{
   const {DB}=fakeDb(),env={DB};
-  const body={state:'s'.repeat(43),code_challenge:'c'.repeat(43),code_challenge_method:'S256'};
-  assert.equal((await handoff({request:request('/api/auth/mobile-handoff',body,{originHeader:'https://attacker.example'}),env})).status,403);
-  assert.equal((await handoff({request:request('/api/auth/mobile-handoff',body),env})).status,401);
+  const query='?app=android&state='+'s'.repeat(43)+'&code_challenge='+'c'.repeat(43)+'&code_challenge_method=S256';
+  assert.equal((await handoff({request:request('/api/auth/mobile-handoff'+query,null,{cookie:true,method:'GET',originHeader:'https://attacker.example'}),env})).status,403);
+  assert.equal((await handoff({request:request('/api/auth/mobile-handoff'+query,null,{cookie:true,method:'GET',fetchSite:'cross-site'}),env})).status,403);
+  assert.equal((await handoff({request:request('/api/auth/mobile-handoff'+query,null,{method:'GET',fetchSite:'same-origin'}),env})).status,401);
 });
