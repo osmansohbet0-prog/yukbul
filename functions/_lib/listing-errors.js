@@ -6,6 +6,7 @@ const MESSAGES = {
   STORAGE_BINDING_MISSING: 'Fotoğraf depolama hizmeti bağlı değil. Lütfen site yöneticisine bildir.',
   VALIDATION_FAILED: 'Zorunlu alanları kontrol et.',
   CITY_INVALID: 'Listeden geçerli bir il seç.',
+  PHOTO_REQUIRED: 'İlanı incelemeye göndermek için en az bir gerçek ekipman veya hizmet fotoğrafı yüklemelisin.',
   PHOTO_TOO_LARGE: 'Fotoğraf çok büyük. Daha küçük bir fotoğraf seçip yeniden dene.',
   PHOTO_TYPE_INVALID: 'Fotoğraf biçimi desteklenmiyor. JPG, PNG veya WebP kullan.',
   AUTH_REQUIRED: 'İlan vermek için önce hesabına giriş yap.',
