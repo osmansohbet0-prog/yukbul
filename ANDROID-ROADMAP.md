@@ -9,7 +9,12 @@
 - [x] Favorileri ilk sonuç sayfasıyla sınırlamadan detay API'sinden yükleme.
 - [x] Depolama, tema ve dar ekranda büyük yazıyla kart testleri.
 - [x] Flutter analiz ve testler.
-- [ ] İmzalı APK, önceki sürüm üstüne kurulum ve açılış: CI sonucu bekleniyor.
+- [x] Kalıcı anahtarla imzalı APK, imza/mimari doğrulaması, Android 14 emülatöründe önceki sürüm üstüne kurulum ve açılış geçti.
+
+Test artifact: https://github.com/osmansohbet0-prog/yukbul/actions/runs/44128373573/artifacts/14348828397
+Gerçek telefonda kullanıcı akışlarının uçtan uca doğrulaması henüz yapılmadı.
+
+**Değiştirilen dosyalar:** mobile/lib/main.dart, mobile/lib/appearance.dart, mobile/lib/favorites.dart, mobile/lib/app_update.dart, mobile/pubspec.yaml, mobile/test/discovery_test.dart, mobile/test/app_test.dart, .github/workflows/yukvinc-mobile.yml.
 
 Kod: dbc2f76144e27c1ec7d960af96cef948cbb7a5b4
 PR: https://github.com/osmansohbet0-prog/yukbul/pull/75
