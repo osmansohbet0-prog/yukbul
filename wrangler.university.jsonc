@@ -1,0 +1,85 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "yukbul",
+  "main": "./src/university-worker.js",
+  "compatibility_date": "2026-10-23",
+  "observability": {
+    "enabled": true,
+    "traces": {
+      "enabled": true
+    }
+  },
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "yukvinc-db",
+      "database_id": "e7bba0a3-eb81-4122-9d16-7787d8fd531c",
+      "migrations_dir": "migrations"
+    },
+    {
+      "binding": "TEST_DB",
+      "database_name": "yukvinc-test-lab",
+      "database_id": "4a9d7604-c4c3-4c27-81a0-95bf36ec1318"
+    }
+  ],
+  "ai": {
+    "binding": "AI"
+  },
+  "send_email": [
+    {
+      "name": "EMAIL"
+    }
+  ],
+  "triggers": {
+    "crons": [
+      "* * * * *",
+      "0 4 * * 1",
+      "*/2 * * * *"
+    ]
+  },
+  "vars": {
+    "AI_ENABLED": "true",
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAFix_9Aae1ng9JT8",
+    "ACCESS_AUDIENCE": "559841639c5112f9f20762af28395a78ec49de26b71fdc8b5060d38b47bc0914",
+    "ACCESS_ISSUER": "https://yukvinc-admin.cloudflareaccess.com",
+    "TEST_LAB_ENABLED": "false"
+  },
+  "routes": [
+    {
+      "pattern": "yukvinc.com.tr",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.yukvinc.com.tr",
+      "custom_domain": true
+    }
+  ],
+  "workers_dev": false,
+  "previews": {
+    "vars": {
+      "AI_ENABLED": "false",
+      "TURNSTILE_SITE_KEY": "0x4AAAAAAFix_9Aae1ng9JT8"
+    },
+    "d1_databases": [
+      {
+        "binding": "DB",
+        "database_name": "yukvinc-preview",
+        "database_id": "fa5c7fc3-e0eb-4fb9-813d-0c696a05cff5",
+        "migrations_dir": "migrations"
+      },
+      {
+        "binding": "TEST_DB",
+        "database_name": "yukvinc-test-lab",
+        "database_id": "4a9d7604-c4c3-4c27-81a0-95bf36ec1318"
+      }
+    ],
+    "ai": {
+      "binding": "AI"
+    }
+  }
+}
