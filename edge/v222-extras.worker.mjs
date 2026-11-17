@@ -3,7 +3,7 @@
 const CLIENT_JS = '__INJECT_CLIENT_JS__';
 const CLIENT_CSS = '__INJECT_CLIENT_CSS__';
 const CORS_ORIGIN = 'https://yukvinc.com.tr';
-const VERSION = 'v222-extras-20261117.4';
+const VERSION = 'v222-extras-20261117.5';
 const CLIENT_ROUTE = '/assets/yv-v222-extras.js';
 const CSS_ROUTE = '/assets/yv-v222-extras.css';
 const API_PREFIX = '/api/yukusta-v2/';
@@ -125,13 +125,22 @@ async function chat(request,env){
 }
 function throwFallback(){return respond({ok:true,answer:'Sana yardımcı olmak isterim. Ne yapmak istediğini biraz daha anlatır mısın?',listings:[],mode:'fallback'})}
 async function passthrough(request,env){
-  // Calling the original V222 Worker through service binding avoids replacing any of its code/assets.
+  // The original V222 Worker stays intact; add only a scoped, nonce-authorized chat script.
   const source=env.ORIGIN?await env.ORIGIN.fetch(request):await fetch(request);
   if(!source.ok||!String(source.headers.get('content-type')||'').includes('text/html'))return source;
+  const nonce=crypto.randomUUID().replaceAll('-','');
+  const headers=new Headers(source.headers);
+  const csp=headers.get('content-security-policy');
+  if(csp){
+    const scriptMatch=/(^|;[ ]*)script-src[ ]+([^;]*)/;
+    if(scriptMatch.test(csp))headers.set('content-security-policy',csp.replace(scriptMatch,(all,prefix,values)=>prefix+'script-src '+values+" 'nonce-"+nonce+"'"));
+  }
+  headers.delete('content-length');
+  const response=new Response(source.body,{status:source.status,statusText:source.statusText,headers});
   const rewriter=new HTMLRewriter().on('head',{element(element){
-    element.append('<script src="/assets/yv-v222-extras.js?v=4" defer></script>',{html:true});
+    element.append('<script nonce="'+nonce+'">'+CLIENT_JS+'</script>',{html:true});
   }});
-  return rewriter.transform(source);
+  return rewriter.transform(response);
 }
 export default {
   async fetch(request,env){
