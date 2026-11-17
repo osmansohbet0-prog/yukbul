@@ -109,9 +109,11 @@ async function compress(file){
  try{
   const width=img.width||img.naturalWidth,height=img.height||img.naturalHeight;
   if(!width||!height||width*height>64_000_000)throw Error('Fotoğrafın çözünürlüğü bu cihazın güvenli işleme sınırını aşıyor.');
-  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+  // Keep uploads usable on memory-constrained phones, without altering thumbnails.
+  const scale=Math.min(1,2000/Math.max(width,height));
+  const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(width*scale));canvas.height=Math.max(1,Math.round(height*scale));
   const ctx=canvas.getContext('2d',{alpha:false});if(!ctx)throw Error('Fotoğraf düzenleyici başlatılamadı.');
-  ctx.drawImage(img,0,0,width,height);
+  ctx.drawImage(img,0,0,canvas.width,canvas.height);
   const encode=(type,q)=>new Promise(ok=>canvas.toBlob(ok,type,q));
   let blob=null;
   for(const quality of [.90,.85,.80,.75,.70,.65,.60,.55,.50,.45,.40,.35,.30,.25]){
