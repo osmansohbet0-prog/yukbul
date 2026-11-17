@@ -92,7 +92,7 @@ export async function reviewOne(env,item){
  const updated=await env.DB.prepare("UPDATE listings SET status=?,moderation_note=?,updated_at=unixepoch() WHERE id=? AND status=? AND updated_at=? AND (SELECT COUNT(*) FROM listing_photos WHERE listing_id=?)=?").bind(decision.action,decision.action==='approved'?null:decision.reason,item.id,item.status,item.updated_at,item.id,item.photo_count).run();
  if(!updated.meta?.changes)return{status:'conflict'};
  await event(env,item.id,'ai.listing.auto.'+decision.action,{reason:decision.reason,confidence:result.confidence,photo_count:item.photo_count});
- if(decision.action==='approved'&&result.company_unverified!==false)await companyAlert(env,item);
+ if(decision.action==='approved'&&String(item.business_name||'').trim())await companyAlert(env,item);
  return{status:decision.action};
 }
 export async function runAutoReview(env,{dryRun=false}={}){
