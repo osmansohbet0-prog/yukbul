@@ -2,20 +2,15 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-const installedVersion = String.fromEnvironment('YV_VERSION', defaultValue: '0.6.0');
+const installedVersion = String.fromEnvironment('YV_VERSION', defaultValue: '0.8.0');
 
 class AndroidUpdate {
   const AndroidUpdate(this.version, this.notes);
   final String version;
   final String notes;
 
-  String get apkFilename => 'YukVinc-Android-$version.apk';
-
   Uri get download => Uri.https('github.com',
-      '/osmansohbet0-prog/yukbul/releases/download/yukvinc-android-v$version/$apkFilename');
-
-  Uri get checksum => Uri.https('github.com',
-      '/osmansohbet0-prog/yukbul/releases/download/yukvinc-android-v$version/$apkFilename.sha256');
+      '/osmansohbet0-prog/yukbul/releases/download/yukvinc-android-v$version/YukVinc-Android-$version.apk');
 }
 
 class AndroidUpdates {
@@ -57,10 +52,6 @@ class AndroidUpdates {
       final apkName = 'YukVinc-Android-$version.apk';
       if (!assets.whereType<Map<String, dynamic>>().any((asset) =>
           asset['name'] == apkName && asset['state'] == 'uploaded' &&
-          asset['size'] is int && (asset['size'] as int) > 0) ||
-          !assets.whereType<Map<String, dynamic>>().any((asset) =>
-          asset['name'] == '$apkName.sha256' &&
-          asset['state'] == 'uploaded' &&
           asset['size'] is int && (asset['size'] as int) > 0)) {
         continue;
       }

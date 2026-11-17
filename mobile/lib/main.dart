@@ -1,9 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
+import 'package:app_links/app_links.dart';
+import 'package:crypto/crypto.dart' as crypto;
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'app_update.dart';
-import 'verified_android_installer.dart';
 import 'favorites.dart';
+import 'appearance.dart';
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
@@ -14,6 +19,211 @@ const navy = Color(0xFF172D35);
 const yellow = Color(0xFFFFC466);
 const green = Color(0xFF0D6D5C);
 const bg = Color(0xFFF0F5F5);
+
+class MemberIdentity {
+  const MemberIdentity({required this.id, required this.email});
+  final String id;
+  final String email;
+  factory MemberIdentity.fromJson(Map<String, dynamic> value) => MemberIdentity(
+    id: (value['id'] ?? '').toString(), email: (value['email'] ?? '').toString());
+}
+
+class MemberAuth {
+  static const _storage = FlutterSecureStorage();
+  static final user = ValueNotifier<MemberIdentity?>(null);
+  static final status = ValueNotifier<String>('');
+  static final busy = ValueNotifier<bool>(false);
+  static final _random = math.Random.secure();
+  static String? _cookie;
+  static String? _processingCode;
+  static String? _completedCode;
+  static StreamSubscription<Uri>? _linkSubscription;
+  static Timer? _loginTimeout;
+  static bool _waitingForCallback = false;
+  static bool _initialized = false;
+
+  static String _randomToken() => base64Url.encode(
+    List<int>.generate(32, (_) => _random.nextInt(256))).replaceAll('=', '');
+
+  static String _challenge(String verifier) =>
+    base64Url.encode(crypto.sha256.convert(utf8.encode(verifier)).bytes).replaceAll('=', '');
+
+  static Future<void> initialize() async {
+    if (_initialized) return;
+    _initialized = true;
+    try {
+      _cookie = await _storage.read(key: 'yv_member_cookie');
+      final email = await _storage.read(key: 'yv_member_email');
+      final id = await _storage.read(key: 'yv_member_id');
+      if (_cookie != null && email != null && id != null) {
+        user.value = MemberIdentity(id: id, email: email);
+        unawaited(_refresh());
+      }
+      final links = AppLinks();
+      _linkSubscription ??= links.uriLinkStream.listen(
+        (uri) => unawaited(_handleCallback(uri)),
+        onError: (_) => status.value = 'Uygulama bağlantısı açılamadı. Tekrar giriş yap.',
+      );
+      final initial = await links.getInitialLink();
+      if (initial != null) await _handleCallback(initial);
+    } catch (_) {
+      // Sign-in remains available when the platform link plugin is not ready.
+    }
+  }
+
+  static Future<void> beginGoogleSignIn() async {
+    if (busy.value) return;
+    busy.value = true;
+    status.value = 'Güvenli Google giriş sayfası açılıyor…';
+    try {
+      final state = _randomToken(), verifier = _randomToken();
+      await _storage.write(key: 'yv_auth_state', value: state);
+      await _storage.write(key: 'yv_auth_verifier', value: verifier);
+      final handoff = Uri(
+        path: '/api/auth/mobile-handoff',
+        queryParameters: {
+          'app': 'android',
+          'state': state,
+          'code_challenge': _challenge(verifier),
+          'code_challenge_method': 'S256',
+        },
+      );
+      final uri = Uri.parse('$baseUrl/giris/').replace(queryParameters: {
+        'next': handoff.toString(),
+      });
+      var opened = false;
+      try { opened = await launchUrl(uri, mode: LaunchMode.inAppBrowserView); } catch (_) {}
+      if (!opened) opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened) throw StateError('Giriş sayfası açılamadı.');
+      _waitingForCallback = true;
+      status.value = 'Giriş sayfasında Google ile devam et, sonra uygulamaya dön.';
+      _loginTimeout?.cancel();
+      _loginTimeout = Timer(const Duration(minutes: 3), () {
+        if (!_waitingForCallback) return;
+        _waitingForCallback = false;
+        busy.value = false;
+        status.value = 'Giriş süresi doldu. Yeniden deneyebilirsin.';
+      });
+    } catch (_) {
+      _waitingForCallback = false;
+      _loginTimeout?.cancel();
+      status.value = 'Google giriş sayfası açılamadı. İnternet bağlantını kontrol et.';
+    } finally {
+      if (!_waitingForCallback) busy.value = false;
+    }
+  }
+
+  static Future<void> _handleCallback(Uri uri) async {
+    if (uri.scheme != 'yukvinc' || uri.host != 'auth' || uri.path != '/callback') return;
+    final code = uri.queryParameters['code'] ?? '';
+    final state = uri.queryParameters['state'] ?? '';
+    if (code.isEmpty || code == _processingCode || code == _completedCode) return;
+    _waitingForCallback = false;
+    _loginTimeout?.cancel();
+    _processingCode = code;
+    busy.value = true;
+    status.value = 'Google oturumu güvenle doğrulanıyor…';
+    try {
+      final expectedState = await _storage.read(key: 'yv_auth_state');
+      final verifier = await _storage.read(key: 'yv_auth_verifier');
+      if (expectedState == null || verifier == null || state != expectedState) {
+        throw StateError('Giriş doğrulaması uyuşmadı. Yeniden dene.');
+      }
+      final response = await http.post(Uri.parse('$baseUrl/api/auth/mobile-exchange'),
+        headers: const {'Content-Type': 'application/json', 'Origin': baseUrl},
+        body: jsonEncode({'code': code, 'code_verifier': verifier}),
+      ).timeout(const Duration(seconds: 15));
+      Map<String, dynamic> body = {};
+      try {
+        final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+        if (decoded is Map) body = Map<String, dynamic>.from(decoded);
+      } catch (_) {}
+      if (response.statusCode != 200 || body['user'] is! Map) {
+        throw StateError((body['error'] ?? 'Google girişi tamamlanamadı.').toString());
+      }
+      final cookieHeader = response.headers['set-cookie'] ?? '';
+      final pair = cookieHeader.split(';').first;
+      const prefix = '__Host-yv_member=';
+      if (!pair.startsWith(prefix)) throw StateError('Güvenli oturum kaydedilemedi.');
+      final cookie = Uri.decodeComponent(pair.substring(prefix.length));
+      final identity = MemberIdentity.fromJson(Map<String, dynamic>.from(body['user'] as Map));
+      if (cookie.isEmpty || identity.id.isEmpty || identity.email.isEmpty) {
+        throw StateError('Google hesabı yanıtı eksik.');
+      }
+      await _storage.write(key: 'yv_member_cookie', value: cookie);
+      await _storage.write(key: 'yv_member_id', value: identity.id);
+      await _storage.write(key: 'yv_member_email', value: identity.email);
+      await _storage.delete(key: 'yv_auth_state');
+      await _storage.delete(key: 'yv_auth_verifier');
+      _cookie = cookie;
+      user.value = identity;
+      _completedCode = code;
+      status.value = 'Google hesabınla giriş yaptın.';
+    } catch (error) {
+      status.value = error is StateError ? error.message : 'Google girişi tamamlanamadı. Tekrar dene.';
+    } finally {
+      _processingCode = null;
+      busy.value = false;
+    }
+  }
+
+  static Future<void> _refresh() async {
+    final cookie = _cookie;
+    if (cookie == null || cookie.isEmpty) return;
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/api/auth/me'),
+        headers: {'Accept': 'application/json', 'Cookie': '__Host-yv_member=$cookie'},
+      ).timeout(const Duration(seconds: 12));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        if (data is Map && data['user'] is Map) {
+          final identity = MemberIdentity.fromJson(Map<String, dynamic>.from(data['user'] as Map));
+          if (identity.id.isNotEmpty && identity.email.isNotEmpty) {
+            user.value = identity;
+            await _storage.write(key: 'yv_member_id', value: identity.id);
+            await _storage.write(key: 'yv_member_email', value: identity.email);
+          }
+        }
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        await _clear();
+      }
+    } catch (_) {
+      // Keep the last confirmed account visible while offline.
+    }
+  }
+
+  static Future<void> cancelSignIn() async {
+    _waitingForCallback = false;
+    _loginTimeout?.cancel();
+    await _storage.delete(key: 'yv_auth_state');
+    await _storage.delete(key: 'yv_auth_verifier');
+    busy.value = false;
+    status.value = 'Google girişi iptal edildi.';
+  }
+
+  static Future<void> logout() async {
+    final cookie = _cookie;
+    try {
+      if (cookie != null) {
+        await http.post(Uri.parse('$baseUrl/api/auth/logout'),
+          headers: {'Origin': baseUrl, 'Cookie': '__Host-yv_member=$cookie'},
+        ).timeout(const Duration(seconds: 10));
+      }
+    } catch (_) {}
+    await _clear();
+    status.value = 'Oturum kapatıldı.';
+  }
+
+  static Future<void> _clear() async {
+    _cookie = null;
+    user.value = null;
+    for (final key in ['yv_member_cookie','yv_member_id','yv_member_email',
+      'yv_auth_state','yv_auth_verifier']) {
+      await _storage.delete(key: key);
+    }
+  }
+}
+
 
 class YukListing {
   const YukListing({required this.id, required this.title, required this.city,
@@ -63,6 +273,53 @@ class YukApi {
       body: jsonEncode({'latitude': lat, 'longitude': lng, 'radius_km': radiusKm}),
     ).timeout(const Duration(seconds: 15)));
   }
+  Future<({YukListing listing, List<String> photos})> detail(String id) async {
+    final response = await client.get(
+      Uri.parse('$baseUrl/api/listings/${Uri.encodeComponent(id)}'),
+      headers: const {'Accept': 'application/json'},
+    ).timeout(const Duration(seconds: 15));
+    if (response.statusCode == 404) {
+      throw ListingUnavailable();
+    }
+    if (response.statusCode != 200) throw StateError('İlan yüklenemedi.');
+    final body = jsonDecode(utf8.decode(response.bodyBytes));
+    if (body is! Map || body['listing'] is! Map || body['photos'] is! List) {
+      throw const FormatException('Geçersiz ilan yanıtı');
+    }
+    final listing = YukListing.fromJson(Map<String, dynamic>.from(body['listing'] as Map));
+    if (listing.id != id || listing.title.isEmpty) {
+      throw const FormatException('İlan bilgileri uyuşmuyor');
+    }
+    final photos = (body['photos'] as List).whereType<String>()
+        .where((path) => path.startsWith('/api/listing-photo/') && !path.contains('..'))
+        .toList(growable: false);
+    return (listing: listing, photos: photos);
+  }
+
+  Future<List<YukListing>> savedListings(Iterable<String> ids) async {
+    final pendingIds = ids.toList();
+    final results = <YukListing>[];
+    for (var offset = 0; offset < pendingIds.length; offset += 4) {
+      final batch = pendingIds.skip(offset).take(4);
+      final items = await Future.wait(batch.map((id) async {
+        try {
+          final result = await detail(id);
+          return YukListing.fromJson({
+            'id': result.listing.id, 'title': result.listing.title,
+            'city': result.listing.city, 'district': result.listing.district,
+            'category': result.listing.category,
+            'description': result.listing.description,
+            'photo_url': result.photos.isEmpty ? null : result.photos.first,
+          });
+        } on ListingUnavailable {
+          return null;
+        }
+      }));
+      results.addAll(items.whereType<YukListing>());
+    }
+    return results;
+  }
+
   List<YukListing> _parse(http.Response response) {
     if (response.statusCode != 200) {
       throw Exception('Sunucu hatası: ' + response.statusCode.toString());
@@ -92,24 +349,30 @@ Future<void> openSite(BuildContext context, String path) async {
   }
 }
 
-void main() => runApp(const YukVincApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try { await AppAppearance.load(); } catch (_) {}
+  try { await MemberAuth.initialize(); } catch (_) {}
+  runApp(const YukVincApp());
+}
+
 class YukVincApp extends StatelessWidget {
   const YukVincApp({super.key});
   @override
-  Widget build(BuildContext context) => MaterialApp(
-    title: 'YükVinç', debugShowCheckedModeBanner: false,
-    theme: ThemeData(
-      useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(seedColor: navy)
-          .copyWith(primary: navy, secondary: yellow, tertiary: green),
-      scaffoldBackgroundColor: bg,
-      appBarTheme: const AppBarTheme(backgroundColor: bg, foregroundColor: navy),
-      cardTheme: CardThemeData(
-        color: Colors.white, elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
+  Widget build(BuildContext context) => ValueListenableBuilder<ThemeMode>(
+    valueListenable: AppAppearance.mode,
+    builder: (context, mode, child) => MaterialApp(
+      title: 'YükVinç', debugShowCheckedModeBanner: false,
+      theme: AppAppearance.theme(Brightness.light),
+      darkTheme: AppAppearance.theme(Brightness.dark),
+      themeMode: mode,
+      home: const Shell(),
     ),
-    home: const Shell(),
   );
+}
+
+class ListingUnavailable extends StateError {
+  ListingUnavailable() : super('İlan artık yayında değil.');
 }
 
 class Shell extends StatefulWidget {
@@ -135,7 +398,7 @@ class _ShellState extends State<Shell> {
     if (checkingUpdate) return;
     checkingUpdate = true;
     final client = http.Client();
-    var installingUpdate = false;
+    var openingDownload = false;
     try {
       final update = await AndroidUpdates.check(client);
       if (!mounted) return;
@@ -147,71 +410,24 @@ class _ShellState extends State<Shell> {
         context: context,
         builder: (dialog) => AlertDialog(
           title: Text('YükVinç ${update.version} hazır'),
-          content: SingleChildScrollView(child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(update.notes),
-              const SizedBox(height: 12),
-              const Text('Uygulama içinde indirilecek, SHA-256 ile doğrulanacak '
-                  've Android kurulum ekranı açılacak. Uygulamayı silmene gerek yok.'),
-            ],
-          )),
+          content: SingleChildScrollView(child: Text(update.notes)),
           actions: [
             TextButton(onPressed: () => Navigator.pop(dialog, false),
               child: const Text('Daha sonra')),
             FilledButton(onPressed: () => Navigator.pop(dialog, true),
-              child: const Text('İndir ve güncelle')),
+              child: const Text('Şimdi güncelle')),
           ],
         ),
       );
-      if (accepted != true || !mounted) return;
-      installingUpdate = true;
-      final progress = ValueNotifier<double?>(0.0);
-      final messenger = ScaffoldMessenger.of(context);
-      messenger.showSnackBar(SnackBar(
-        duration: const Duration(minutes: 10),
-        content: ValueListenableBuilder<double?>(
-          valueListenable: progress,
-          builder: (context, ratio, _) => Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(ratio == null
-                  ? 'YükVinç ${update.version} indiriliyor…'
-                  : 'YükVinç ${update.version} indiriliyor: %${(ratio * 100).round()}'),
-              const SizedBox(height: 8),
-              LinearProgressIndicator(value: ratio),
-            ],
-          ),
-        ),
-      ));
-      try {
-        final apk = await VerifiedAndroidInstaller.downloadVerified(
-          client, update,
-          onProgress: (ratio) {
-            if (mounted) progress.value = ratio;
-          },
-        );
-        if (mounted) messenger.hideCurrentSnackBar();
-        await VerifiedAndroidInstaller.requestInstall(apk);
-        if (mounted) {
-          updateMessage('Güncelleme doğrulandı. Android kurulum '
-              'ekranından yüklemeyi onayla; uygulamanı silme.');
-        }
-      } finally {
-        if (mounted) messenger.hideCurrentSnackBar();
-        progress.dispose();
+      if (accepted == true && mounted) {
+        openingDownload = true;
+        final launched = await launchUrl(update.download, mode: LaunchMode.externalApplication);
+        if (!launched && mounted) updateMessage('APK indirme bağlantısı açılamadı.');
       }
-    } catch (error) {
-      if (mounted && (manual || installingUpdate)) {
-        final message = error is FormatException
-            ? error.message
-            : installingUpdate
-                ? 'Güncelleme tamamlanamadı. Bağlantını ve '
-                    'Android yükleme iznini kontrol edip tekrar dene.'
-                : 'Sürüm kontrolü yapılamadı. Biraz sonra tekrar dene.';
-        updateMessage(message);
+    } catch (_) {
+      if (mounted && (manual || openingDownload)) {
+        updateMessage(openingDownload ? 'APK indirme bağlantısı açılamadı.'
+          : 'Sürüm kontrolü yapılamadı. Tekrar dene.');
       }
     } finally {
       client.close();
@@ -232,7 +448,7 @@ class _ShellState extends State<Shell> {
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
       title: const Row(children: [
-        Icon(Icons.local_shipping_rounded, size: 29, color: navy),
+        Icon(Icons.local_shipping_rounded, size: 29),
         SizedBox(width: 10),
         Text('YükVinç', style: TextStyle(fontWeight: FontWeight.w900)),
       ]),
@@ -260,10 +476,9 @@ class _ShellState extends State<Shell> {
     bottomNavigationBar: NavigationBar(
       selectedIndex: tab,
       onDestinationSelected: openTab,
-      indicatorColor: yellow.withValues(alpha: .3),
       destinations: const [
-        NavigationDestination(icon: Icon(Icons.work_outline_rounded), label: 'Fırsatlar'),
-        NavigationDestination(icon: Icon(Icons.search_rounded), label: 'İlanlar'),
+        NavigationDestination(icon: Icon(Icons.work_outline_rounded), label: 'Ana Sayfa'),
+        NavigationDestination(icon: Icon(Icons.search_rounded), label: 'Keşfet'),
         NavigationDestination(icon: Icon(Icons.near_me_outlined), label: 'Yakınımda'),
         NavigationDestination(icon: Icon(Icons.car_repair_outlined), label: 'Yol yardım'),
         NavigationDestination(icon: Icon(Icons.person_outline_rounded), label: 'Hesabım'),
@@ -294,6 +509,35 @@ class _OpportunitiesState extends State<Opportunities> {
         action: 'İlanları keşfet', actionIcon: Icons.arrow_forward_rounded,
         onTap: widget.onExplore,
       ),
+      const SizedBox(height: 18),
+      TextField(
+        textInputAction: TextInputAction.search,
+        decoration: const InputDecoration(
+          hintText: 'Şehir veya ekipman ara', prefixIcon: Icon(Icons.search_rounded),
+        ),
+        onSubmitted: (query) {
+          if (query.trim().isEmpty) return;
+          Navigator.of(context).push(MaterialPageRoute<void>(
+            builder: (_) => Scaffold(
+              appBar: AppBar(title: const Text('Keşfet')),
+              body: ListingsScreen(initialQuery: query.trim()),
+            ),
+          ));
+        },
+      ),
+      const SizedBox(height: 12),
+      Wrap(spacing: 8, children: [
+        ActionChip(avatar: const Icon(Icons.bookmark_outline, size: 18),
+          label: const Text('Favorilerim'),
+          onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+            builder: (_) => const FavoriteListings(),
+          ))),
+        ActionChip(avatar: const Icon(Icons.history, size: 18),
+          label: const Text('Son baktıklarım'),
+          onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+            builder: (_) => const FavoriteListings(recent: true),
+          ))),
+      ]),
       const SizedBox(height: 14),
       Row(children: [
         Expanded(child: ShortcutCard(
@@ -308,10 +552,10 @@ class _OpportunitiesState extends State<Opportunities> {
       ]),
       const SizedBox(height: 24),
       const Text('Güncel ilanlar', style: TextStyle(fontSize: 21,
-        fontWeight: FontWeight.w800, color: navy)),
+        fontWeight: FontWeight.w800)),
       const SizedBox(height: 5),
       const Text('Onaylı ilanlar gösterilir. Operatör ilanları iş arayan kişilere aittir.',
-        style: TextStyle(fontSize: 12, color: Colors.black54)),
+        style: TextStyle(fontSize: 12)),
       const SizedBox(height: 12),
       FutureBuilder<List<YukListing>>(future: future, builder: (context, snap) {
         if (!snap.hasData && !snap.hasError) return const Loading();
@@ -379,16 +623,17 @@ class ShortcutCard extends StatelessWidget {
     child: InkWell(borderRadius: BorderRadius.circular(18), onTap: onTap,
       child: Padding(padding: const EdgeInsets.all(15),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Icon(icon, size: 27, color: navy), const SizedBox(height: 12),
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w800, color: navy)),
+          Icon(icon, size: 27), const SizedBox(height: 12),
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
           const SizedBox(height: 3),
-          Text(subtitle, style: const TextStyle(fontSize: 11, color: Colors.black54)),
+          Text(subtitle, style: const TextStyle(fontSize: 11)),
         ]))),
   );
 }
 
 class ListingsScreen extends StatefulWidget {
-  const ListingsScreen({super.key});
+  const ListingsScreen({super.key, this.initialQuery = ''});
+  final String initialQuery;
   @override State<ListingsScreen> createState() => _ListingsState();
 }
 class _ListingsState extends State<ListingsScreen> {
@@ -401,7 +646,11 @@ class _ListingsState extends State<ListingsScreen> {
     'basket': 'Sepetli', 'mobile_tire': 'Lastik', 'manlift': 'Manlift',
     'machine': 'Makine', 'lift': 'Asansör', 'operator': 'Operatör',
   };
-  @override void initState() { super.initState(); future = api.initialListings(); }
+  @override void initState() {
+    super.initState();
+    search.text = widget.initialQuery;
+    future = search.text.isEmpty ? api.initialListings() : api.listings(query: search.text);
+  }
   void load() => setState(() =>
     future = api.listings(query: search.text, category: category));
   Future<void> refresh() async { load(); try { await future; } catch (_) {} }
@@ -413,7 +662,7 @@ class _ListingsState extends State<ListingsScreen> {
         decoration: InputDecoration(
           hintText: 'Şehir, ilan veya ekipman ara',
           prefixIcon: const Icon(Icons.search),
-          filled: true, fillColor: Colors.white,
+          filled: true,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(15),
             borderSide: BorderSide.none)),
         onSubmitted: (_) { timer?.cancel(); load(); },
@@ -588,7 +837,7 @@ class _NearbyState extends State<Nearby> {
       if (visible != null) ...[
         const SizedBox(height: 23),
         Text(manual ? 'Bölgedeki ilanlar (${visible.length})' : 'Yakındaki ilanlar (${visible.length})',
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: navy)),
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
         const SizedBox(height: 10),
         if (visible.isEmpty) Empty(manual
           ? 'Bu il ve ilçe için ilan bulunamadı.'
@@ -680,7 +929,8 @@ class _RoadHelpState extends State<RoadHelp> {
 }
 
 class FavoriteListings extends StatefulWidget {
-  const FavoriteListings({super.key});
+  const FavoriteListings({super.key, this.recent = false});
+  final bool recent;
   @override State<FavoriteListings> createState() => _FavoriteListingsState();
 }
 
@@ -694,10 +944,8 @@ class _FavoriteListingsState extends State<FavoriteListings> {
   }
 
   Future<List<YukListing>> _load() async {
-    final ids = await FavoritesStore.load();
-    if (ids.isEmpty) return const [];
-    final listings = await api.listings();
-    return listings.where((item) => ids.contains(item.id)).toList(growable: false);
+    final ids = widget.recent ? await RecentListingsStore.load() : await FavoritesStore.load();
+    return api.savedListings(ids);
   }
 
   Future<void> _refresh() async {
@@ -708,14 +956,30 @@ class _FavoriteListingsState extends State<FavoriteListings> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Favorilerim')),
+    appBar: AppBar(title: Text(widget.recent ? 'Son görüntülenenler' : 'Favorilerim'),
+      actions: [
+        if (widget.recent) IconButton(
+          tooltip: 'Geçmişi temizle', icon: const Icon(Icons.delete_outline),
+          onPressed: () async {
+            try {
+              await RecentListingsStore.clear();
+              if (mounted) await _refresh();
+            } catch (_) {
+              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Geçmiş temizlenemedi.')),
+              );
+            }
+          },
+        ),
+      ],
+    ),
     body: FutureBuilder<List<YukListing>>(
       future: future,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) return const Loading();
         if (snapshot.hasError) return Retry(onTap: _refresh);
         final items = snapshot.data ?? const <YukListing>[];
-        if (items.isEmpty) return const Empty('Kaydedilmiş ilan yok. Kaldırılmış ilanlar burada gösterilmez.');
+        if (items.isEmpty) return const Empty('Gösterilecek ilan yok. İlanları keşfederek başlayabilirsin.');
         return RefreshIndicator(
           onRefresh: _refresh,
           child: ListView.builder(
@@ -737,18 +1001,125 @@ class Account extends StatelessWidget {
   @override Widget build(BuildContext context) => ListView(
     padding: const EdgeInsets.all(18), children: [
       const Text('Hesabım', style: TextStyle(
-        color: navy, fontSize: 25, fontWeight: FontWeight.w900)),
+        fontSize: 25, fontWeight: FontWeight.w900)),
       const SizedBox(height: 7),
-      const Text('Mevcut YükVinç hesabınla devam et.',
-        style: TextStyle(color: Colors.black54)),
+      const Text('YükVinç hesabınla uygulamadan devam et.'),
       const SizedBox(height: 17),
+      ValueListenableBuilder<MemberIdentity?>(
+        valueListenable: MemberAuth.user,
+        builder: (context, member, child) => Card(
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: member == null
+              ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  Icon(Icons.account_circle_rounded, size: 48,
+                    color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(height: 10),
+                  Text('İşlerini tek hesaptan yönet',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 6),
+                  const Text('Google ile giriş yap; doğrulama tamamlanınca güvenli oturumun bu uygulamada açılır.',
+                    textAlign: TextAlign.center),
+                  const SizedBox(height: 14),
+                  ValueListenableBuilder<bool>(
+                    valueListenable: MemberAuth.busy,
+                    builder: (context, busy, child) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        FilledButton.icon(
+                          onPressed: busy ? null : () { unawaited(MemberAuth.beginGoogleSignIn()); },
+                          icon: busy
+                            ? const SizedBox.square(dimension: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Icon(Icons.login_rounded),
+                          label: Text(busy ? 'Giriş bekleniyor…' : 'Google ile devam et'),
+                        ),
+                        const SizedBox(height: 4),
+                        OutlinedButton(
+                          onPressed: busy ? null : () { unawaited(MemberAuth.beginGoogleSignIn()); },
+                          child: const Text('E-posta ile giriş yap'),
+                        ),
+                        if (busy)
+                          TextButton(
+                            onPressed: () { unawaited(MemberAuth.cancelSignIn()); },
+                            child: const Text('Girişten vazgeç'),
+                          ),
+                      ],
+                    ),
+                  ),
+                  ValueListenableBuilder<String>(
+                    valueListenable: MemberAuth.status,
+                    builder: (context, status, child) => status.isEmpty
+                      ? const SizedBox.shrink()
+                      : Padding(padding: const EdgeInsets.only(top: 10),
+                          child: Text(status, textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodySmall)),
+                  ),
+                ])
+              : Column(children: [
+                  ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                      child: const Icon(Icons.person_rounded),
+                    ),
+                    title: Text(member.email,
+                      style: const TextStyle(fontWeight: FontWeight.w800)),
+                    subtitle: const Text('YükVinç hesabınla giriş yaptın.'),
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: () { unawaited(MemberAuth.logout()); },
+                      icon: const Icon(Icons.logout_rounded),
+                      label: const Text('Çıkış yap'),
+                    ),
+                  ),
+                  ValueListenableBuilder<String>(
+                    valueListenable: MemberAuth.status,
+                    builder: (context, status, child) => status.isEmpty
+                      ? const SizedBox.shrink()
+                      : Padding(padding: const EdgeInsets.only(bottom: 10),
+                          child: Text(status, style: Theme.of(context).textTheme.bodySmall)),
+                  ),
+                ]),
+          ),
+        ),
+      ),
+      Card(child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: ValueListenableBuilder<ThemeMode>(
+          valueListenable: AppAppearance.mode,
+          builder: (context, mode, child) => DropdownButtonFormField<ThemeMode>(
+            initialValue: mode, decoration: const InputDecoration(labelText: 'Görünüm'),
+            items: const [
+              DropdownMenuItem(value: ThemeMode.system, child: Text('Telefon ayarı')),
+              DropdownMenuItem(value: ThemeMode.light, child: Text('Aydınlık')),
+              DropdownMenuItem(value: ThemeMode.dark, child: Text('Karanlık')),
+            ],
+            onChanged: (value) async {
+              if (value == null) return;
+              try { await AppAppearance.save(value); } catch (_) {
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Görünüm kaydedilemedi.')),
+                );
+              }
+            },
+          ),
+        ),
+      )),
+      AccountLink(icon: Icons.history_rounded, title: 'Son görüntülenenler',
+        subtitle: 'Bu cihazda baktığın son 12 ilan',
+        onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => const FavoriteListings(recent: true),
+        ))),
       AccountLink(icon: Icons.bookmark_outline_rounded, title: 'Favorilerim',
         subtitle: 'Bu cihazda kaydettiğin ilanlar',
         onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
           builder: (_) => const FavoriteListings(),
         ))),
       AccountLink(icon: Icons.person_outline_rounded, title: 'Hesabımı aç',
-        subtitle: 'Giriş yap, profilini ve ilanlarını yönet',
+        subtitle: 'Profilini ve ilanlarını yönet',
         onTap: () => openSite(context, '/hesabim/')),
       AccountLink(icon: Icons.add_circle_outline, title: 'İlan ver',
         subtitle: 'Hizmetini veya operatör ilanını yayınla',
@@ -766,7 +1137,7 @@ class AccountLink extends StatelessWidget {
   final VoidCallback onTap;
   @override Widget build(BuildContext context) => Card(
     child: ListTile(
-      leading: CircleAvatar(backgroundColor: bg, child: Icon(icon, color: navy)),
+      leading: CircleAvatar(backgroundColor: Theme.of(context).colorScheme.primaryContainer, child: Icon(icon)),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
       subtitle: Text(subtitle), trailing: const Icon(Icons.chevron_right),
       onTap: onTap,
@@ -802,69 +1173,192 @@ class ListingCard extends StatelessWidget {
     'mobile_tire' => 'MOBİL LASTİK', 'operator' => 'İŞ ARAYAN OPERATÖR',
     'manlift' => 'MANLİFT', 'machine' => 'İŞ MAKİNESİ', 'lift' => 'NAKLİYAT ASANSÖRÜ', _ => 'İLAN',
   };
-  @override Widget build(BuildContext context) => Card(
-    margin: const EdgeInsets.only(bottom: 10),
-    child: InkWell(borderRadius: BorderRadius.circular(18),
-      onTap: () => showModalBottomSheet<void>(context: context, showDragHandle: true,
-        isScrollControlled: true,
-        builder: (sheet) => SafeArea(child: Padding(
-          padding: const EdgeInsets.fromLTRB(22, 10, 22, 24),
-          child: Column(mainAxisSize: MainAxisSize.min,
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final photo = item.photoUrl;
+    final uri = photo == null ? null : Uri.tryParse(photo);
+    final imageUrl = uri != null && photo!.startsWith('/api/listing-photo/')
+        ? baseUrl + photo
+        : uri != null && uri.scheme == 'https' && uri.host == 'yukvinc.com.tr'
+            ? uri.toString() : null;
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => ListingDetail(itemId: item.id),
+        )),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          AspectRatio(aspectRatio: 16 / 9, child: imageUrl == null
+            ? const ListingPlaceholder()
+            : Image.network(imageUrl, fit: BoxFit.cover, cacheWidth: 900,
+                semanticLabel: item.title,
+                errorBuilder: (_, error, stack) => const ListingPlaceholder())),
+          Padding(padding: const EdgeInsets.all(18), child: Column(
             crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(item.title, style: const TextStyle(fontSize: 22,
-              color: navy, fontWeight: FontWeight.w900)),
-            const SizedBox(height: 7),
-            Text(item.city + ' / ' + item.district,
-              style: const TextStyle(color: Colors.black54)),
-            const SizedBox(height: 12),
-            ConstrainedBox(constraints: const BoxConstraints(maxHeight: 180),
-              child: SingleChildScrollView(child: Text(item.description))),
-            const SizedBox(height: 16),
-            if (dialNumber.isNotEmpty) Wrap(spacing: 8, children: [
-              OutlinedButton.icon(
-                icon: const Icon(Icons.call_outlined), label: const Text('Ara'),
-                onPressed: () => contact(sheet, Uri(scheme: 'tel', path: '+$dialNumber')),
-              ),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.chat_outlined), label: const Text('WhatsApp'),
-                onPressed: () => contact(sheet, Uri.https('wa.me', '/$dialNumber')),
-              ),
-            ]),
-            SizedBox(width: double.infinity, child: FilledButton.icon(
-              onPressed: () { Navigator.pop(sheet);
-                openSite(context, '/ilan/' + Uri.encodeComponent(item.id) + '/'); },
-              icon: const Icon(Icons.open_in_browser),
-              label: const Text('İlan detayını aç'))),
-          ])))),
-      child: Padding(padding: const EdgeInsets.all(13),
-        child: Row(children: [
-          ClipRRect(borderRadius: BorderRadius.circular(12),
-            child: SizedBox(width: 80, height: 80,
-              child: item.photoUrl != null && item.photoUrl!.startsWith('/')
-                ? Image.network(baseUrl + item.photoUrl!, fit: BoxFit.cover,
-                    cacheWidth: 240,
-                    errorBuilder: (context, err, trace) => const ListingPlaceholder())
-                : const ListingPlaceholder())),
-          const SizedBox(width: 13),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-            Text(categoryLabel, style: const TextStyle(color: green,
-              fontWeight: FontWeight.w900, fontSize: 10)),
-            const SizedBox(height: 5),
-            Text(item.title, maxLines: 2, overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: navy, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 7),
-            Text(item.city + ' / ' + item.district,
-              maxLines: 1, overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.black54, fontSize: 11)),
-            if (item.distanceKm != null)
-              Text('Yaklaşık ' + item.distanceKm.toString() + ' km',
-                style: const TextStyle(color: green, fontSize: 11)),
-          ])),
-          FavoriteButton(itemId: item.id, onChanged: onFavoriteChanged),
-        ])),
-    ));
+              Row(children: [
+                Expanded(child: Text(categoryLabel,
+                  style: TextStyle(color: colors.primary,
+                    fontWeight: FontWeight.w800, fontSize: 11))),
+                FavoriteButton(key: ValueKey(item.id),
+                  itemId: item.id, onChanged: onFavoriteChanged),
+              ]),
+              Text(item.title, maxLines: 2, overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800)),
+              const SizedBox(height: 10),
+              Row(children: [
+                Icon(Icons.location_on_outlined, size: 17, color: colors.onSurfaceVariant),
+                const SizedBox(width: 5),
+                Expanded(child: Text(
+                  [item.city, item.district].where((value) => value.isNotEmpty).join(' / '),
+                  style: TextStyle(color: colors.onSurfaceVariant))),
+                if (item.distanceKm != null)
+                  Text('${item.distanceKm} km', style: TextStyle(color: colors.primary)),
+              ]),
+            ],
+          )),
+        ]),
+      ),
+    );
+  }
 }
+
+
+class ListingDetail extends StatefulWidget {
+  const ListingDetail({super.key, required this.itemId, this.client});
+  final String itemId;
+  final YukApi? client;
+
+  @override
+  State<ListingDetail> createState() => _ListingDetailState();
+}
+
+class _ListingDetailState extends State<ListingDetail> {
+  late Future<({YukListing listing, List<String> photos})> future;
+  int photoIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    future = (widget.client ?? api).detail(widget.itemId).then((value) {
+      unawaited(RecentListingsStore.record(widget.itemId).catchError((Object error) {}));
+      return value;
+    });
+  }
+
+  Future<void> refresh() async {
+    final next = (widget.client ?? api).detail(widget.itemId);
+    setState(() { future = next; photoIndex = 0; });
+    try { await next; } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(
+      title: const Text('İlan detayı'),
+      actions: [
+        IconButton(tooltip: 'Bağlantıyı kopyala', icon: const Icon(Icons.link),
+          onPressed: () async {
+            try {
+              await Clipboard.setData(ClipboardData(
+                text: '$baseUrl/ilan/${Uri.encodeComponent(widget.itemId)}/'));
+              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('İlan bağlantısı kopyalandı.')),
+              );
+            } catch (_) {
+              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Bağlantı kopyalanamadı.')),
+              );
+            }
+          },
+        ),
+        FavoriteButton(itemId: widget.itemId),
+      ],
+    ),
+    body: FutureBuilder<({YukListing listing, List<String> photos})>(
+      future: future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) return const Loading();
+        if (snapshot.hasError) {
+          return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(snapshot.error is StateError
+                ? (snapshot.error as StateError).message.toString()
+                : 'İlan yüklenemedi. Bağlantını kontrol et.'),
+            const SizedBox(height: 12),
+            OutlinedButton(onPressed: refresh, child: const Text('Tekrar dene')),
+          ]));
+        }
+        final detail = snapshot.data!;
+        final item = detail.listing;
+        final card = ListingCard(item: item);
+        return RefreshIndicator(
+          onRefresh: refresh,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(18),
+            children: [
+              if (detail.photos.isNotEmpty) ...[
+                SizedBox(height: 280, child: ClipRRect(
+                  borderRadius: BorderRadius.circular(22),
+                  child: PageView.builder(
+                    key: ValueKey(future),
+                    itemCount: detail.photos.length,
+                    onPageChanged: (index) => setState(() => photoIndex = index),
+                    itemBuilder: (context, index) => InteractiveViewer(
+                      minScale: 1, maxScale: 3,
+                      child: Image.network(
+                        baseUrl + detail.photos[index],
+                        fit: BoxFit.contain, cacheWidth: 1200,
+                        semanticLabel: '${item.title}, fotoğraf ${index + 1}',
+                        errorBuilder: (_, error, stack) => const ListingPlaceholder(),
+                      ),
+                    ),
+                  ),
+                )),
+                const SizedBox(height: 8),
+                Text('${photoIndex + 1} / ${detail.photos.length}',
+                  textAlign: TextAlign.center),
+                const SizedBox(height: 18),
+              ],
+              Text(card.categoryLabel, style: const TextStyle(color: green,
+                fontWeight: FontWeight.w800)),
+              const SizedBox(height: 8),
+              Text(item.title, style: const TextStyle(fontSize: 25,
+                fontWeight: FontWeight.w800)),
+              const SizedBox(height: 8),
+              Text([item.city, item.district].where((v) => v.isNotEmpty).join(' / ')),
+              const SizedBox(height: 24),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.share_outlined),
+                label: const Text('WhatsApp’ta paylaş'),
+                onPressed: () => card.contact(context, Uri.https('wa.me', '/', {
+                  'text': '${item.title}\n$baseUrl/ilan/${Uri.encodeComponent(item.id)}/',
+                })),
+              ),
+              const SizedBox(height: 16),
+              SelectableText(item.description, style: const TextStyle(height: 1.6)),
+              const SizedBox(height: 24),
+              if (card.dialNumber.isNotEmpty) Wrap(spacing: 12, children: [
+                FilledButton.icon(
+                  onPressed: () => card.contact(context,
+                    Uri(scheme: 'tel', path: '+${card.dialNumber}')),
+                  icon: const Icon(Icons.call_outlined), label: const Text('Ara'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => card.contact(context,
+                    Uri.https('wa.me', '/${card.dialNumber}')),
+                  icon: const Icon(Icons.chat_outlined), label: const Text('WhatsApp'),
+                ),
+              ]),
+            ],
+          ),
+        );
+      },
+    ),
+  );
+}
+
 class FavoriteButton extends StatefulWidget {
   const FavoriteButton({super.key, required this.itemId, this.onChanged});
   final String itemId;
@@ -882,9 +1376,34 @@ class _FavoriteButtonState extends State<FavoriteButton> {
   @override
   void initState() {
     super.initState();
-    FavoritesStore.contains(widget.itemId).then((value) {
-      if (mounted) setState(() { favorite = value; ready = true; });
+    FavoritesStore.changes.addListener(reload);
+    reload();
+  }
+
+  void reload() {
+    final id = widget.itemId;
+    FavoritesStore.contains(id).then((value) {
+      if (mounted && widget.itemId == id) {
+        setState(() { favorite = value; ready = true; });
+      }
+    }).catchError((Object error) {
+      if (mounted) setState(() => ready = true);
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant FavoriteButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.itemId != widget.itemId) {
+      ready = false;
+      reload();
+    }
+  }
+
+  @override
+  void dispose() {
+    FavoritesStore.changes.removeListener(reload);
+    super.dispose();
   }
 
   Future<void> toggle() async {
@@ -910,15 +1429,15 @@ class _FavoriteButtonState extends State<FavoriteButton> {
     icon: saving ? const SizedBox(
       width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2),
     ) : Icon(favorite ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-        color: favorite ? green : Colors.black45),
+        color: favorite ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant),
   );
 }
 
 class ListingPlaceholder extends StatelessWidget {
   const ListingPlaceholder({super.key});
   @override Widget build(BuildContext context) => Container(
-    color: const Color(0xFFEAF0F1),
-    child: const Icon(Icons.local_shipping_outlined, size: 32, color: navy));
+    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+    child: const Icon(Icons.local_shipping_outlined, size: 32));
 }
 class Loading extends StatelessWidget {
   const Loading({super.key});
@@ -931,7 +1450,7 @@ class Empty extends StatelessWidget {
   @override Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.all(30),
     child: Center(child: Text(label, textAlign: TextAlign.center,
-      style: const TextStyle(color: Colors.black54))));
+      style: Theme.of(context).textTheme.bodyMedium)));
 }
 class Retry extends StatelessWidget {
   const Retry({super.key, required this.onTap});

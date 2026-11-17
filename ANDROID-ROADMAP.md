@@ -1,24 +1,53 @@
-# YükVinç Android — çalışma kaydı
+# Android geliştirme iş listesi
 
-## Bu döngü
+## 0.7.0 — keşfet ve görünüm
+- [x] Sisteme uyumlu açık/koyu tema ve kalıcı kullanıcı tercihi.
+- [x] Büyük fotoğraflı ilan kartları, ana ekrandan arama.
+- [x] Son görüntülenen 12 ilan, geçmişi temizleme.
+- [x] İlan bağlantısı kopyalama ve WhatsApp paylaşımı.
+- [x] Favori yazmalarını sıraya alma ve ekranlar arası durum yenileme.
+- [x] Favorileri ilk sonuç sayfasıyla sınırlamadan detay API'sinden yükleme.
+- [x] Depolama, tema ve dar ekranda büyük yazıyla kart testleri.
+- [x] Flutter analiz ve testler.
+- [x] Kalıcı anahtarla imzalı APK, imza/mimari doğrulaması, Android 14 emülatöründe önceki sürüm üstüne kurulum ve açılış geçti.
 
-- **Tamamlanan kod:** İlan kartlarına favori düğmesi; Favorilerim ekranı; favorilerin cihazda kalıcı saklanması.
-- **Görünür sınır:** Sunucuda web ve Android arasında ortak favori API'si yok. Favoriler bu sürümde yalnızca kullanılan Android cihazda tutulur. Favoriler ekranı halen yayındaki ilanları sunucudan yeniden alır.
-- **Sürüm:** `mobile/pubspec.yaml` 0.5.0+5. Güncelleme denetleyicisinin yerel varsayılan sürümü de 0.5.0.
-- **Kontrol:** `FavoritesStore` için ekleme, tekrar okuma ve kaldırma birim testleri eklendi. GitHub Actions commit `6580973dc4eff0966c747c7aa45df61211278952` üzerinde analiz, test, imzalama ve Android 14 emulator kurulumunu yürütüyor. Sonuç bekleniyor.
-- **Yayın:** Üretim sitesi değiştirilmedi. İmzalı APK oluşturulması mevcut Android workflow'unun yetkili release davranışıdır.
+Test artifact: https://github.com/osmansohbet0-prog/yukbul/actions/runs/44128373573/artifacts/14348828397
+Gerçek telefonda kullanıcı akışlarının uçtan uca doğrulaması henüz yapılmadı.
 
-## Sıradaki işler
+**Değiştirilen dosyalar:** mobile/lib/main.dart, mobile/lib/appearance.dart, mobile/lib/favorites.dart, mobile/lib/app_update.dart, mobile/pubspec.yaml, mobile/test/discovery_test.dart, mobile/test/app_test.dart, .github/workflows/yukvinc-mobile.yml.
 
-1. **Giriş ve oturum:** Mevcut Google uç noktası Google ID token'ı ile birlikte Turnstile doğrulaması ister ve HttpOnly oturum çerezi döndürür. Android istemcisi için Turnstile'ı atlamadan doğrulama akışını tasarla; çerezleri cihazda güvenli sakla, yenileme/çıkış davranışını test et. Giriş yapılandırması yoksa açıkça hata göster.
-2. **Hesabım ve profil:** Kullanıcı adı/şirket bilgisi, fotoğraf ve mevcut profil API sözleşmelerini doğrula; sadece gerçek API ile çalışan işlevleri göster.
-3. **İlan yönetimi:** Fotoğraf boyut/format sınırlarına göre sıkıştırma, taslak, oluşturma ve düzenleme uç noktalarını test et; sunucudaki moderasyon kuyruğunu koru.
-4. **Teklifler ve iş talepleri:** Mevcut yetkili API ve roller bulunmadan yerel sahte kayıt üretme. Önce backend sözleşmesini ve admin onay durumlarını doğrula.
-5. **Ortak favoriler:** Web hesabı ve Android arasında senkron için yetkilendirilmiş, sahiplik kontrolü olan API ve testleri ekle.
-6. **UX ve performans:** Filtre/konum hata durumları, erişilebilirlik, zayıf bağlantı ve düşük bellek cihazları için ölçülebilir testler.
+Kod: dbc2f76144e27c1ec7d960af96cef948cbb7a5b4
+PR: https://github.com/osmansohbet0-prog/yukbul/pull/75
+CI: https://github.com/osmansohbet0-prog/yukbul/actions/runs/44128373573
 
-## Güvenli yayın sınırı
+## Sıradaki işler (öncelik sırası)
+- [ ] Google oturumunu mevcut Turnstile / HttpOnly çerez sözleşmesi ile güvenli mobil akışa bağla; iptal, tekrar deneme, süre aşımı ve oturum geri yükleme testleri ekle.
+- [ ] Aynı kullanıcı hesabıyla yerel profil görüntüleme/düzenleme ve fotoğraf yükleme.
+- [ ] Yerel ilan oluşturma/düzenleme/silme; mevcut yetki ve moderasyon kontrollerini kullan.
+- [ ] Teklif verme, iş talebi ve durum yönetimi ekranları.
+- [ ] Gerçek cihazda konum izni reddi, yaklaşık konum, en yakın ilanlar ve acil yardım uçtan uca testleri.
+- [ ] Favorileri hesapla eşitleme (şu an yalnızca cihazda).
+- [ ] Gerçek cihazda erişilebilirlik, açılış süresi, kaydırma ve bellek ölçümü.
+- [ ] Eski sürümden yükseltirken oturum/veri korumasını gerçek cihazda doğrula.
 
-- Android geliştirmesi `feature/yukvinc-mobile-mvp` dalında kalır.
-- `main` canlı Cloudflare Worker ve statik varlıklarla sürüm farkı taşıyabilir; site paketini bu daldan doğrudan dağıtma veya birleştirme.
-- Her APK sürümünde CI analiz/test, imza, sabit paket kimliği, yükseltme, mimari ve emulator açılış kontrolleri başarılı olmalı.
+## Devam notu
+`feature/android-discovery-design` dalından devam et. PR #75, #74 üzerine kuruludur; #74 ise mobil MVP dalını hedefler. PR #72 EVREN çalışmasını ezme. Mevcut API'leri incelemeden yeni sözleşme veya sahte servis üretme. Ana dalı birleştirmek veya canlı site/APK yayını yapmak ayrıca kullanıcı onayına bağlıdır. Test artifact'ı dağıtım değildir.
+
+# Android 0.6.0 geliştirme kaydı
+
+**Tamamlanan iş:** Uygulama içinde güncel ilan detayları, kaydırılabilir ve yakınlaştırılabilir fotoğraf galerisi, kaldırılan ilan ve hatalı sunucu yanıtlarında tekrar deneme.
+
+**Değiştirilen dosyalar:** mobile/lib/main.dart, mobile/test/listing_detail_test.dart, mobile/pubspec.yaml, .github/workflows/yukvinc-mobile.yml.
+
+**Test sonucu:** Flutter analiz ve testler, APK derleme, kalıcı imza/mimari doğrulaması, Android 14 emülatöründe önceki sürüm üzerine kurulum ve açılış geçti. Test APK artifact olarak kaydedildi. Public yayın işi bu geliştirme dalında atlandı.
+https://github.com/osmansohbet0-prog/yukbul/actions/runs/44121795128
+
+**Commit:** e196074901e3392d0c1c0ed3c6d9356d6b1452f2
+
+**PR:** https://github.com/osmansohbet0-prog/yukbul/pull/74
+
+**Sıradaki görev:** Google oturum akışını mevcut Turnstile ve HttpOnly çerez sözleşmesiyle güvenli biçimde Android'e entegre etmek. Mevcut profil ve ilan yönetimi API'lerini tekrar kullanarak yerel ekranlara bağlamak. Backend sözleşmeleri eksikse ayrı dalda eklemek ve test etmek.
+
+Telefon API yanıtında bulunursa iletişim düğmeleri gösterilir. Mevcut ilan detay API'si çoğu ilanda telefon alanı döndürmez. Gerçek cihazda galeri hareketleri ve canlı API bağlantısı henüz doğrulanmadı. Hesap, profil, ilan oluşturma/düzenleme, fotoğraf yükleme, teklifler ve iş talebi akışları açık iş olarak devam eder.
+
+0.5.0'daki cihazda kalıcı favoriler korunur. Web ile favori eşitleme API'si geliştirilmelidir. Canlı site dağıtımı ayrı onaya bağlıdır.
