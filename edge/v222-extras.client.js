@@ -1,17 +1,19 @@
 /* Additive YükVinç V222 experience — no base page replacements. */
 (()=>{'use strict';
-if(window.__yv2Ready)return;window.__yv2Ready=true;
+if(window.__yv2Ready)return;window.__yv2Ready=true;document.documentElement.dataset.yv2Script='loaded';
 const BASE='/api/yukusta-v2',APK='https://github.com/osmansohbet0-prog/yukbul/releases/download/yukvinc-android-v0.5.0/YukVinc-Android-0.5.0.apk';
 const e=(tag,cls,txt)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(txt!==undefined)n.textContent=txt;return n};
 const add=(node,tag,cls,txt)=>{const n=e(tag,cls,txt);node.append(n);return n};
 const scroll=node=>{node.scrollTop=node.scrollHeight};
 function start(){
+ document.documentElement.dataset.yv2Start='run';
  const link=e('link');link.id='yv2-css';link.rel='stylesheet';link.href='/assets/yv-v222-extras.css?v=1';document.head.append(link);
  if(location.pathname==='/')document.getElementById('yv-buyer-cta-v191')?.remove();
  if(location.pathname.startsWith('/hesabim'))apkCard();
  if(location.pathname.startsWith('/is-talepleri'))tenderBadge();
  if(location.pathname.startsWith('/admin'))return;
  createChat();
+ document.documentElement.dataset.yv2Start='complete';
 }
 function apkCard(){
  const target=document.getElementById('account-view')||document.querySelector('main');
