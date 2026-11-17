@@ -6,7 +6,7 @@ const CLIENT_CSS = '__INJECT_CLIENT_CSS__';
 const FORM_SCRIPT = '__INJECT_FORM_SCRIPT__';
 const FORM_ROUTE = '/assets/yv-v222-listing-form.js';
 const CORS_ORIGIN = 'https://yukvinc.com.tr';
-const VERSION = 'v222-extras-20261118.19';
+const VERSION = 'v222-extras-20261118.20';
 const CLIENT_ROUTE = '/assets/yv-v222-extras.js';
 const CSS_ROUTE = '/assets/yv-v222-extras.css';
 const API_PREFIX = '/api/yukusta-v2/';
@@ -185,7 +185,7 @@ async function passthrough(request,env){
   const apk='<section id="yv2-apk" class="yv2-app-card" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;border:1px solid #c8dee9;border-radius:14px;background:#f1f8fb;padding:16px;margin:16px 0;font-family:system-ui,Arial,sans-serif"><div><strong style="display:block;color:#193f51">📲 YükVinç Android uygulaması</strong><small style="color:#526b79">Android 0.6.0 · Resmî GitHub APK dosyası</small></div><a href="https://github.com/osmansohbet0-prog/yukbul/releases/download/yukvinc-android-v0.6.0/YukVinc-Android-0.6.0.apk" target="_blank" rel="noopener noreferrer" style="background:#133f56;color:#fff;text-decoration:none;font-weight:800;border-radius:10px;padding:11px 14px">Uygulamayı indir</a></section>';
   const tag='<span class="yv2-tender-new" aria-label="Yeni ihale">Yeni ihale</span>';
   const rewriter=new HTMLRewriter()
-    .on('head',{element(e){e.append(style+wizardStyle+'<script defer src="/assets/yv-v222-extras.js?v=19"></script>',{html:true})}})
+    .on('head',{element(e){e.append(style+wizardStyle+'<script defer src="/assets/yv-v222-extras.js?v=20"></script>',{html:true})}})
     .on('body',{element(e){e.append(float,{html:true})}})
     .on('#yv-buyer-cta-v191',{element(e){if(path==='/')e.remove()}})
     .on('#account-view',{element(e){if(path.startsWith('/hesabim'))e.prepend(apk,{html:true})}})
@@ -195,7 +195,7 @@ async function passthrough(request,env){
     .on('#step-title',{element(e){if(path.startsWith('/ilan-ver'))e.setInnerContent('1 / 4 · Tür ve konum') }})
     .on('#submit-listing',{element(e){if(path.startsWith('/ilan-ver'))e.setInnerContent('İlanı gönder ↗') }})
     .on('#photo-dropzone .optional-tag',{element(e){if(path.startsWith('/ilan-ver'))e.setInnerContent('1–3 fotoğraf · zorunlu') }})
-    .on('script[src="/assets/listing-form.js"]',{element(e){if(path.startsWith('/ilan-ver'))e.setAttribute('src','/assets/yv-v222-listing-form.js?v=19') }});
+    .on('script[src="/assets/listing-form.js"]',{element(e){if(path.startsWith('/ilan-ver'))e.setAttribute('src','/assets/yv-v222-listing-form.js?v=20') }});
   return rewriter.transform(source);
 }
 export default {
