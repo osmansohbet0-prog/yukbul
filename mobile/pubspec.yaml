@@ -1,7 +1,7 @@
 name: yukvinc_mobile
 description: "YükVinç mobil uygulaması: ilanlar, iş fırsatları ve yakındaki hizmetler."
 publish_to: none
-version: 0.4.0+4
+version: 0.5.0+5
 
 environment:
   sdk: ">=3.13.0 <4.0.0"
@@ -13,6 +13,7 @@ dependencies:
   http: ^1.5.0
   url_launcher: ^6.3.3
   geolocator: ^14.1.2
+  shared_preferences: ^2.5.4
 
 dev_dependencies:
   flutter_test:
