@@ -1,0 +1,56 @@
+{
+  "snapshot_name": "YükVinç - eski çalışan web / admin / İş Radarı sürümü V222",
+  "snapshot_type": "Cloudflare Workers immutable historical version reference + production configuration manifest",
+  "as_of": "2026-11-17",
+  "production": {
+    "account_id": "bea5839fd076ac143825303b36a17a94",
+    "zone_id": "46c493a67dfdfff266d513de9704cf07",
+    "worker_name": "yukbul",
+    "worker_version_number": 222,
+    "worker_version_id": "e394c647-c942-4352-9f7f-1f46d88f558a",
+    "worker_version_created_at_utc": "2026-11-07T17:38:39.873186Z",
+    "rollback_deployment_id": "345c0115-0ac1-4174-9967-f1dfaeddccfa",
+    "rollback_deployed_at_utc": "2026-11-17T18:31:51.966643Z",
+    "traffic_percentage": 100,
+    "custom_domains": [
+      "yukvinc.com.tr",
+      "www.yukvinc.com.tr"
+    ]
+  },
+  "production_worker_routes": [
+    {
+      "pattern": "yukvinc.com.tr/assets/lead-radar-admin.js*",
+      "script": "yukvinc-radar-sanitizer"
+    },
+    {
+      "pattern": "yukvinc.com.tr/api/radar*",
+      "script": "yukvinc-radar-sanitizer"
+    },
+    {
+      "pattern": "yukvinc.com.tr/admin/radar/yayinla*",
+      "script": "yukvinc-radar-sanitizer"
+    },
+    {
+      "pattern": "yukvinc.com.tr/robots.txt",
+      "script": "yukvinc-seo-settings"
+    },
+    {
+      "pattern": "yukvinc.com.tr/sitemaps/pages-1.xml",
+      "script": "yukvinc-seo-settings"
+    }
+  ],
+  "d1": {
+    "binding_name": "DB",
+    "database_name": "yukvinc-db",
+    "database_id": "e7bba0a3-eb81-4122-9d16-7787d8fd531c",
+    "note": "This snapshot references the live database only. It does NOT contain a D1 export or time-travel backup."
+  },
+  "recovery_constraints": [
+    "Cloudflare historical V222 worker and associated versioned assets must remain available.",
+    "Do not deploy GitHub main to production as a substitute; main differs from this V222 release.",
+    "Re-deploy the exact historical V222 version at 100% to restore worker behavior, without replacing D1 data.",
+    "Do not recreate the removed UI overlays (yukvinc-sitejs-dedupe, yukvinc-profile-design, yukvinc-member-auth, yukvinc-opportunities, yukvinc-detail-css-hotfix).",
+    "Admin path is protected by Cloudflare Access; retain the protection.",
+    "Authenticated admin/radar functionality should be tested after restoring; public checks alone do not prove it."
+  ]
+}
