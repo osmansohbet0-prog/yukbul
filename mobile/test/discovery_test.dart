@@ -52,7 +52,11 @@ void main() {
       ));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      await tester.tap(find.byTooltip('Favorilere ekle'));
+      await tester.runAsync(() async {
+        await tester.tap(find.byTooltip('Favorilere ekle'));
+        await Future<void>.delayed(Duration.zero);
+        expect(await FavoritesStore.contains('listing_a'), isTrue);
+      });
       await tester.pumpAndSettle();
       expect(find.byTooltip('Favorilerden kaldır'), findsOneWidget);
     });
