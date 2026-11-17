@@ -15,6 +15,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 const baseUrl = 'https://yukvinc.com.tr';
@@ -270,7 +271,7 @@ class YukApi {
     return _parse(await client.get(uri, headers: const {'Accept': 'application/json'})
         .timeout(const Duration(seconds: 15)));
   }
-  Future<({List<YukListing> items,String? nextCursor})> listingPage({
+  Future<({List<YukListing> items,String? nextCursor,bool offline})> listingPage({
     String category='all',String query='',String city='',String? cursor,int limit=20,
   }) async {
     final q=<String,String>{'limit':limit.toString(),'sort':'newest'};
@@ -279,16 +280,31 @@ class YukApi {
     if(query.trim().isNotEmpty)q['q']=query.trim();
     if(cursor!=null&&cursor.isNotEmpty)q['cursor']=cursor;
     final uri=Uri.parse(baseUrl+'/api/listings').replace(queryParameters:q);
-    final response=await client.get(uri,headers:const {'Accept':'application/json'})
-      .timeout(const Duration(seconds:15));
-    if(response.statusCode!=200)throw Exception('Sunucu hatası: '+response.statusCode.toString());
-    final body=jsonDecode(utf8.decode(response.bodyBytes));
-    if(body is! Map||body['items'] is! List)throw const FormatException('Beklenmeyen ilan yanıtı');
-    final items=(body['items'] as List).whereType<Map>()
-      .map((v)=>YukListing.fromJson(Map<String,dynamic>.from(v)))
-      .where((v)=>v.title.isNotEmpty&&v.id.isNotEmpty).toList(growable:false);
-    final next=body['next_cursor'];
-    return(items:items,nextCursor:next is String&&next.isNotEmpty?next:null);
+    final cacheKey='yv_feed_page_'+crypto.sha256.convert(utf8.encode(uri.toString())).toString();
+    ({List<YukListing> items,String? nextCursor,bool offline}) parse(String raw,bool offline){
+      final body=jsonDecode(raw);
+      if(body is! Map||body['items'] is! List)throw const FormatException('Beklenmeyen ilan yanıtı');
+      final items=(body['items'] as List).whereType<Map>()
+        .map((v)=>YukListing.fromJson(Map<String,dynamic>.from(v)))
+        .where((v)=>v.title.isNotEmpty&&v.id.isNotEmpty).toList(growable:false);
+      final next=body['next_cursor'];
+      return(items:items,nextCursor:next is String&&next.isNotEmpty?next:null,offline:offline);
+    }
+    try{
+      final response=await client.get(uri,headers:const {'Accept':'application/json'})
+        .timeout(const Duration(seconds:15));
+      if(response.statusCode!=200)throw Exception('Sunucu hatası: '+response.statusCode.toString());
+      final raw=utf8.decode(response.bodyBytes);
+      final page=parse(raw,false);
+      unawaited(SharedPreferences.getInstance().then((prefs)=>prefs.setString(cacheKey,raw)));
+      return page;
+    }catch(error){
+      try{
+        final cached=await SharedPreferences.getInstance().then((prefs)=>prefs.getString(cacheKey));
+        if(cached!=null)return parse(cached,true);
+      }catch(_){}
+      rethrow;
+    }
   }
 
   Future<List<YukListing>> nearby(double lat, double lng, {int radiusKm = 100}) async {
