@@ -23,8 +23,10 @@ async function infer(ai,model,payload,timeout){
  let timer;try{return await Promise.race([ai.run(model,payload),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('AI timeout')),timeout)})])}finally{clearTimeout(timer)}
 }
 function parseDecision(v){
- const s=String(v?.response??v?.answer??v?.output_text??'').trim().replace(/^\\x60{3}(?:json)?\s*/,'').replace(/\s*\\x60{3}$/,'');
- const r=JSON.parse(s);if(typeof r.photo_matches_category!=='boolean'||typeof r.random_or_spam!=='boolean'||typeof r.brand_mismatch!=='boolean'||!Number.isFinite(r.confidence)||r.confidence<0||r.confidence>1)throw Error('UnstructuredAI');
+ const s=String(v?.response??v?.answer??v?.output_text??'').trim();
+ const start=s.indexOf('{'),end=s.lastIndexOf('}');
+ if(start<0||end<=start)throw Error('InvalidAIJson');
+ const r=JSON.parse(s.slice(start,end+1));if(typeof r.photo_matches_category!=='boolean'||typeof r.random_or_spam!=='boolean'||typeof r.brand_mismatch!=='boolean'||!Number.isFinite(r.confidence)||r.confidence<0||r.confidence>1)throw Error('UnstructuredAI');
  return r
 }
 async function reject(db,row,reason){
