@@ -11,10 +11,40 @@ function start(){
  if(location.pathname==='/')document.getElementById('yv-buyer-cta-v191')?.remove();
  if(location.pathname.startsWith('/hesabim'))apkCard();
  if(location.pathname.startsWith('/is-talepleri')||location.pathname.startsWith('/ihale-duyurulari'))tenderBadge();
+ syncMobileNav();
  if(location.pathname.startsWith('/admin'))return;
  createChat();
  if(document.getElementById('yv2-chat'))document.getElementById('yv2-float')?.style.setProperty('display','none','important');
  document.documentElement.dataset.yv2Start='complete';
+}
+
+function syncMobileNav(){
+ const path=location.pathname.replace(/\/+$/,'')||'/';
+ const section=path==='/ilan-ver'?'post':path==='/hesabim'?'account':
+  (path.startsWith('/is-talepleri')||path.startsWith('/ihale-duyurulari'))?'jobs':
+  (path==='/'||path.startsWith('/kategori/')||path.startsWith('/sehir/')||path.startsWith('/ilan/'))?'listings':'';
+ const update=()=>{
+  const navs=[...document.querySelectorAll('.yv-mobile-nav,.bottom-nav,.mobile-bottom-nav')];
+  for(const nav of navs){
+   for(const link of nav.querySelectorAll('a[href]')){
+    const href=(link.getAttribute('href')||'').split('#')[0];
+    const target=href==='/ilan-ver/'?'post':href==='/hesabim/'?'account':
+     href==='/is-talepleri/'?'jobs':href==='/'?'listings':'';
+    const active=Boolean(section&&target===section);
+    if(active){link.setAttribute('aria-current','page');link.classList.add('is-active')}
+    else{link.removeAttribute('aria-current');link.classList.remove('is-active')}
+   }
+  }
+ };
+ update();
+ let scheduled=false;
+ const observer=new MutationObserver(()=>{
+  if(scheduled)return;
+  scheduled=true;requestAnimationFrame(()=>{scheduled=false;update()});
+ });
+ // The original V222 sidebar creates the mobile nav after DOMContentLoaded.
+ observer.observe(document.body,{childList:true,subtree:false});
+ setTimeout(()=>observer.disconnect(),15000);
 }
 function apkCard(){
  const target=document.getElementById('account-view')||document.querySelector('main');
@@ -149,7 +179,34 @@ function createChat(){
   const b=add(messages,'div','yv2-bubble '+(kind==='user'?'yv2-from-user':'yv2-from-agent'),text);
   scroll(messages);return b;
  }
- function show(opened){panel.hidden=!opened;open.hidden=opened;open.setAttribute('aria-expanded',String(opened));if(opened){scroll(messages);input.focus()}else open.focus()}
+ let savedPageScroll=0;
+ function show(opened){
+  panel.hidden=!opened;open.hidden=opened;open.setAttribute('aria-expanded',String(opened));
+  if(opened){
+   if(!document.body.classList.contains('yv2-standalone')&&!document.body.classList.contains('yv2-chat-open')){
+    savedPageScroll=window.scrollY;
+    document.body.style.setProperty('--yv2-locked-scroll',(-savedPageScroll)+'px');
+    document.body.classList.add('yv2-chat-open');
+  }
+   scroll(messages);input.focus({preventScroll:true});
+  }else{
+   if(document.body.classList.contains('yv2-chat-open')){
+    document.body.classList.remove('yv2-chat-open');
+    document.body.style.removeProperty('--yv2-locked-scroll');
+    window.scrollTo(0,savedPageScroll);
+   }
+   open.focus({preventScroll:true});
+  }
+ }
+ // Keep wheel and touch gestures in the chat rather than scrolling the page behind it.
+ panel.addEventListener('wheel',ev=>{
+  const box=ev.target.closest('.yv2-messages');
+  if(!box){ev.preventDefault();return}
+  if((ev.deltaY<0&&box.scrollTop<=0)||(ev.deltaY>0&&box.scrollTop+box.clientHeight>=box.scrollHeight-1))ev.preventDefault();
+ },{passive:false});
+ panel.addEventListener('touchmove',ev=>{
+  if(!ev.target.closest('.yv2-messages,textarea,.yv2-tools'))ev.preventDefault();
+ },{passive:false});
  function welcome(){messages.replaceChildren();bubble('assistant','Selam! Ben Yük Usta. 🙂 İstersen sohbet edelim, sana uygun vinci bulalım veya bir sorunu birlikte çözelim.')}
  function showReport(prefill){
   complaint.hidden=false;form.hidden=true;tools.hidden=true;
