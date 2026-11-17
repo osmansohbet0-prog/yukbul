@@ -30,6 +30,5 @@ test('publicItems binds a cursor after applying category filters',async()=>{
   const {sql,args}=db.calls[0];
   assert.match(sql,/COALESCE\(l\.service_category,l\.category_detail,l\.category\)=\?/);
   assert.match(sql,/0<\? OR \(0=\? AND \(l\.created_at<\? OR \(l\.created_at=\? AND l\.id<\?\)\)\)/);
-  assert.deepEqual(args.slice(-6),['listing_01']);
-  assert.equal(args.at(-1),21);
+  assert.deepEqual(args.slice(-6),[0,0,12345,12345,'listing_01',21]);
 });
