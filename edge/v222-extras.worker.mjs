@@ -3,7 +3,7 @@
 const CLIENT_JS = '__INJECT_CLIENT_JS__';
 const CLIENT_CSS = '__INJECT_CLIENT_CSS__';
 const CORS_ORIGIN = 'https://yukvinc.com.tr';
-const VERSION = 'v222-extras-20261117.3';
+const VERSION = 'v222-extras-20261117.4';
 const CLIENT_ROUTE = '/assets/yv-v222-extras.js';
 const CSS_ROUTE = '/assets/yv-v222-extras.css';
 const API_PREFIX = '/api/yukusta-v2/';
@@ -128,8 +128,8 @@ async function passthrough(request,env){
   // Calling the original V222 Worker through service binding avoids replacing any of its code/assets.
   const source=env.ORIGIN?await env.ORIGIN.fetch(request):await fetch(request);
   if(!source.ok||!String(source.headers.get('content-type')||'').includes('text/html'))return source;
-  const rewriter=new HTMLRewriter().on('body',{element(element){
-    element.append('<script src="/assets/yv-v222-extras.js?v=3"></script>',{html:true});
+  const rewriter=new HTMLRewriter().on('head',{element(element){
+    element.append('<script src="/assets/yv-v222-extras.js?v=4" defer></script>',{html:true});
   }});
   return rewriter.transform(source);
 }
