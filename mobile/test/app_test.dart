@@ -89,6 +89,7 @@ void main() {
     ));
     expect(find.text('Hesabımı aç'), findsOneWidget);
     expect(find.text('İlan ver'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('İş talepleri'), 150);
     expect(find.text('İş talepleri'), findsOneWidget);
     expect(find.text('Mesaiye Başla (yakında)'), findsNothing);
   });
