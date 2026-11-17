@@ -10,9 +10,10 @@ function start(){
  const link=e('link');link.id='yv2-css';link.rel='stylesheet';link.href='/assets/yv-v222-extras.css?v=1';document.head.append(link);
  if(location.pathname==='/')document.getElementById('yv-buyer-cta-v191')?.remove();
  if(location.pathname.startsWith('/hesabim'))apkCard();
- if(location.pathname.startsWith('/is-talepleri'))tenderBadge();
+ if(location.pathname.startsWith('/is-talepleri')&&!document.querySelector('.yv2-tender-new'))tenderBadge();
  if(location.pathname.startsWith('/admin'))return;
  createChat();
+ if(document.getElementById('yv2-chat'))document.getElementById('yv2-float')?.style.setProperty('display','none','important');
  document.documentElement.dataset.yv2Start='complete';
 }
 function apkCard(){
