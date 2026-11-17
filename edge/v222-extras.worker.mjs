@@ -3,7 +3,7 @@
 const CLIENT_JS = '__INJECT_CLIENT_JS__';
 const CLIENT_CSS = '__INJECT_CLIENT_CSS__';
 const CORS_ORIGIN = 'https://yukvinc.com.tr';
-const VERSION = 'v222-extras-20261117.1';
+const VERSION = 'v222-extras-20261117.2';
 const CLIENT_ROUTE = '/assets/yv-v222-extras.js';
 const CSS_ROUTE = '/assets/yv-v222-extras.css';
 const API_PREFIX = '/api/yukusta-v2/';
@@ -129,7 +129,7 @@ async function passthrough(request,env){
   const source=env.ORIGIN?await env.ORIGIN.fetch(request):await fetch(request);
   if(!source.ok||!String(source.headers.get('content-type')||'').includes('text/html'))return source;
   const rewriter=new HTMLRewriter().on('body',{element(element){
-    element.append('<script src="/assets/yv-v222-extras.js?v=1" defer></script>',{html:true});
+    element.append('<script src="/assets/yv-v222-extras.js?v=2"></script>',{html:true});
   }});
   return rewriter.transform(source);
 }
