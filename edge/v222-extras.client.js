@@ -10,7 +10,7 @@ function start(){
  const link=e('link');link.id='yv2-css';link.rel='stylesheet';link.href='/assets/yv-v222-extras.css?v=1';document.head.append(link);
  if(location.pathname==='/')document.getElementById('yv-buyer-cta-v191')?.remove();
  if(location.pathname.startsWith('/hesabim'))apkCard();
- if(location.pathname.startsWith('/is-talepleri')&&!document.querySelector('.yv2-tender-new'))tenderBadge();
+ if(location.pathname.startsWith('/is-talepleri'))tenderBadge();
  if(location.pathname.startsWith('/admin'))return;
  createChat();
  if(document.getElementById('yv2-chat'))document.getElementById('yv2-float')?.style.setProperty('display','none','important');
@@ -36,7 +36,7 @@ async function tenderBadge(){
    const links=[...document.querySelectorAll('a[href*="ihale-duyurulari"]')];
    const link=links.find(x=>/ihale duyurular/i.test(x.textContent))||links[0];
    if(!link)return;
-   if(link.querySelector('.yv2-tender-badge'))return;
+   if(link.querySelector('.yv2-tender-badge, .yv2-tender-new'))return;
    const stars=add(link,'span','yv2-tender-stars',' ✦ ✦');stars.setAttribute('aria-hidden','true');
    add(link,'span','yv2-tender-badge','Yeni eklendi');
    link.setAttribute('aria-label','İhale duyurularına git; yeni ihale yayımlandı');
