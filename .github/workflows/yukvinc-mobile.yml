@@ -111,8 +111,8 @@ jobs:
             new_code="$("$sdk_bin/aapt" dump badging "$apk" | sed -nE "s/^package:.*versionCode='([0-9]+)'.*/\1/p")"
             test "$new_code" -gt "$old_code"
             # A different signing certificate would force users to uninstall the app.
-            old_cert="$("$sdk_bin/apksigner" verify --print-certs "$RUNNER_TEMP/yukvinc-previous.apk" | grep -F 'Signer #1 certificate SHA-256 digest:' | head -n1)"
-            new_cert="$("$sdk_bin/apksigner" verify --print-certs "$apk" | grep -F 'Signer #1 certificate SHA-256 digest:' | head -n1)"
+            old_cert="$("$sdk_bin/apksigner" verify --print-certs "$RUNNER_TEMP/yukvinc-previous.apk" | grep -F 'certificate SHA-256 digest:' | head -n1 | sed -E 's/.*certificate SHA-256 digest:[[:space:]]*//')"
+            new_cert="$("$sdk_bin/apksigner" verify --print-certs "$apk" | grep -F 'certificate SHA-256 digest:' | head -n1 | sed -E 's/.*certificate SHA-256 digest:[[:space:]]*//')"
             test -n "$old_cert" && test -n "$new_cert"
             if [[ "$old_cert" != "$new_cert" ]]; then
               echo "::error::APK signing certificate changed; in-place updates would fail."
