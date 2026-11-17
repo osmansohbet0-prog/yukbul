@@ -751,64 +751,92 @@ class ListingsScreen extends StatefulWidget {
   @override State<ListingsScreen> createState() => _ListingsState();
 }
 class _ListingsState extends State<ListingsScreen> {
-  final search = TextEditingController();
+  final search=TextEditingController();
+  final scroll=ScrollController();
+  final appended=<YukListing>[];
   Timer? timer;
-  String category = 'all';
+  String category='all';
+  String? cursor;
+  bool hasMore=true,loadingMore=false;
   late Future<List<YukListing>> future;
-  static const filters = <String, String>{
-    'all': 'Tümü', 'crane': 'Vinç', 'tow': 'Çekici',
-    'basket': 'Sepetli', 'mobile_tire': 'Lastik', 'manlift': 'Manlift',
-    'machine': 'Makine', 'lift': 'Asansör', 'operator': 'Operatör',
+  static const filters=<String,String>{
+    'all':'Tümü','crane':'Vinç','tow':'Çekici','basket':'Sepetli',
+    'mobile_tire':'Lastik','manlift':'Manlift','machine':'Makine',
+    'lift':'Asansör','operator':'Operatör',
   };
-  @override void initState() {
+  @override void initState(){
     super.initState();
-    search.text = widget.initialQuery;
-    future = search.text.isEmpty ? api.initialListings() : api.listings(query: search.text);
+    search.text=widget.initialQuery;
+    scroll.addListener(checkForMore);
+    future=firstPage();
   }
-  void load() => setState(() =>
-    future = api.listings(query: search.text, category: category));
-  Future<void> refresh() async { load(); try { await future; } catch (_) {} }
-  @override void dispose() { timer?.cancel(); search.dispose(); super.dispose(); }
-  @override Widget build(BuildContext context) => Column(children: [
-    Padding(padding: const EdgeInsets.fromLTRB(18, 12, 18, 3),
-      child: TextField(
-        controller: search, textInputAction: TextInputAction.search,
-        decoration: InputDecoration(
-          hintText: 'Şehir, ilan veya ekipman ara',
-          prefixIcon: const Icon(Icons.search),
-          filled: true,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(15),
-            borderSide: BorderSide.none)),
-        onSubmitted: (_) { timer?.cancel(); load(); },
-        onChanged: (_) { timer?.cancel();
-          timer = Timer(const Duration(milliseconds: 450), load); },
-      )),
-    SizedBox(height: 53, child: ListView(scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 18),
-      children: [for (final filter in filters.entries)
-        Padding(padding: const EdgeInsets.only(right: 7),
-          child: ChoiceChip(label: Text(filter.value),
-            selected: category == filter.key,
-            onSelected: (selected) {
-              if (!selected || category == filter.key) return;
-              timer?.cancel();
-              category = filter.key;
-              load();
-            }))])),
-    Expanded(child: FutureBuilder<List<YukListing>>(
-      future: future, builder: (context, snap) {
-        if (!snap.hasData && !snap.hasError) return const Loading();
-        if (snap.hasError) return Retry(onTap: refresh);
-        final items = snap.data ?? [];
-        if (items.isEmpty) return const Empty('Bu aramaya uygun ilan yok.');
-        return RefreshIndicator(onRefresh: refresh, child: ListView.builder(
-          padding: const EdgeInsets.fromLTRB(18, 4, 18, 20),
-          physics: const AlwaysScrollableScrollPhysics(),
-          itemCount: items.length,
-          itemBuilder: (context, i) => ListingCard(item: items[i]),
-        ));
-      },
+  Future<List<YukListing>> firstPage()async{
+    final page=await api.listingPage(query:search.text,category:category);
+    if(mounted){cursor=page.nextCursor;hasMore=cursor!=null;}
+    return page.items;
+  }
+  void load(){
+    timer?.cancel();
+    setState((){
+      appended.clear();cursor=null;hasMore=true;loadingMore=false;
+      future=firstPage();
+    });
+    if(scroll.hasClients)scroll.jumpTo(0);
+  }
+  Future<void> refresh()async{
+    load();
+    try{await future;}catch(_){}
+  }
+  void checkForMore(){
+    if(scroll.hasClients&&scroll.position.extentAfter<500)unawaited(loadMore());
+  }
+  Future<void> loadMore()async{
+    if(loadingMore||!hasMore||cursor==null)return;
+    setState(()=>loadingMore=true);
+    try{
+      final page=await api.listingPage(query:search.text,category:category,cursor:cursor);
+      if(!mounted)return;
+      setState((){
+        appended.addAll(page.items);
+        cursor=page.nextCursor;
+        hasMore=cursor!=null;
+      });
+    }catch(_){
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:const Text('Diğer ilanlar yüklenemedi.'),action:SnackBarAction(label:'Tekrar dene',onPressed:()=>unawaited(loadMore()))));
+    }finally{if(mounted)setState(()=>loadingMore=false);}
+  }
+  @override void dispose(){
+    timer?.cancel();search.dispose();scroll.dispose();super.dispose();
+  }
+  @override Widget build(BuildContext context)=>Column(children:[
+    Padding(padding:const EdgeInsets.fromLTRB(18,12,18,3),child:TextField(
+      controller:search,textInputAction:TextInputAction.search,
+      decoration:InputDecoration(hintText:'Şehir, ilan veya ekipman ara',
+        prefixIcon:const Icon(Icons.search),filled:true,
+        border:OutlineInputBorder(borderRadius:BorderRadius.circular(15),borderSide:BorderSide.none)),
+      onSubmitted:(_){timer?.cancel();load();},
+      onChanged:(_){timer?.cancel();timer=Timer(const Duration(milliseconds:450),load);},
     )),
+    SizedBox(height:53,child:ListView(scrollDirection:Axis.horizontal,padding:const EdgeInsets.symmetric(horizontal:18),
+      children:[for(final filter in filters.entries)Padding(padding:const EdgeInsets.only(right:7),
+        child:ChoiceChip(label:Text(filter.value),selected:category==filter.key,onSelected:(selected){
+          if(!selected||category==filter.key)return;
+          category=filter.key;load();
+        }))])),
+    Expanded(child:FutureBuilder<List<YukListing>>(future:future,builder:(context,snap){
+      if(!snap.hasData&&!snap.hasError)return const Loading();
+      if(snap.hasError)return Retry(onTap:refresh);
+      final items=[...(snap.data??const <YukListing>[]),...appended];
+      if(items.isEmpty)return const Empty('Bu aramaya uygun ilan yok.');
+      return RefreshIndicator(onRefresh:refresh,child:ListView.builder(
+        controller:scroll,padding:const EdgeInsets.fromLTRB(18,4,18,20),
+        physics:const AlwaysScrollableScrollPhysics(),
+        itemCount:items.length+(loadingMore?1:0),
+        itemBuilder:(context,i)=>i<items.length?ListingCard(item:items[i]):
+          const Padding(padding:EdgeInsets.all(20),child:Center(child:CircularProgressIndicator())),
+      ));
+    })),
   ]);
 }
 
