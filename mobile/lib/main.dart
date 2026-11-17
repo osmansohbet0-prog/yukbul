@@ -774,6 +774,7 @@ class _ListingsState extends State<ListingsScreen> {
   String category='all';
   String? cursor;
   bool hasMore=true,loadingMore=false,offline=false;
+  int generation=0;
   late Future<List<YukListing>> future;
   static const filters=<String,String>{
     'all':'Tümü','crane':'Vinç','tow':'Çekici','basket':'Sepetli',
@@ -784,18 +785,20 @@ class _ListingsState extends State<ListingsScreen> {
     super.initState();
     search.text=widget.initialQuery;
     scroll.addListener(checkForMore);
-    future=firstPage();
+    future=firstPage(generation);
   }
-  Future<List<YukListing>> firstPage()async{
-    final page=await api.listingPage(query:search.text,category:category);
-    if(mounted)setState((){cursor=page.nextCursor;hasMore=cursor!=null;offline=page.offline;});
+  Future<List<YukListing>> firstPage(int requestGeneration)async{
+    final requestedQuery=search.text,requestedCategory=category;
+    final page=await api.listingPage(query:requestedQuery,category:requestedCategory);
+    if(mounted&&generation==requestGeneration)setState((){cursor=page.nextCursor;hasMore=cursor!=null;offline=page.offline;});
     return page.items;
   }
   void load(){
     timer?.cancel();
+    generation++;
     setState((){
-      appended.clear();cursor=null;hasMore=true;loadingMore=false;
-      future=firstPage();
+      appended.clear();cursor=null;hasMore=true;loadingMore=false;offline=false;
+      future=firstPage(generation);
     });
     if(scroll.hasClients)scroll.jumpTo(0);
   }
@@ -808,19 +811,21 @@ class _ListingsState extends State<ListingsScreen> {
   }
   Future<void> loadMore()async{
     if(loadingMore||!hasMore||cursor==null)return;
+    final requestGeneration=generation,requestedCursor=cursor;
+    final requestedQuery=search.text,requestedCategory=category;
     setState(()=>loadingMore=true);
     try{
-      final page=await api.listingPage(query:search.text,category:category,cursor:cursor);
-      if(!mounted)return;
+      final page=await api.listingPage(query:requestedQuery,category:requestedCategory,cursor:requestedCursor);
+      if(!mounted||generation!=requestGeneration)return;
       setState((){
         appended.addAll(page.items);
         cursor=page.nextCursor;
         hasMore=cursor!=null;offline=page.offline;
       });
     }catch(_){
-      if(mounted)ScaffoldMessenger.of(context).showSnackBar(
+      if(mounted&&generation==requestGeneration)ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content:const Text('Diğer ilanlar yüklenemedi.'),action:SnackBarAction(label:'Tekrar dene',onPressed:()=>unawaited(loadMore()))));
-    }finally{if(mounted)setState(()=>loadingMore=false);}
+    }finally{if(mounted&&generation==requestGeneration)setState(()=>loadingMore=false);}
   }
   @override void dispose(){
     timer?.cancel();search.dispose();scroll.dispose();super.dispose();
