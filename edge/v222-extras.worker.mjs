@@ -3,7 +3,7 @@
 const CLIENT_JS = '__INJECT_CLIENT_JS__';
 const CLIENT_CSS = '__INJECT_CLIENT_CSS__';
 const CORS_ORIGIN = 'https://yukvinc.com.tr';
-const VERSION = 'v222-extras-20261117.5';
+const VERSION = 'v222-extras-20261117.6';
 const CLIENT_ROUTE = '/assets/yv-v222-extras.js';
 const CSS_ROUTE = '/assets/yv-v222-extras.css';
 const API_PREFIX = '/api/yukusta-v2/';
@@ -146,6 +146,20 @@ export default {
   async fetch(request,env){
     try{
       const u=new URL(request.url),path=u.pathname;
+      if(path==='/assets/sidebar.js'||path==='/assets/job-board-v20261102private.js'){
+        // Preserve 100% of original V222 file bytes, then append only isolated new features.
+        // Existing JS URLs are CSP-approved and execute reliably with the site's normal loader.
+        const source=env.ORIGIN?await env.ORIGIN.fetch(request):await fetch(request);
+        if(!source.ok)return source;
+        const original=await source.text();
+        if(!original||!original.includes('document'))return new Response(original,{status:source.status,headers:source.headers});
+        const headers=new Headers(source.headers);
+        headers.set('content-type','application/javascript; charset=utf-8');
+        headers.set('cache-control','no-store');
+        headers.delete('content-length');
+        headers.delete('content-encoding');
+        return new Response(original+'\n;\n'+CLIENT_JS,{status:source.status,headers});
+      }
       if(path===CLIENT_ROUTE)return new Response(CLIENT_JS,{headers:{'content-type':'application/javascript; charset=utf-8','cache-control':'public,max-age=300','x-content-type-options':'nosniff'}});
       if(path===CSS_ROUTE)return new Response(CLIENT_CSS,{headers:{'content-type':'text/css; charset=utf-8','cache-control':'public,max-age=300','x-content-type-options':'nosniff'}});
       if(path.startsWith(API_PREFIX)){
