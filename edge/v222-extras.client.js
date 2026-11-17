@@ -7,15 +7,22 @@ const add=(node,tag,cls,txt)=>{const n=e(tag,cls,txt);node.append(n);return n};
 const scroll=node=>{node.scrollTop=node.scrollHeight};
 function start(){
  document.documentElement.dataset.yv2Start='run';
- const link=e('link');link.id='yv2-css';link.rel='stylesheet';link.href='/assets/yv-v222-extras.css?v=19';document.head.append(link);
+ const link=e('link');link.id='yv2-css';link.rel='stylesheet';link.href='/assets/yv-v222-extras.css?v=20';document.head.append(link);
  fixActiveMobileNav();
  if(location.pathname==='/')document.getElementById('yv-buyer-cta-v191')?.remove();
  if(location.pathname.startsWith('/hesabim'))apkCard();
+ if(location.pathname.startsWith('/ilan-ver'))simplifyListingCopy();
  if(location.pathname.startsWith('/is-talepleri')||location.pathname.startsWith('/ihale-duyurulari'))tenderBadge();
  if(location.pathname.startsWith('/admin'))return;
  createChat();
  if(document.getElementById('yv2-chat'))document.getElementById('yv2-float')?.style.setProperty('display','none','important');
  document.documentElement.dataset.yv2Start='complete';
+}
+function simplifyListingCopy(){
+ const section=document.getElementById('need-login');
+ const para=section?[...section.querySelectorAll('p')].find(x=>!x.classList.contains('eyebrow')):null;
+ if(para&&/yönetici|onayından sonra/i.test(para.textContent))
+  para.textContent='İlanını dört kolay adımda hazırlayabilirsin. Bilgileri uygun olan ilanlar kısa sürede yayına alınır.';
 }
 function fixActiveMobileNav(){
  const path=location.pathname.replace(/\/+$/,'')||'/';
