@@ -1,3 +1,38 @@
+# Android geliştirme iş listesi
+
+## 0.7.0 — keşfet ve görünüm
+- [x] Sisteme uyumlu açık/koyu tema ve kalıcı kullanıcı tercihi.
+- [x] Büyük fotoğraflı ilan kartları, ana ekrandan arama.
+- [x] Son görüntülenen 12 ilan, geçmişi temizleme.
+- [x] İlan bağlantısı kopyalama ve WhatsApp paylaşımı.
+- [x] Favori yazmalarını sıraya alma ve ekranlar arası durum yenileme.
+- [x] Favorileri ilk sonuç sayfasıyla sınırlamadan detay API'sinden yükleme.
+- [x] Depolama, tema ve dar ekranda büyük yazıyla kart testleri.
+- [x] Flutter analiz ve testler.
+- [x] Kalıcı anahtarla imzalı APK, imza/mimari doğrulaması, Android 14 emülatöründe önceki sürüm üstüne kurulum ve açılış geçti.
+
+Test artifact: https://github.com/osmansohbet0-prog/yukbul/actions/runs/44128373573/artifacts/14348828397
+Gerçek telefonda kullanıcı akışlarının uçtan uca doğrulaması henüz yapılmadı.
+
+**Değiştirilen dosyalar:** mobile/lib/main.dart, mobile/lib/appearance.dart, mobile/lib/favorites.dart, mobile/lib/app_update.dart, mobile/pubspec.yaml, mobile/test/discovery_test.dart, mobile/test/app_test.dart, .github/workflows/yukvinc-mobile.yml.
+
+Kod: dbc2f76144e27c1ec7d960af96cef948cbb7a5b4
+PR: https://github.com/osmansohbet0-prog/yukbul/pull/75
+CI: https://github.com/osmansohbet0-prog/yukbul/actions/runs/44128373573
+
+## Sıradaki işler (öncelik sırası)
+- [ ] Google oturumunu mevcut Turnstile / HttpOnly çerez sözleşmesi ile güvenli mobil akışa bağla; iptal, tekrar deneme, süre aşımı ve oturum geri yükleme testleri ekle.
+- [ ] Aynı kullanıcı hesabıyla yerel profil görüntüleme/düzenleme ve fotoğraf yükleme.
+- [ ] Yerel ilan oluşturma/düzenleme/silme; mevcut yetki ve moderasyon kontrollerini kullan.
+- [ ] Teklif verme, iş talebi ve durum yönetimi ekranları.
+- [ ] Gerçek cihazda konum izni reddi, yaklaşık konum, en yakın ilanlar ve acil yardım uçtan uca testleri.
+- [ ] Favorileri hesapla eşitleme (şu an yalnızca cihazda).
+- [ ] Gerçek cihazda erişilebilirlik, açılış süresi, kaydırma ve bellek ölçümü.
+- [ ] Eski sürümden yükseltirken oturum/veri korumasını gerçek cihazda doğrula.
+
+## Devam notu
+`feature/android-discovery-design` dalından devam et. PR #75, #74 üzerine kuruludur; #74 ise mobil MVP dalını hedefler. PR #72 EVREN çalışmasını ezme. Mevcut API'leri incelemeden yeni sözleşme veya sahte servis üretme. Ana dalı birleştirmek veya canlı site/APK yayını yapmak ayrıca kullanıcı onayına bağlıdır. Test artifact'ı dağıtım değildir.
+
 # Android 0.6.0 geliştirme kaydı
 
 **Tamamlanan iş:** Uygulama içinde güncel ilan detayları, kaydırılabilir ve yakınlaştırılabilir fotoğraf galerisi, kaldırılan ilan ve hatalı sunucu yanıtlarında tekrar deneme.
