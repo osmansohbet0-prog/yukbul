@@ -38,6 +38,8 @@ class MemberAuth {
   static String? _processingCode;
   static String? _completedCode;
   static StreamSubscription<Uri>? _linkSubscription;
+  static Timer? _loginTimeout;
+  static bool _waitingForCallback = false;
   static bool _initialized = false;
 
   static String _randomToken() => base64Url.encode(
@@ -93,10 +95,21 @@ class MemberAuth {
       try { opened = await launchUrl(uri, mode: LaunchMode.inAppBrowserView); } catch (_) {}
       if (!opened) opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!opened) throw StateError('Giriş sayfası açılamadı.');
+      _waitingForCallback = true;
+      status.value = 'Giriş sayfasında Google ile devam et, sonra uygulamaya dön.';
+      _loginTimeout?.cancel();
+      _loginTimeout = Timer(const Duration(minutes: 3), () {
+        if (!_waitingForCallback) return;
+        _waitingForCallback = false;
+        busy.value = false;
+        status.value = 'Giriş süresi doldu. Yeniden deneyebilirsin.';
+      });
     } catch (_) {
+      _waitingForCallback = false;
+      _loginTimeout?.cancel();
       status.value = 'Google giriş sayfası açılamadı. İnternet bağlantını kontrol et.';
     } finally {
-      busy.value = false;
+      if (!_waitingForCallback) busy.value = false;
     }
   }
 
@@ -105,6 +118,8 @@ class MemberAuth {
     final code = uri.queryParameters['code'] ?? '';
     final state = uri.queryParameters['state'] ?? '';
     if (code.isEmpty || code == _processingCode || code == _completedCode) return;
+    _waitingForCallback = false;
+    _loginTimeout?.cancel();
     _processingCode = code;
     busy.value = true;
     status.value = 'Google oturumu güvenle doğrulanıyor…';
@@ -175,6 +190,15 @@ class MemberAuth {
     } catch (_) {
       // Keep the last confirmed account visible while offline.
     }
+  }
+
+  static Future<void> cancelSignIn() async {
+    _waitingForCallback = false;
+    _loginTimeout?.cancel();
+    await _storage.delete(key: 'yv_auth_state');
+    await _storage.delete(key: 'yv_auth_verifier');
+    busy.value = false;
+    status.value = 'Google girişi iptal edildi.';
   }
 
   static Future<void> logout() async {
@@ -1000,19 +1024,29 @@ class Account extends StatelessWidget {
                   const SizedBox(height: 14),
                   ValueListenableBuilder<bool>(
                     valueListenable: MemberAuth.busy,
-                    builder: (context, busy, child) => FilledButton.icon(
-                      onPressed: busy ? null : () { unawaited(MemberAuth.beginGoogleSignIn()); },
-                      icon: busy
-                        ? const SizedBox.square(dimension: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.login_rounded),
-                      label: Text(busy ? 'Giriş hazırlanıyor…' : 'Google ile devam et'),
+                    builder: (context, busy, child) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        FilledButton.icon(
+                          onPressed: busy ? null : () { unawaited(MemberAuth.beginGoogleSignIn()); },
+                          icon: busy
+                            ? const SizedBox.square(dimension: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Icon(Icons.login_rounded),
+                          label: Text(busy ? 'Giriş bekleniyor…' : 'Google ile devam et'),
+                        ),
+                        const SizedBox(height: 4),
+                        OutlinedButton(
+                          onPressed: busy ? null : () { unawaited(MemberAuth.beginGoogleSignIn()); },
+                          child: const Text('E-posta ile giriş yap'),
+                        ),
+                        if (busy)
+                          TextButton(
+                            onPressed: () { unawaited(MemberAuth.cancelSignIn()); },
+                            child: const Text('Girişten vazgeç'),
+                          ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  OutlinedButton(
-                    onPressed: () { unawaited(MemberAuth.beginGoogleSignIn()); },
-                    child: const Text('E-posta ile giriş yap'),
                   ),
                   ValueListenableBuilder<String>(
                     valueListenable: MemberAuth.status,
