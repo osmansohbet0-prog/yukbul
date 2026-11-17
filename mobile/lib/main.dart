@@ -58,7 +58,7 @@ class MemberAuth {
         unawaited(_refresh());
       }
       final links = AppLinks();
-      _linkSubscription = links.uriLinkStream.listen(
+      _linkSubscription ??= links.uriLinkStream.listen(
         (uri) => unawaited(_handleCallback(uri)),
         onError: (_) => status.value = 'Uygulama bağlantısı açılamadı. Tekrar giriş yap.',
       );
@@ -77,11 +77,17 @@ class MemberAuth {
       final state = _randomToken(), verifier = _randomToken();
       await _storage.write(key: 'yv_auth_state', value: state);
       await _storage.write(key: 'yv_auth_verifier', value: verifier);
+      final handoff = Uri(
+        path: '/api/auth/mobile-handoff',
+        queryParameters: {
+          'app': 'android',
+          'state': state,
+          'code_challenge': _challenge(verifier),
+          'code_challenge_method': 'S256',
+        },
+      );
       final uri = Uri.parse('$baseUrl/giris/').replace(queryParameters: {
-        'app': 'android',
-        'state': state,
-        'code_challenge': _challenge(verifier),
-        'code_challenge_method': 'S256',
+        'next': handoff.toString(),
       });
       var opened = false;
       try { opened = await launchUrl(uri, mode: LaunchMode.inAppBrowserView); } catch (_) {}
