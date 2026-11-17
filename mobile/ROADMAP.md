@@ -9,7 +9,8 @@
 - [ ] Google hesabı/oturum ve profil bilgilerini uygulama içinde düzenleme; önce desteklenen alanları ve API sözleşmesini doğrula.
 - [ ] İşveren iş talebi oluşturma ve talep listesi; API mevcut değilse yetki ve moderasyon kurallarıyla ekle.
 - [ ] Teklif oluşturma, görüntüleme ve durum takibi; sunucu API'si ve kullanıcı yetkileri doğrulanmalı.
-- [ ] İlan formunda il/ilçe seçimini doğrulanmış yerel listelerle yap; serbest metin hatalarını kaldır.
+- [x] İlan formunda 81 il ve ilçeyi doğrulanmış listeden seç; yanlış il/ilçe eşleşmesini engelle.
+- [x] İncelemedeki, işaretli veya reddedilmiş ilana uygulama içinden itiraz gönder.
 - [ ] Fotoğraf kırpma, sıkıştırma önizlemesi ve başarısız yüklemeyi tekrar deneme.
 - [ ] Yol yardımı için doğrulanmış API/konum paylaşımı yoksa sahte canlı veri gösterme; gerçek akış için sunucu sözleşmesi oluştur.
 - [ ] Hesap menüsündeki siteye yönlendiren aksiyonları yerel ekranlara taşı.
