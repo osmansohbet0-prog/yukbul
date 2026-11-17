@@ -2,7 +2,7 @@ name: YükVinç Android
 on:
   workflow_dispatch:
   push:
-    branches: [feature/yukvinc-mobile-mvp, feature/android-native-details]
+    branches: [feature/yukvinc-mobile-mvp, feature/android-native-details, feature/android-discovery-design]
     paths:
       - "mobile/**"
       - ".github/workflows/yukvinc-mobile.yml"
