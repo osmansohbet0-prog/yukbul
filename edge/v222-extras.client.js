@@ -8,6 +8,7 @@ const scroll=node=>{node.scrollTop=node.scrollHeight};
 function start(){
  document.documentElement.dataset.yv2Start='run';
  const link=e('link');link.id='yv2-css';link.rel='stylesheet';link.href='/assets/yv-v222-extras.css?v=1';document.head.append(link);
+ fixActiveMobileNav();
  if(location.pathname==='/')document.getElementById('yv-buyer-cta-v191')?.remove();
  if(location.pathname.startsWith('/hesabim'))apkCard();
  if(location.pathname.startsWith('/is-talepleri')||location.pathname.startsWith('/ihale-duyurulari'))tenderBadge();
@@ -15,6 +16,33 @@ function start(){
  createChat();
  if(document.getElementById('yv2-chat'))document.getElementById('yv2-float')?.style.setProperty('display','none','important');
  document.documentElement.dataset.yv2Start='complete';
+}
+function fixActiveMobileNav(){
+ const path=location.pathname.replace(/\/+$/,'')||'/';
+ function activeFor(href){
+  let p;try{p=new URL(href,location.href).pathname.replace(/\/+$/,'')||'/'}catch{return false}
+  if(p==='/ilan-ver')return path==='/ilan-ver';
+  if(p==='/hesabim')return path==='/hesabim'||path==='/giris';
+  if(p==='/is-talepleri')return path.startsWith('/is-talepleri')||path.startsWith('/ihale-duyurulari');
+  if(p==='/')return path==='/'||path.startsWith('/kategori/')||path.startsWith('/sehir/')||path.startsWith('/ilan/');
+  return false;
+ }
+ function apply(){
+  for(const nav of document.querySelectorAll('.yv-mobile-nav, .bottom-nav, nav[aria-label="Mobil hızlı erişim"]')){
+   for(const a of nav.querySelectorAll('a[href]')){
+    const isActive=activeFor(a.getAttribute('href'));
+    if(a.getAttribute('aria-current')!==(isActive?'page':null)){
+     if(isActive)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');
+    }
+    if(a.classList.contains('yv2-nav-active')!==isActive)a.classList.toggle('yv2-nav-active',isActive);
+   }
+  }
+ }
+ apply();
+ let pending=false;
+ const observer=new MutationObserver(()=>{if(!pending){pending=true;requestAnimationFrame(()=>{pending=false;apply()})}});
+ observer.observe(document.body,{childList:true,subtree:true});
+ setTimeout(()=>observer.disconnect(),45000);
 }
 function apkCard(){
  const target=document.getElementById('account-view')||document.querySelector('main');
@@ -149,7 +177,27 @@ function createChat(){
   const b=add(messages,'div','yv2-bubble '+(kind==='user'?'yv2-from-user':'yv2-from-agent'),text);
   scroll(messages);return b;
  }
- function show(opened){panel.hidden=!opened;open.hidden=opened;open.setAttribute('aria-expanded',String(opened));if(opened){scroll(messages);input.focus()}else open.focus()}
+ let scrollLock=null;
+ function lockBackdrop(){
+  if(document.body.classList.contains('yv2-standalone')||scrollLock)return;
+  const body=document.body;
+  scrollLock={x:window.scrollX,y:window.scrollY,position:body.style.position,top:body.style.top,left:body.style.left,right:body.style.right,width:body.style.width,overflow:body.style.overflow};
+  body.style.position='fixed';body.style.top='-'+scrollLock.y+'px';body.style.left='0';body.style.right='0';body.style.width='100%';body.style.overflow='hidden';
+  document.documentElement.classList.add('yv2-chat-scroll-lock');
+ }
+ function unlockBackdrop(){
+  if(!scrollLock)return;
+  const s=scrollLock;scrollLock=null;
+  const body=document.body;
+  body.style.position=s.position;body.style.top=s.top;body.style.left=s.left;body.style.right=s.right;body.style.width=s.width;body.style.overflow=s.overflow;
+  document.documentElement.classList.remove('yv2-chat-scroll-lock');
+  window.scrollTo(s.x,s.y);
+ }
+ function show(opened){
+  panel.hidden=!opened;open.hidden=opened;open.setAttribute('aria-expanded',String(opened));
+  if(opened){lockBackdrop();scroll(messages);input.focus({preventScroll:true})}
+  else{unlockBackdrop();open.focus({preventScroll:true})}
+ }
  function welcome(){messages.replaceChildren();bubble('assistant','Selam! Ben Yük Usta. 🙂 İstersen sohbet edelim, sana uygun vinci bulalım veya bir sorunu birlikte çözelim.')}
  function showReport(prefill){
   complaint.hidden=false;form.hidden=true;tools.hidden=true;
