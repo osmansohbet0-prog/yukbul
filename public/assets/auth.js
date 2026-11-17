@@ -1,32 +1,11 @@
 'use strict';
-const $=s=>document.querySelector(s),form=$('#auth-form'),mobileQuery=new URLSearchParams(location.search);
-let mode='login',siteKey='',googleClientId='',widget=null;
-const appRequested=mobileQuery.get('app')==='android',mobileState=mobileQuery.get('state')||'',
-  codeChallenge=mobileQuery.get('code_challenge')||'';
-const validMobileRequest=/^[A-Za-z0-9_-]{43,128}$/.test(mobileState)&&
-  /^[A-Za-z0-9_-]{43}$/.test(codeChallenge)&&mobileQuery.get('code_challenge_method')==='S256';
+const $=s=>document.querySelector(s),form=$('#auth-form');let mode='login',siteKey='',googleClientId='',widget=null;
 function msg(s,bad=false){$('#auth-status').textContent=s;$('#auth-status').classList.toggle('bad',bad)}
 function turnstileToken(){return widget!==null&&window.turnstile?window.turnstile.getResponse(widget):''}
 function drawTurnstile(){const box=$('#turnstile-box');if(!siteKey){box.textContent='Bot koruması ayarlanmamış. Site yöneticisi Cloudflare Turnstile anahtarlarını eklemeli.';return}if(!window.turnstile){if((window.__yvTurnstileTries=(window.__yvTurnstileTries||0)+1)>40){msg('Bot doğrulaması yüklenemedi. Sayfayı yenileyip tekrar dene.',true);return}setTimeout(drawTurnstile,250);return}box.textContent='';widget=window.turnstile.render(box,{sitekey:siteKey,action:'member_auth',theme:'light',callback:()=>msg(''),'expired-callback':()=>msg('Doğrulamayı tekrar tamamla.',true)});}
 async function api(path,body){const r=await fetch(path,{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify(body)});let d={};try{d=await r.json()}catch{}if(!r.ok)throw Error(d.error||'İşlem başarısız.');return d}
-function goToAccount(){const next=mobileQuery.get('next')||'/hesabim/';location.replace(next.startsWith('/')&&!next.startsWith('//')?next:'/hesabim/')}
-async function finishLogin(){
-  if(!appRequested){goToAccount();return}
-  if(!validMobileRequest){msg('Uygulamaya dönüş bağlantısı geçersiz. Girişi YükVinç uygulamasından yeniden başlat.',true);return}
-  try{
-    msg('Giriş tamamlandı. Uygulamaya güvenli bağlantı hazırlanıyor…');
-    const result=await api('/api/auth/mobile-handoff',{state:mobileState,code_challenge:codeChallenge,code_challenge_method:'S256'});
-    const callback=new URL('yukvinc://auth/callback');
-    callback.searchParams.set('code',result.code);
-    callback.searchParams.set('state',mobileState);
-    const link=$('#app-return');
-    link.href=callback.toString();
-    link.hidden=false;
-    form.hidden=true;
-    msg('Giriş tamamlandı. YükVinç uygulamasına dön.');
-  }catch(err){msg(err.message,true)}
-}
-function loadGoogle(){if(!googleClientId)return;const box=$('#google-auth-container');box.hidden=false;const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.async=true;s.defer=true;s.onload=()=>{if(!window.google?.accounts?.id)return;google.accounts.id.initialize({client_id:googleClientId,callback:async response=>{if(!turnstileToken()){msg('Google ile devam etmeden önce bot doğrulamasını tamamla.',true);return}try{msg('Google hesabı doğrulanıyor…');await api('/api/auth/google',{credential:response.credential,turnstile_token:turnstileToken()});await finishLogin()}catch(err){msg(err.message,true);if(window.turnstile&&widget!==null)window.turnstile.reset(widget)}}});google.accounts.id.renderButton($('#google-auth-button'),{type:'standard',theme:'outline',size:'large',text:'continue_with',shape:'rectangular',locale:'tr',width:280})};s.onerror=()=>msg('Google girişi şu an yüklenemedi.',true);document.head.append(s)}
+function goToAccount(){const next=new URLSearchParams(location.search).get('next')||'/hesabim/';location.replace(next.startsWith('/')&&!next.startsWith('//')?next:'/hesabim/')}
+function loadGoogle(){if(!googleClientId)return;const box=$('#google-auth-container');box.hidden=false;const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.async=true;s.defer=true;s.onload=()=>{if(!window.google?.accounts?.id)return;google.accounts.id.initialize({client_id:googleClientId,callback:async response=>{if(!turnstileToken()){msg('Google ile devam etmeden önce bot doğrulamasını tamamla.',true);return}try{await api('/api/auth/google',{credential:response.credential,turnstile_token:turnstileToken()});goToAccount()}catch(err){msg(err.message,true);if(window.turnstile&&widget!==null)window.turnstile.reset(widget)}}});google.accounts.id.renderButton($('#google-auth-button'),{type:'standard',theme:'outline',size:'large',text:'continue_with',shape:'rectangular',locale:'tr',width:280})};s.onerror=()=>msg('Google girişi şu an yüklenemedi.',true);document.head.append(s)}
 function setMode(next){
   const isRegister=next==='register';
   mode=isRegister?'register':'login';
@@ -48,5 +27,5 @@ function setMode(next){
 }
 document.querySelectorAll('[data-auth-tab]').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.authTab)));
 if(new URLSearchParams(location.search).get('mode')==='register')setMode('register');
-form.addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget;if(f.elements.website.value){msg('Güvenlik kontrolü başarısız. Sayfayı yenileyerek tekrar dene.',true);return}if(!turnstileToken()){msg('Devam etmeden önce bot doğrulamasını tamamla.',true);return}if(mode==='register'&&f.elements.password.value!==f.querySelector('input[name="confirm"]').value){msg('Şifreler eşleşmiyor.',true);return}const button=$('#auth-submit');button.disabled=true;try{await api('/api/auth/'+mode,{email:f.elements.email.value,password:f.elements.password.value,turnstile_token:turnstileToken()});await finishLogin()}catch(err){msg(err.message,true);if(window.turnstile&&widget!==null)window.turnstile.reset(widget)}finally{button.disabled=false}});
+form.addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget;if(f.elements.website.value){msg('Güvenlik kontrolü başarısız. Sayfayı yenileyerek tekrar dene.',true);return}if(!turnstileToken()){msg('Devam etmeden önce bot doğrulamasını tamamla.',true);return}if(mode==='register'&&f.elements.password.value!==f.querySelector('input[name="confirm"]').value){msg('Şifreler eşleşmiyor.',true);return}const button=$('#auth-submit');button.disabled=true;try{await api('/api/auth/'+mode,{email:f.elements.email.value,password:f.elements.password.value,turnstile_token:turnstileToken()});goToAccount()}catch(err){msg(err.message,true);if(window.turnstile&&widget!==null)window.turnstile.reset(widget)}finally{button.disabled=false}});
 (async()=>{let d=window.__YV_AUTH_CONFIG||{};if(!d.turnstile_site_key||!d.google_client_id){try{const response=await fetch('/api/public-settings',{cache:'no-store',signal:AbortSignal.timeout(6000)});if(!response.ok)throw Error('Ayarlar alınamadı.');d={...d,...await response.json()}}catch(err){msg('Giriş ayarları alınamadı. Sayfayı yenileyip tekrar dene.',true)}}siteKey=d.turnstile_site_key||'';googleClientId=d.google_client_id||'';if(siteKey){const s=document.createElement('script');s.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';s.async=true;s.defer=true;s.onload=drawTurnstile;s.onerror=()=>msg('Bot doğrulama servisine erişilemiyor. İnternet bağlantını kontrol et.',true);document.head.append(s)}else drawTurnstile();loadGoogle()})();
