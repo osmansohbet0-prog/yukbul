@@ -55,3 +55,29 @@ body.yv2-standalone #yv2-chat .yv2-panel[hidden]{display:none!important}
 body.yv2-standalone #yv2-chat .yv2-messages{padding:20px clamp(12px,3vw,24px)}
 body.yv2-standalone #yv2-chat .yv2-bubble{max-width:83%;font-size:14px}
 @media(max-width:640px){body.yv2-standalone .yv2-site-head{height:53px;padding:0 12px}body.yv2-standalone #yv2-chat{margin:0;width:100%;height:calc(100dvh - 53px)}body.yv2-standalone #yv2-chat .yv2-panel{border-radius:0;border:0;height:100%}}
+
+/* Page-aware bottom navigation: the neutral "İlan ver" state must not appear selected. */
+.yv-mobile-nav a:not([aria-current="page"]),.bottom-nav a:not([aria-current="page"]),.mobile-bottom-nav a:not([aria-current="page"]){
+ color:#526b79!important;background:transparent!important;box-shadow:none!important;border-color:transparent!important
+}
+.yv-mobile-nav a.yv-mobile-post:not([aria-current="page"]){color:#4c6574!important;background:transparent!important;border:0!important}
+.yv-mobile-nav a[aria-current="page"],.bottom-nav a[aria-current="page"],.mobile-bottom-nav a[aria-current="page"]{
+ color:#fff!important;background:#164a60!important;border-radius:11px!important;
+ font-weight:850!important;box-shadow:0 2px 9px rgba(22,74,96,.13)!important
+}
+.yv-mobile-nav a[aria-current="page"] span{color:inherit!important}
+@media(max-width:640px){.yv-mobile-nav a[aria-current="page"]{min-height:41px}}
+/* Chat must capture vertical scrolling; page behind it stays fixed while open. */
+body.yv2-chat-open:not(.yv2-standalone){
+ position:fixed!important;top:var(--yv2-locked-scroll,0px)!important;
+ left:0!important;right:0!important;width:100%!important;overflow:hidden!important;
+}
+body.yv2-chat-open #yv2-chat{touch-action:auto}
+#yv2-chat .yv2-messages{
+ overflow-y:auto!important;overflow-x:hidden!important;
+ min-height:0!important;overscroll-behavior-y:contain!important;
+ -webkit-overflow-scrolling:touch;touch-action:pan-y;
+ scrollbar-width:thin
+}
+#yv2-chat .yv2-panel{overscroll-behavior:contain!important}
+#yv2-chat .yv2-report textarea{min-height:100px}
