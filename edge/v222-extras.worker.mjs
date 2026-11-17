@@ -3,7 +3,7 @@
 const CLIENT_JS = '__INJECT_CLIENT_JS__';
 const CLIENT_CSS = '__INJECT_CLIENT_CSS__';
 const CORS_ORIGIN = 'https://yukvinc.com.tr';
-const VERSION = 'v222-extras-20261117.9';
+const VERSION = 'v222-extras-20261117.10';
 const CLIENT_ROUTE = '/assets/yv-v222-extras.js';
 const CSS_ROUTE = '/assets/yv-v222-extras.css';
 const API_PREFIX = '/api/yukusta-v2/';
@@ -125,7 +125,7 @@ async function chat(request,env){
 }
 function throwFallback(){return respond({ok:true,answer:'Sana yardımcı olmak isterim. Ne yapmak istediğini biraz daha anlatır mısın?',listings:[],mode:'fallback'})}
 function chatPage(){
-  const html='<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Yük Usta ile sohbet | YükVinç</title><link rel="stylesheet" href="/assets/yv-v222-extras.css?v=8"></head><body class="yv2-standalone"><header class="yv2-site-head"><a href="/">‹ YükVinç ana sayfa</a><strong>Yük Usta ✦</strong></header><main></main><script src="/assets/yv-v222-extras.js?v=8" defer></script></body></html>';
+  const html='<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Yük Usta ile sohbet | YükVinç</title><link rel="stylesheet" href="/assets/yv-v222-extras.css?v=8"></head><body class="yv2-standalone"><header class="yv2-site-head"><a href="/">‹ YükVinç ana sayfa</a><strong>Yük Usta ✦</strong></header><main></main><script>' + CLIENT_JS + '</script></body></html>';
   return new Response(html,{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}});
 }
 async function passthrough(request,env){
