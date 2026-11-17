@@ -4,9 +4,11 @@ import {runAutoReview,validPhone} from './v222-auto-review.mjs';
 const CLIENT_JS = '__INJECT_CLIENT_JS__';
 const CLIENT_CSS = '__INJECT_CLIENT_CSS__';
 const FORM_SCRIPT = '__INJECT_FORM_SCRIPT__';
+const AUTH_SCRIPT = '__INJECT_AUTH_SCRIPT__';
+const AUTH_ROUTE = '/assets/yv-v222-auth.js';
 const FORM_ROUTE = '/assets/yv-v222-listing-form.js';
 const CORS_ORIGIN = 'https://yukvinc.com.tr';
-const VERSION = 'v222-extras-20261118.20';
+const VERSION = 'v222-extras-20261118.21';
 const CLIENT_ROUTE = '/assets/yv-v222-extras.js';
 const CSS_ROUTE = '/assets/yv-v222-extras.css';
 const API_PREFIX = '/api/yukusta-v2/';
@@ -180,12 +182,13 @@ async function passthrough(request,env){
     try{hasTender=(await publicTenders(env)).new_count>0}catch{}
   }
   const wizardStyle=path.startsWith('/ilan-ver')?'<style id="yv2-premium-wizard">.wizard-wrap{max-width:980px!important}.wizard-head{padding:20px 22px;border-radius:18px;background:linear-gradient(135deg,#f4faff,#fff);border:1px solid #dbe9f0;box-shadow:0 10px 36px rgba(11,53,79,.06)}.wizard-panel{border:1px solid #e0eaf0;background:#fff;border-radius:18px;padding:20px;margin-top:14px;box-shadow:0 7px 26px rgba(18,57,80,.05)}.wizard-panel[hidden]{display:none!important}.wizard-actions{gap:10px}.wizard-actions .button,#submit-listing{border-radius:12px;min-height:46px;font-weight:800}.wizard-progress{height:7px;border-radius:8px;overflow:hidden}.wizard-wrap [aria-invalid="true"]{border:2px solid #c12b31!important;background:#fff4f4!important;box-shadow:0 0 0 3px #c12b3119}.wizard-wrap .yv-field-error{display:block;color:#b4232c;font-size:12px;font-weight:750;margin-top:5px}#photo-dropzone.yv-invalid{border:2px dashed #c12b31!important;background:#fff4f4!important}.wizard-head .lead{max-width:55ch}</style>':'';
+  const loginStyle=path.startsWith('/giris')?'<style id="yv21-google-auth-style">#google-auth-container{min-height:82px}#yv-google-status:not(:empty){margin:10px auto 3px;padding:9px 12px;border-radius:9px;background:#edf7f8;color:#18495e;font-size:13px;font-weight:700;text-align:center;line-height:1.5}#yv-google-status.bad{background:#fff1f1;color:#a9212d}.yv-google-busy .account-tabs button{opacity:.55;cursor:progress}.yv-google-busy #google-auth-button{opacity:.6;cursor:progress}#google-auth-button{min-height:42px}.google-auth .form-hint{font-size:12px}</style><link rel="preconnect" href="https://accounts.google.com" crossorigin><link rel="preconnect" href="https://challenges.cloudflare.com" crossorigin>':''; 
   const style='<style id="yv2-static-style">#yv2-float{position:fixed;right:14px;bottom:20px;z-index:2147480000;display:inline-flex;align-items:center;gap:8px;padding:13px 17px;background:#123c51;color:#fff!important;font:800 14px system-ui,Arial,sans-serif;text-decoration:none;border-radius:30px;box-shadow:0 9px 26px #123c5140}#yv2-float:focus-visible{outline:3px solid #f7b852;outline-offset:3px}#yukusta-widget{display:none!important}#yv2-tender-top{display:none!important}.offer-tabs a.yv2-tender-tab{position:relative;overflow:visible!important;white-space:nowrap}.offer-tabs a .yv2-tender-new{position:absolute;top:-10px;right:-6px;padding:2px 6px;font:800 10px system-ui,Arial;background:#b4232c;color:#fff;border-radius:7px;line-height:1.2;z-index:2}.offer-tabs{overflow:visible!important}.yv2-tender-new{background:#b4232c;color:#fff;border-radius:7px;padding:3px 7px;margin-left:7px;font:800 10px system-ui;vertical-align:middle}.yv2-tender-star{color:#e3a52a;font-weight:900;margin-left:6px}@media(max-width:640px){#yv2-float{bottom:calc(77px + env(safe-area-inset-bottom,0px));right:10px;padding:10px 13px;font-size:12px}}</style>';
   const float='<a id="yv2-float" href="/yukusta/" aria-label="Yük Usta ile sohbet et">✦ Yük Usta ile sohbet</a>';
   const apk='<section id="yv2-apk" class="yv2-app-card" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;border:1px solid #c8dee9;border-radius:14px;background:#f1f8fb;padding:16px;margin:16px 0;font-family:system-ui,Arial,sans-serif"><div><strong style="display:block;color:#193f51">📲 YükVinç Android uygulaması</strong><small style="color:#526b79">Android 0.6.0 · Resmî GitHub APK dosyası</small></div><a href="https://github.com/osmansohbet0-prog/yukbul/releases/download/yukvinc-android-v0.6.0/YukVinc-Android-0.6.0.apk" target="_blank" rel="noopener noreferrer" style="background:#133f56;color:#fff;text-decoration:none;font-weight:800;border-radius:10px;padding:11px 14px">Uygulamayı indir</a></section>';
   const tag='<span class="yv2-tender-new" aria-label="Yeni ihale">Yeni ihale</span>';
   const rewriter=new HTMLRewriter()
-    .on('head',{element(e){e.append(style+wizardStyle+'<script defer src="/assets/yv-v222-extras.js?v=20"></script>',{html:true})}})
+    .on('head',{element(e){e.append(style+wizardStyle+loginStyle+'<script defer src="/assets/yv-v222-extras.js?v=21"></script>',{html:true})}})
     .on('body',{element(e){e.append(float,{html:true})}})
     .on('#yv-buyer-cta-v191',{element(e){if(path==='/')e.remove()}})
     .on('#account-view',{element(e){if(path.startsWith('/hesabim'))e.prepend(apk,{html:true})}})
@@ -195,7 +198,8 @@ async function passthrough(request,env){
     .on('#step-title',{element(e){if(path.startsWith('/ilan-ver'))e.setInnerContent('1 / 4 · Tür ve konum') }})
     .on('#submit-listing',{element(e){if(path.startsWith('/ilan-ver'))e.setInnerContent('İlanı gönder ↗') }})
     .on('#photo-dropzone .optional-tag',{element(e){if(path.startsWith('/ilan-ver'))e.setInnerContent('1–3 fotoğraf · zorunlu') }})
-    .on('script[src="/assets/listing-form.js"]',{element(e){if(path.startsWith('/ilan-ver'))e.setAttribute('src','/assets/yv-v222-listing-form.js?v=20') }});
+    .on('script[src="/assets/listing-form.js"]',{element(e){if(path.startsWith('/ilan-ver'))e.setAttribute('src','/assets/yv-v222-listing-form.js?v=21') }})
+    .on('script[src^="/assets/auth.js"]',{element(e){if(path.startsWith('/giris'))e.setAttribute('src','/assets/yv-v222-auth.js?v=21') }});
   return rewriter.transform(source);
 }
 export default {
@@ -206,6 +210,7 @@ export default {
       if(path===CLIENT_ROUTE)return new Response(CLIENT_JS,{headers:{'content-type':'application/javascript; charset=utf-8','cache-control':'public,max-age=300','x-content-type-options':'nosniff'}});
       if(path===CSS_ROUTE)return new Response(CLIENT_CSS,{headers:{'content-type':'text/css; charset=utf-8','cache-control':'public,max-age=300','x-content-type-options':'nosniff'}});
       if(path===FORM_ROUTE)return new Response(FORM_SCRIPT,{headers:{'content-type':'application/javascript; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}});
+      if(path===AUTH_ROUTE)return new Response(AUTH_SCRIPT,{headers:{'content-type':'application/javascript; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}});
       if(path.startsWith(API_PREFIX)){
         if(!env.DB)return error('Yük Usta veritabanına ulaşılamıyor.',503);
         const name=path.slice(API_PREFIX.length);
