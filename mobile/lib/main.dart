@@ -296,7 +296,7 @@ class YukApi {
       if(response.statusCode!=200)throw Exception('Sunucu hatası: '+response.statusCode.toString());
       final raw=utf8.decode(response.bodyBytes);
       final page=parse(raw,false);
-      unawaited(SharedPreferences.getInstance().then((prefs)=>prefs.setString(cacheKey,raw)));
+      unawaited(SharedPreferences.getInstance().then((prefs)=>prefs.setString(cacheKey,raw)).catchError((_)=>false));
       return page;
     }catch(error){
       try{
