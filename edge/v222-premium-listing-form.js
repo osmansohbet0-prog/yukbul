@@ -81,7 +81,7 @@ function validStep(n){
   }
   if(n===2){
     if(photoProcessing)return fieldError(photoInput,'Fotoğraflar hazırlanıyor; tamamlanmadan devam edemezsin.');
-    if(!hasRequiredPhoto())return fieldError(photoInput,'En az bir gerçek fotoğraf yüklemelisin. Fotoğrafsız ilan onaya gönderilemez.');
+    if(!hasRequiredPhoto())return fieldError(photoInput,'En az bir gerçek fotoğraf yüklemelisin. Fotoğrafsız ilan gönderilemez.');
     clearFieldError(photoInput);
   }
   if(n===3&&!form.elements.privacy_ok.checked)return fieldError(form.elements.privacy_ok,'İlanı göndermek için aydınlatma onayını işaretle.');
