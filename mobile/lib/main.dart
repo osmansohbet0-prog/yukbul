@@ -270,6 +270,27 @@ class YukApi {
     return _parse(await client.get(uri, headers: const {'Accept': 'application/json'})
         .timeout(const Duration(seconds: 15)));
   }
+  Future<({List<YukListing> items,String? nextCursor})> listingPage({
+    String category='all',String query='',String city='',String? cursor,int limit=20,
+  }) async {
+    final q=<String,String>{'limit':limit.toString(),'sort':'newest'};
+    if(category!='all')q['category']=category;
+    if(city.trim().isNotEmpty)q['city']=city.trim();
+    if(query.trim().isNotEmpty)q['q']=query.trim();
+    if(cursor!=null&&cursor.isNotEmpty)q['cursor']=cursor;
+    final uri=Uri.parse(baseUrl+'/api/listings').replace(queryParameters:q);
+    final response=await client.get(uri,headers:const {'Accept':'application/json'})
+      .timeout(const Duration(seconds:15));
+    if(response.statusCode!=200)throw Exception('Sunucu hatası: '+response.statusCode.toString());
+    final body=jsonDecode(utf8.decode(response.bodyBytes));
+    if(body is! Map||body['items'] is! List)throw const FormatException('Beklenmeyen ilan yanıtı');
+    final items=(body['items'] as List).whereType<Map>()
+      .map((v)=>YukListing.fromJson(Map<String,dynamic>.from(v)))
+      .where((v)=>v.title.isNotEmpty&&v.id.isNotEmpty).toList(growable:false);
+    final next=body['next_cursor'];
+    return(items:items,nextCursor:next is String&&next.isNotEmpty?next:null);
+  }
+
   Future<List<YukListing>> nearby(double lat, double lng, {int radiusKm = 100}) async {
     return _parse(await client.post(Uri.parse(baseUrl + '/api/ai/nearby'),
       headers: const {'Content-Type': 'application/json', 'Origin': baseUrl},
