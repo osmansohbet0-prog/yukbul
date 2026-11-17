@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'app_update.dart';
+import 'favorites.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
@@ -630,6 +631,59 @@ class _RoadHelpState extends State<RoadHelp> {
   ]);
 }
 
+class FavoriteListings extends StatefulWidget {
+  const FavoriteListings({super.key});
+  @override State<FavoriteListings> createState() => _FavoriteListingsState();
+}
+
+class _FavoriteListingsState extends State<FavoriteListings> {
+  late Future<List<YukListing>> future;
+
+  @override
+  void initState() {
+    super.initState();
+    future = _load();
+  }
+
+  Future<List<YukListing>> _load() async {
+    final ids = await FavoritesStore.load();
+    if (ids.isEmpty) return const [];
+    final listings = await api.listings();
+    return listings.where((item) => ids.contains(item.id)).toList(growable: false);
+  }
+
+  Future<void> _refresh() async {
+    final next = _load();
+    setState(() => future = next);
+    try { await next; } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Favorilerim')),
+    body: FutureBuilder<List<YukListing>>(
+      future: future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) return const Loading();
+        if (snapshot.hasError) return Retry(onTap: _refresh);
+        final items = snapshot.data ?? const <YukListing>[];
+        if (items.isEmpty) return const Empty('Kaydedilmiş ilan yok. Kaldırılmış ilanlar burada gösterilmez.');
+        return RefreshIndicator(
+          onRefresh: _refresh,
+          child: ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(18),
+            itemCount: items.length,
+            itemBuilder: (context, index) => ListingCard(
+              item: items[index], onFavoriteChanged: _refresh,
+            ),
+          ),
+        );
+      },
+    ),
+  );
+}
+
 class Account extends StatelessWidget {
   const Account({super.key});
   @override Widget build(BuildContext context) => ListView(
@@ -640,6 +694,11 @@ class Account extends StatelessWidget {
       const Text('Mevcut YükVinç hesabınla devam et.',
         style: TextStyle(color: Colors.black54)),
       const SizedBox(height: 17),
+      AccountLink(icon: Icons.bookmark_outline_rounded, title: 'Favorilerim',
+        subtitle: 'Bu cihazda kaydettiğin ilanlar',
+        onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => const FavoriteListings(),
+        ))),
       AccountLink(icon: Icons.person_outline_rounded, title: 'Hesabımı aç',
         subtitle: 'Giriş yap, profilini ve ilanlarını yönet',
         onTap: () => openSite(context, '/hesabim/')),
@@ -667,8 +726,9 @@ class AccountLink extends StatelessWidget {
 }
 
 class ListingCard extends StatelessWidget {
-  const ListingCard({super.key, required this.item});
+  const ListingCard({super.key, required this.item, this.onFavoriteChanged});
   final YukListing item;
+  final VoidCallback? onFavoriteChanged;
 
   String get dialNumber {
     final digits = item.phone.replaceAll(RegExp(r'[^0-9]'), '');
@@ -753,10 +813,59 @@ class ListingCard extends StatelessWidget {
               Text('Yaklaşık ' + item.distanceKm.toString() + ' km',
                 style: const TextStyle(color: green, fontSize: 11)),
           ])),
-          const Icon(Icons.chevron_right, color: Colors.black38),
+          FavoriteButton(itemId: item.id, onChanged: onFavoriteChanged),
         ])),
     ));
 }
+class FavoriteButton extends StatefulWidget {
+  const FavoriteButton({super.key, required this.itemId, this.onChanged});
+  final String itemId;
+  final VoidCallback? onChanged;
+
+  @override
+  State<FavoriteButton> createState() => _FavoriteButtonState();
+}
+
+class _FavoriteButtonState extends State<FavoriteButton> {
+  bool favorite = false;
+  bool ready = false;
+  bool saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    FavoritesStore.contains(widget.itemId).then((value) {
+      if (mounted) setState(() { favorite = value; ready = true; });
+    });
+  }
+
+  Future<void> toggle() async {
+    if (saving) return;
+    setState(() => saving = true);
+    try {
+      final ids = await FavoritesStore.toggle(widget.itemId);
+      if (mounted) setState(() { favorite = ids.contains(widget.itemId); ready = true; });
+      widget.onChanged?.call();
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Favori kaydedilemedi. Tekrar dene.')),
+      );
+    } finally {
+      if (mounted) setState(() => saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => IconButton(
+    tooltip: favorite ? 'Favorilerden kaldır' : 'Favorilere ekle',
+    onPressed: ready && !saving ? toggle : null,
+    icon: saving ? const SizedBox(
+      width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2),
+    ) : Icon(favorite ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+        color: favorite ? green : Colors.black45),
+  );
+}
+
 class ListingPlaceholder extends StatelessWidget {
   const ListingPlaceholder({super.key});
   @override Widget build(BuildContext context) => Container(
