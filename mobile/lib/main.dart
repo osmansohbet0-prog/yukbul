@@ -973,9 +973,79 @@ class Account extends StatelessWidget {
       const Text('Hesabım', style: TextStyle(
         fontSize: 25, fontWeight: FontWeight.w900)),
       const SizedBox(height: 7),
-      const Text('Mevcut YükVinç hesabınla devam et.',
-        style: TextStyle(color: Colors.black54)),
+      const Text('YükVinç hesabınla uygulamadan devam et.'),
       const SizedBox(height: 17),
+      ValueListenableBuilder<MemberIdentity?>(
+        valueListenable: MemberAuth.user,
+        builder: (context, member, child) => Card(
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: member == null
+              ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  Icon(Icons.account_circle_rounded, size: 48,
+                    color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(height: 10),
+                  Text('İşlerini tek hesaptan yönet',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 6),
+                  const Text('Google ile giriş yap; doğrulama tamamlanınca güvenli oturumun bu uygulamada açılır.',
+                    textAlign: TextAlign.center),
+                  const SizedBox(height: 14),
+                  ValueListenableBuilder<bool>(
+                    valueListenable: MemberAuth.busy,
+                    builder: (context, busy, child) => FilledButton.icon(
+                      onPressed: busy ? null : () { unawaited(MemberAuth.beginGoogleSignIn()); },
+                      icon: busy
+                        ? const SizedBox.square(dimension: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.login_rounded),
+                      label: Text(busy ? 'Giriş hazırlanıyor…' : 'Google ile devam et'),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  OutlinedButton(
+                    onPressed: () { unawaited(MemberAuth.beginGoogleSignIn()); },
+                    child: const Text('E-posta ile giriş yap'),
+                  ),
+                  ValueListenableBuilder<String>(
+                    valueListenable: MemberAuth.status,
+                    builder: (context, status, child) => status.isEmpty
+                      ? const SizedBox.shrink()
+                      : Padding(padding: const EdgeInsets.only(top: 10),
+                          child: Text(status, textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodySmall)),
+                  ),
+                ])
+              : Column(children: [
+                  ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                      child: const Icon(Icons.person_rounded),
+                    ),
+                    title: Text(member.email,
+                      style: const TextStyle(fontWeight: FontWeight.w800)),
+                    subtitle: const Text('YükVinç hesabınla giriş yaptın.'),
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: () { unawaited(MemberAuth.logout()); },
+                      icon: const Icon(Icons.logout_rounded),
+                      label: const Text('Çıkış yap'),
+                    ),
+                  ),
+                  ValueListenableBuilder<String>(
+                    valueListenable: MemberAuth.status,
+                    builder: (context, status, child) => status.isEmpty
+                      ? const SizedBox.shrink()
+                      : Padding(padding: const EdgeInsets.only(bottom: 10),
+                          child: Text(status, style: Theme.of(context).textTheme.bodySmall)),
+                  ),
+                ]),
+          ),
+        ),
+      ),
       Card(child: Padding(
         padding: const EdgeInsets.all(16),
         child: ValueListenableBuilder<ThemeMode>(
@@ -1009,7 +1079,7 @@ class Account extends StatelessWidget {
           builder: (_) => const FavoriteListings(),
         ))),
       AccountLink(icon: Icons.person_outline_rounded, title: 'Hesabımı aç',
-        subtitle: 'Giriş yap, profilini ve ilanlarını yönet',
+        subtitle: 'Profilini ve ilanlarını yönet',
         onTap: () => openSite(context, '/hesabim/')),
       AccountLink(icon: Icons.add_circle_outline, title: 'İlan ver',
         subtitle: 'Hizmetini veya operatör ilanını yayınla',
