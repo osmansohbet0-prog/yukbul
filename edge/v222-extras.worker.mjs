@@ -3,7 +3,7 @@
 const CLIENT_JS = '__INJECT_CLIENT_JS__';
 const CLIENT_CSS = '__INJECT_CLIENT_CSS__';
 const CORS_ORIGIN = 'https://yukvinc.com.tr';
-const VERSION = 'v222-extras-20261117.10';
+const VERSION = 'v222-extras-20261117.11';
 const CLIENT_ROUTE = '/assets/yv-v222-extras.js';
 const CSS_ROUTE = '/assets/yv-v222-extras.css';
 const API_PREFIX = '/api/yukusta-v2/';
@@ -142,7 +142,7 @@ async function passthrough(request,env){
   const tag='<span class="yv2-tender-star" aria-hidden="true">✦ ✦</span><small class="yv2-tender-new">Yeni eklendi</small>';
   const banner='<aside id="yv2-tender-top" style="padding:10px;text-align:center;background:#fff8e9;border-bottom:1px solid #f4ddaf"><a href="/ihale-duyurulari/" style="font:800 13px system-ui,Arial;color:#123c51;text-decoration:none">✦ ✦ İhale duyurularına git <small style="background:#b4232c;color:white;padding:3px 7px;border-radius:8px">Yeni eklendi</small></a></aside>';
   const rewriter=new HTMLRewriter()
-    .on('head',{element(e){e.append(style,{html:true})}})
+    .on('head',{element(e){e.append(style+(path.startsWith('/hesabim')?'<script defer src="/assets/yv-v222-extras.js?v=11"></script>':''),{html:true})}})
     .on('body',{element(e){e.append(float,{html:true});if(hasTender)e.prepend(banner,{html:true})}})
     .on('#yv-buyer-cta-v191',{element(e){if(path==='/')e.remove()}})
     .on('#account-view',{element(e){if(path.startsWith('/hesabim'))e.prepend(apk,{html:true})}})
