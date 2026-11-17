@@ -3,10 +3,13 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {readAiModeration,cleanAiModeration} from '../functions/_lib/ai-settings.js';
 import {processListingAgent} from '../functions/_lib/listing-agent.js';
-test('legacy settings cannot re-enable automatic publication',async()=>{
+test('high confidence auto publication requires explicit administrator opt-in and image review',async()=>{
  const db={prepare(){return{async first(){return{value_json:JSON.stringify({enabled:true,image_review:true,auto_publish:true})}}}}};
- assert.equal((await readAiModeration(db)).auto_publish,false);
- assert.equal(cleanAiModeration({enabled:true,image_review:true,auto_publish:true,sensitivity:'balanced'}).auto_publish,false);
+ assert.equal((await readAiModeration(db)).auto_publish,true);
+ const disabled={prepare(){return{async first(){return{value_json:'{"enabled":true,"image_review":false,"auto_publish":true}'}}}}};
+ assert.equal((await readAiModeration(disabled)).auto_publish,false);
+ assert.equal(cleanAiModeration({enabled:true,image_review:true,auto_publish:true,sensitivity:'balanced'}).auto_publish,true);
+ assert.equal(cleanAiModeration({enabled:true,image_review:false,auto_publish:true,sensitivity:'balanced'}).auto_publish,false);
 });
 test('scheduled review never publishes even with a legacy enabled setting',async()=>{
  const statements=[];
