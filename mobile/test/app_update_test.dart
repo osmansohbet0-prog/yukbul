@@ -37,6 +37,16 @@ void main() {
         endsWith('YukVinc-Android-0.11.0.apk.sha256'));
   });
 
+  test('ignores releases missing the verification file', () {
+    final result = AndroidUpdates.newest([{
+      ...release('0.9.0'),
+      'assets': [
+        {'name': 'YukVinc-Android-0.9.0.apk', 'state': 'uploaded', 'size': 9999},
+      ],
+    }], '0.5.0');
+    expect(result, isNull);
+  });
+
   test('ignores installed and older releases', () {
     expect(AndroidUpdates.newest([release('0.3.0'), release('0.2.0')], '0.3.0'), isNull);
   });
