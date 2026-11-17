@@ -82,17 +82,17 @@ void main() {
     expect(calls, 2);
   });
 
-  testWidgets('Account shows working entry points for profile and listings',
+  testWidgets('Account exposes native listing entry points and work requests',
       (tester) async {
     await tester.pumpWidget(const MaterialApp(
       home: Scaffold(body: Account()),
     ));
     expect(find.text('Google ile devam et'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Hesabımı aç'), 150);
-    expect(find.text('Hesabımı aç'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('İlanlarım'), 150);
+    expect(find.text('İlanlarım'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('İlan ver'), 150);
     expect(find.text('İlan ver'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('İş talepleri'), 150);
     expect(find.text('İş talepleri'), findsOneWidget);
-    expect(find.text('Mesaiye Başla (yakında)'), findsNothing);
   });
 }
