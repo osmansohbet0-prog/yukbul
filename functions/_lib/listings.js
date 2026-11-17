@@ -23,6 +23,11 @@ export function validatePhotoPayloads(photos){if(!Array.isArray(photos)||photos.
 export async function savePhotos(db,listingId,photos){if(!Array.isArray(photos)||photos.length>3)throw new Error('Tek ilan için en fazla 3 fotoğraf ekleyebilirsin.');for(const [i,x]of photos.entries()){const bytes=decodeImage(x);await db.prepare('INSERT INTO listing_photos(id,listing_id,object_key,sort_order,mime_type,byte_size,image_blob,visual_hash,thumbnail_blob,thumbnail_mime) VALUES(?,?,?,?,?,?,?,?,?,?)').bind(randomId(16),listingId,randomId(20),i,x.mime_type,bytes.byteLength,bytes,/^[a-f0-9]{16}$/i.test(String(x.visual_hash||''))?String(x.visual_hash).toLowerCase():null,thumbnailBytes(x),x.thumbnail?.mime_type||null).run()}}
 export async function replacePhotos(db,listingId,photos){if(!Array.isArray(photos)||photos.length>3)throw new Error('Tek ilan için en fazla 3 fotoğraf ekleyebilirsin.');const statements=[db.prepare('DELETE FROM listing_photos WHERE listing_id=?').bind(listingId)];for(const [i,x]of photos.entries()){const bytes=decodeImage(x);statements.push(db.prepare('INSERT INTO listing_photos(id,listing_id,object_key,sort_order,mime_type,byte_size,image_blob,visual_hash,thumbnail_blob,thumbnail_mime) VALUES(?,?,?,?,?,?,?,?,?,?)').bind(randomId(16),listingId,randomId(20),i,x.mime_type,bytes.byteLength,bytes,/^[a-f0-9]{16}$/i.test(String(x.visual_hash||''))?String(x.visual_hash).toLowerCase():null,thumbnailBytes(x),x.thumbnail?.mime_type||null))}await db.batch(statements)}
 export async function publicItems(db,params={}){
+ const requested=Number.parseInt(String(params.limit||'100'),10);
+ const pageLimit=Math.min(100,Math.max(1,Number.isFinite(requested)?requested:100));
+ const sortNewest=params.sort==='newest';
+ const priority=sortNewest?'0':"CASE l.package_tier WHEN 'premium' THEN 2 WHEN 'featured' THEN 1 ELSE 0 END";
+ const cursor=params.cursor||null;
  let sql="SELECT l.id,(SELECT source FROM listing_directory directory_public WHERE directory_public.listing_id=l.id) AS public_source,l.listing_type,COALESCE(l.service_category,l.category_detail,l.category) AS category,l.title,l.description,l.city,l.district,l.price_amount,l.price_unit,l.created_at,l.business_name,l.package_tier,(SELECT id FROM listing_photos p WHERE p.listing_id=l.id ORDER BY sort_order LIMIT 1) photo_id FROM listings l WHERE l.status='approved' AND (COALESCE(l.service_category,l.category_detail,l.category)='operator' OR EXISTS(SELECT 1 FROM users u WHERE u.id=l.user_id AND u.role='admin') OR l.trial_expires_at>unixepoch() OR l.paid_until>unixepoch())",args=[];
  for(const k of ['category','city']){
   const v=String(params[k]||'').trim();
@@ -75,7 +80,12 @@ export async function publicItems(db,params={}){
    sql+=' AND ('+matches.join(' OR ')+')';
   }
  }
- sql+=" ORDER BY CASE l.package_tier WHEN 'premium' THEN 2 WHEN 'featured' THEN 1 ELSE 0 END DESC,l.created_at DESC LIMIT 100";
+ if(cursor){
+  sql+=' AND ('+priority+'<? OR ('+priority+'=? AND (l.created_at<? OR (l.created_at=? AND l.id<?))))';
+  args.push(cursor.tier,cursor.tier,cursor.created_at,cursor.created_at,cursor.id);
+ }
+ sql+=' ORDER BY '+priority+' DESC,l.created_at DESC,l.id DESC LIMIT ?';
+ args.push(pageLimit);
  const{results=[]}=await db.prepare(sql).bind(...args).all();
  return results.map(x=>({...x,price_amount:x.price_amount==null?null:Number(x.price_amount),photo_url:x.photo_id?`/api/listing-photo/${x.photo_id}?v=2`:null}));
 }
