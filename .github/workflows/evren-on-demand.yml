@@ -1,0 +1,41 @@
+name: EVREN - kontrollu tek istek
+
+# Varsayilan olarak hicbir model istegi yapilmaz.
+# Bu workflow yalnizca GitHub Actions ekranindan elle baslatilabilir.
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: "verify = model listesi (uretim tokeni kullanmaz); review = bir kisa kod incelemesi"
+        required: true
+        type: choice
+        options:
+          - verify
+          - review
+        default: verify
+      model:
+        description: "EVREN panelinde gercekten erisiminizin oldugu model kimligi"
+        required: true
+        type: string
+        default: "glm-5.3"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: evren-budget-limited
+  cancel-in-progress: false
+
+jobs:
+  evren:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Checkout without write privileges
+        uses: actions/checkout@v4
+      - name: EVREN one-shot check or review
+        env:
+          EVREN_LLM_API_KEY: ${{ secrets.EVREN_LLM_API_KEY }}
+          EVREN_OPERATION: ${{ inputs.operation }}
+          EVREN_MODEL: ${{ inputs.model }}
+        run: node .github/scripts/evren-once.mjs
