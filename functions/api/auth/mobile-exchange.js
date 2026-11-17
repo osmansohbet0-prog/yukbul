@@ -39,7 +39,7 @@ async function digest(value) {
   const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value)));
   let binary = '';
   for (const byte of hash) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/=/g, '').replace(/\\+/g, '-').replace(/\\//g, '_');
+  return btoa(binary).replaceAll('=', '').replaceAll('+', '-').replaceAll('/', '_');
 }
 async function codeChallenge(verifier) {
   return digest(verifier);
