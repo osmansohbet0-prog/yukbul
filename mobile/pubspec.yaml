@@ -15,8 +15,10 @@ dependencies:
   geolocator: ^14.1.2
   shared_preferences: ^2.5.4
   app_links: ^6.4.1
-  crypto: ^3.0.6
   flutter_secure_storage: ^11.2.0
+  path_provider: ^2.1.5
+  crypto: ^3.0.7
+  open_filex: ^4.7.0
 
 dev_dependencies:
   flutter_test:

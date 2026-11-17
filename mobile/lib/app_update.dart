@@ -9,8 +9,13 @@ class AndroidUpdate {
   final String version;
   final String notes;
 
+  String get apkFilename => 'YukVinc-Android-$version.apk';
+
   Uri get download => Uri.https('github.com',
-      '/osmansohbet0-prog/yukbul/releases/download/yukvinc-android-v$version/YukVinc-Android-$version.apk');
+      '/osmansohbet0-prog/yukbul/releases/download/yukvinc-android-v$version/$apkFilename');
+
+  Uri get checksum => Uri.https('github.com',
+      '/osmansohbet0-prog/yukbul/releases/download/yukvinc-android-v$version/$apkFilename.sha256');
 }
 
 class AndroidUpdates {
@@ -52,6 +57,10 @@ class AndroidUpdates {
       final apkName = 'YukVinc-Android-$version.apk';
       if (!assets.whereType<Map<String, dynamic>>().any((asset) =>
           asset['name'] == apkName && asset['state'] == 'uploaded' &&
+          asset['size'] is int && (asset['size'] as int) > 0) ||
+          !assets.whereType<Map<String, dynamic>>().any((asset) =>
+          asset['name'] == '$apkName.sha256' &&
+          asset['state'] == 'uploaded' &&
           asset['size'] is int && (asset['size'] as int) > 0)) {
         continue;
       }

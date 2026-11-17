@@ -6,6 +6,7 @@ import 'package:crypto/crypto.dart' as crypto;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'app_update.dart';
+import 'verified_android_installer.dart';
 import 'favorites.dart';
 import 'appearance.dart';
 import 'package:flutter/services.dart';
@@ -398,7 +399,7 @@ class _ShellState extends State<Shell> {
     if (checkingUpdate) return;
     checkingUpdate = true;
     final client = http.Client();
-    var openingDownload = false;
+    var installingUpdate = false;
     try {
       final update = await AndroidUpdates.check(client);
       if (!mounted) return;
@@ -410,24 +411,71 @@ class _ShellState extends State<Shell> {
         context: context,
         builder: (dialog) => AlertDialog(
           title: Text('YükVinç ${update.version} hazır'),
-          content: SingleChildScrollView(child: Text(update.notes)),
+          content: SingleChildScrollView(child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(update.notes),
+              const SizedBox(height: 12),
+              const Text('Uygulama içinde indirilecek, SHA-256 ile doğrulanacak '
+                  've Android kurulum ekranı açılacak. Uygulamayı silmene gerek yok.'),
+            ],
+          )),
           actions: [
             TextButton(onPressed: () => Navigator.pop(dialog, false),
               child: const Text('Daha sonra')),
             FilledButton(onPressed: () => Navigator.pop(dialog, true),
-              child: const Text('Şimdi güncelle')),
+              child: const Text('İndir ve güncelle')),
           ],
         ),
       );
-      if (accepted == true && mounted) {
-        openingDownload = true;
-        final launched = await launchUrl(update.download, mode: LaunchMode.externalApplication);
-        if (!launched && mounted) updateMessage('APK indirme bağlantısı açılamadı.');
+      if (accepted != true || !mounted) return;
+      installingUpdate = true;
+      final progress = ValueNotifier<double?>(0.0);
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.showSnackBar(SnackBar(
+        duration: const Duration(minutes: 10),
+        content: ValueListenableBuilder<double?>(
+          valueListenable: progress,
+          builder: (context, ratio, _) => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(ratio == null
+                  ? 'YükVinç ${update.version} indiriliyor…'
+                  : 'YükVinç ${update.version} indiriliyor: %${(ratio * 100).round()}'),
+              const SizedBox(height: 8),
+              LinearProgressIndicator(value: ratio),
+            ],
+          ),
+        ),
+      ));
+      try {
+        final apk = await VerifiedAndroidInstaller.downloadVerified(
+          client, update,
+          onProgress: (ratio) {
+            if (mounted) progress.value = ratio;
+          },
+        );
+        if (mounted) messenger.hideCurrentSnackBar();
+        await VerifiedAndroidInstaller.requestInstall(apk);
+        if (mounted) {
+          updateMessage('Güncelleme doğrulandı. Android kurulum '
+              'ekranından yüklemeyi onayla; uygulamanı silme.');
+        }
+      } finally {
+        if (mounted) messenger.hideCurrentSnackBar();
+        progress.dispose();
       }
-    } catch (_) {
-      if (mounted && (manual || openingDownload)) {
-        updateMessage(openingDownload ? 'APK indirme bağlantısı açılamadı.'
-          : 'Sürüm kontrolü yapılamadı. Tekrar dene.');
+    } catch (error) {
+      if (mounted && (manual || installingUpdate)) {
+        final message = error is FormatException
+            ? error.message
+            : installingUpdate
+                ? 'Güncelleme tamamlanamadı. Bağlantını ve '
+                    'Android yükleme iznini kontrol edip tekrar dene.'
+                : 'Sürüm kontrolü yapılamadı. Biraz sonra tekrar dene.';
+        updateMessage(message);
       }
     } finally {
       client.close();
