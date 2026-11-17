@@ -15,6 +15,16 @@ function mockDb() {
     if(sql.includes('site_settings'))return{value_json:'{"enabled":true}'};
     return{n:0}
    },
+   async all(){
+    if(sql.includes('lead_radar_leads')){
+      const now=Math.floor(Date.now()/1000);
+      return{results:[
+        {id:'old',title:'Eski onaylı ihale',source_url:'https://example.org/old',public_at:now-9*86400},
+        {id:'fresh',title:'Yeni onaylı vinç ihalesi',source_url:'https://example.org/new',public_at:now-3600}
+      ]};
+    }
+    return{results:[]}
+   },
    async run(){records.push({sql,args:this.args});return{meta:{changes:1}}}
   }}
  };
@@ -34,7 +44,13 @@ test('versioned add-on health does not require auth',async()=>{
 });
 test('tender badge uses approved, published and non-expired records only',async()=>{
  const {env}=ctx();const r=await worker.fetch(request('tenders',undefined,'GET'),env);
- assert.equal(r.status,200);assert.equal((await r.json()).new_count,1);
+ assert.equal(r.status,200);
+ const data=await r.json();
+ assert.equal(data.new_count,1);
+ assert.equal(data.items.length,2);
+ assert.equal(data.items[0].is_new,true);
+ assert.ok(data.items[0].published_at>data.items[1].published_at);
+ assert.equal(data.items[1].is_new,false);
 });
 test('complaints become support tickets and do not give admin powers to AI',async()=>{
  const {env,db}=ctx();const r=await worker.fetch(request('report',{message:'Vinç ilanında sahte fotoğraf bulundu. Kontrol edin.'}),env);
@@ -64,7 +80,7 @@ test('standalone scoped assets are served with correct MIME types',async()=>{
 test('chat interface includes scroller, complaint sender, APK and fresh tender endpoint',()=>{
  const js=readFileSync(new URL('../edge/v222-extras.client.js',import.meta.url),'utf8');
  const css=readFileSync(new URL('../edge/v222-extras.css',import.meta.url),'utf8');
- for(const token of ['yv2-messages','yv2-report','/report','/tenders','yukvinc-android-v0.5.0','yv-buyer-cta-v191'])assert.ok(js.includes(token),token);
+ for(const token of ['yv2-messages','yv2-report','/report','/tenders','yukvinc-android-v0.6.0','yv-buyer-cta-v191'])assert.ok(js.includes(token),token);
  assert.match(css,/overflow-y:auto/);assert.match(css,/yv2-tender-badge/);
 });
 
