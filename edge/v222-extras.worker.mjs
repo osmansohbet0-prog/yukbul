@@ -158,7 +158,7 @@ async function passthrough(request,env){
     .on('body',{element(e){e.append(float,{html:true})}})
     .on('#yv-buyer-cta-v191',{element(e){if(path==='/')e.remove()}})
     .on('#account-view',{element(e){if(path.startsWith('/hesabim'))e.prepend(apk,{html:true})}})
-    .on('.offer-tabs a[href*="ihale-duyurulari"]',{element(e){e.setAttribute('class','yv2-tender-tab');e.setInnerContent('İhaleler',{html:false});if(hasTender){e.setAttribute('aria-label','İhaleler — yeni ihale var');e.append(tag,{html:true});}}});
+    .on('.offer-tabs a[href*="ihale-duyurulari"]',{element(e){e.setAttribute('class',[(e.getAttribute('class')||''),'yv2-tender-tab'].filter(Boolean).join(' '));e.setInnerContent('İhaleler',{html:false});if(hasTender){e.setAttribute('aria-label','İhaleler — yeni ihale var');e.append(tag,{html:true});}}});
   return rewriter.transform(source);
 }
 export default {
