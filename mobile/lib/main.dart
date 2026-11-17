@@ -1,6 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
+import 'package:app_links/app_links.dart';
+import 'package:crypto/crypto.dart' as crypto;
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'app_update.dart';
 import 'favorites.dart';
 import 'appearance.dart';
@@ -15,6 +19,181 @@ const navy = Color(0xFF172D35);
 const yellow = Color(0xFFFFC466);
 const green = Color(0xFF0D6D5C);
 const bg = Color(0xFFF0F5F5);
+
+class MemberIdentity {
+  const MemberIdentity({required this.id, required this.email});
+  final String id;
+  final String email;
+  factory MemberIdentity.fromJson(Map<String, dynamic> value) => MemberIdentity(
+    id: (value['id'] ?? '').toString(), email: (value['email'] ?? '').toString());
+}
+
+class MemberAuth {
+  static const _storage = FlutterSecureStorage();
+  static final user = ValueNotifier<MemberIdentity?>(null);
+  static final status = ValueNotifier<String>('');
+  static final busy = ValueNotifier<bool>(false);
+  static final _random = math.Random.secure();
+  static String? _cookie;
+  static String? _processingCode;
+  static String? _completedCode;
+  static StreamSubscription<Uri>? _linkSubscription;
+  static bool _initialized = false;
+
+  static String _randomToken() => base64Url.encode(
+    List<int>.generate(32, (_) => _random.nextInt(256))).replaceAll('=', '');
+
+  static String _challenge(String verifier) =>
+    base64Url.encode(crypto.sha256.convert(utf8.encode(verifier)).bytes).replaceAll('=', '');
+
+  static Future<void> initialize() async {
+    if (_initialized) return;
+    _initialized = true;
+    try {
+      _cookie = await _storage.read(key: 'yv_member_cookie');
+      final email = await _storage.read(key: 'yv_member_email');
+      final id = await _storage.read(key: 'yv_member_id');
+      if (_cookie != null && email != null && id != null) {
+        user.value = MemberIdentity(id: id, email: email);
+        unawaited(_refresh());
+      }
+      final links = AppLinks();
+      _linkSubscription = links.uriLinkStream.listen(
+        (uri) => unawaited(_handleCallback(uri)),
+        onError: (_) => status.value = 'Uygulama bağlantısı açılamadı. Tekrar giriş yap.',
+      );
+      final initial = await links.getInitialLink();
+      if (initial != null) await _handleCallback(initial);
+    } catch (_) {
+      // Sign-in remains available when the platform link plugin is not ready.
+    }
+  }
+
+  static Future<void> beginGoogleSignIn() async {
+    if (busy.value) return;
+    busy.value = true;
+    status.value = 'Güvenli Google giriş sayfası açılıyor…';
+    try {
+      final state = _randomToken(), verifier = _randomToken();
+      await _storage.write(key: 'yv_auth_state', value: state);
+      await _storage.write(key: 'yv_auth_verifier', value: verifier);
+      final uri = Uri.parse('$baseUrl/giris/').replace(queryParameters: {
+        'app': 'android',
+        'state': state,
+        'code_challenge': _challenge(verifier),
+        'code_challenge_method': 'S256',
+      });
+      var opened = false;
+      try { opened = await launchUrl(uri, mode: LaunchMode.inAppBrowserView); } catch (_) {}
+      if (!opened) opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened) throw StateError('Giriş sayfası açılamadı.');
+    } catch (_) {
+      status.value = 'Google giriş sayfası açılamadı. İnternet bağlantını kontrol et.';
+    } finally {
+      busy.value = false;
+    }
+  }
+
+  static Future<void> _handleCallback(Uri uri) async {
+    if (uri.scheme != 'yukvinc' || uri.host != 'auth' || uri.path != '/callback') return;
+    final code = uri.queryParameters['code'] ?? '';
+    final state = uri.queryParameters['state'] ?? '';
+    if (code.isEmpty || code == _processingCode || code == _completedCode) return;
+    _processingCode = code;
+    busy.value = true;
+    status.value = 'Google oturumu güvenle doğrulanıyor…';
+    try {
+      final expectedState = await _storage.read(key: 'yv_auth_state');
+      final verifier = await _storage.read(key: 'yv_auth_verifier');
+      if (expectedState == null || verifier == null || state != expectedState) {
+        throw StateError('Giriş doğrulaması uyuşmadı. Yeniden dene.');
+      }
+      final response = await http.post(Uri.parse('$baseUrl/api/auth/mobile-exchange'),
+        headers: const {'Content-Type': 'application/json', 'Origin': baseUrl},
+        body: jsonEncode({'code': code, 'code_verifier': verifier}),
+      ).timeout(const Duration(seconds: 15));
+      Map<String, dynamic> body = {};
+      try {
+        final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+        if (decoded is Map) body = Map<String, dynamic>.from(decoded);
+      } catch (_) {}
+      if (response.statusCode != 200 || body['user'] is! Map) {
+        throw StateError((body['error'] ?? 'Google girişi tamamlanamadı.').toString());
+      }
+      final cookieHeader = response.headers['set-cookie'] ?? '';
+      final pair = cookieHeader.split(';').first;
+      const prefix = '__Host-yv_member=';
+      if (!pair.startsWith(prefix)) throw StateError('Güvenli oturum kaydedilemedi.');
+      final cookie = Uri.decodeComponent(pair.substring(prefix.length));
+      final identity = MemberIdentity.fromJson(Map<String, dynamic>.from(body['user'] as Map));
+      if (cookie.isEmpty || identity.id.isEmpty || identity.email.isEmpty) {
+        throw StateError('Google hesabı yanıtı eksik.');
+      }
+      await _storage.write(key: 'yv_member_cookie', value: cookie);
+      await _storage.write(key: 'yv_member_id', value: identity.id);
+      await _storage.write(key: 'yv_member_email', value: identity.email);
+      await _storage.delete(key: 'yv_auth_state');
+      await _storage.delete(key: 'yv_auth_verifier');
+      _cookie = cookie;
+      user.value = identity;
+      _completedCode = code;
+      status.value = 'Google hesabınla giriş yaptın.';
+    } catch (error) {
+      status.value = error is StateError ? error.message : 'Google girişi tamamlanamadı. Tekrar dene.';
+    } finally {
+      _processingCode = null;
+      busy.value = false;
+    }
+  }
+
+  static Future<void> _refresh() async {
+    final cookie = _cookie;
+    if (cookie == null || cookie.isEmpty) return;
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/api/auth/me'),
+        headers: {'Accept': 'application/json', 'Cookie': '__Host-yv_member=$cookie'},
+      ).timeout(const Duration(seconds: 12));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        if (data is Map && data['user'] is Map) {
+          final identity = MemberIdentity.fromJson(Map<String, dynamic>.from(data['user'] as Map));
+          if (identity.id.isNotEmpty && identity.email.isNotEmpty) {
+            user.value = identity;
+            await _storage.write(key: 'yv_member_id', value: identity.id);
+            await _storage.write(key: 'yv_member_email', value: identity.email);
+          }
+        }
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        await _clear();
+      }
+    } catch (_) {
+      // Keep the last confirmed account visible while offline.
+    }
+  }
+
+  static Future<void> logout() async {
+    final cookie = _cookie;
+    try {
+      if (cookie != null) {
+        await http.post(Uri.parse('$baseUrl/api/auth/logout'),
+          headers: {'Origin': baseUrl, 'Cookie': '__Host-yv_member=$cookie'},
+        ).timeout(const Duration(seconds: 10));
+      }
+    } catch (_) {}
+    await _clear();
+    status.value = 'Oturum kapatıldı.';
+  }
+
+  static Future<void> _clear() async {
+    _cookie = null;
+    user.value = null;
+    for (final key in ['yv_member_cookie','yv_member_id','yv_member_email',
+      'yv_auth_state','yv_auth_verifier']) {
+      await _storage.delete(key: key);
+    }
+  }
+}
+
 
 class YukListing {
   const YukListing({required this.id, required this.title, required this.city,
@@ -143,6 +322,7 @@ Future<void> openSite(BuildContext context, String path) async {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try { await AppAppearance.load(); } catch (_) {}
+  try { await MemberAuth.initialize(); } catch (_) {}
   runApp(const YukVincApp());
 }
 
