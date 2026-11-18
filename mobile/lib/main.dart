@@ -418,16 +418,19 @@ class YukApi {
 
 final api = YukApi();
 Future<void> openSite(BuildContext context, String path) async {
-  try {
-    final uri = Uri.parse(baseUrl + path);
-    final external = path == '/hesabim/' || path == '/ilan-ver/';
-    final opened = !external && await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
-    final ok = opened || await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!ok) throw Exception('Bağlantı açılamadı');
-  } catch (_) {
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Sayfa açılamadı. İnternet bağlantını kontrol et.')));
+  if (!context.mounted) return;
+  switch (path) {
+    case '/ilan-ver/':
+      await Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => const ListingEditorScreen()));
+      return;
+    case '/is-talepleri/':
+      await Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => const OpportunityHub()));
+      return;
+    default:
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bu bölüm uygulama içi ekrana taşınıyor.')));
   }
 }
 
@@ -587,10 +590,7 @@ class _ShellState extends State<Shell> {
           tooltip: 'Güncellemeleri kontrol et',
           onPressed: () => checkUpdate(manual: true),
         ),
-        IconButton(
-        icon: const Icon(Icons.open_in_browser_rounded), tooltip: 'Web sitesi',
-        onPressed: () => openSite(context, '/'),
-      )],
+      ],
     ),
     body: SafeArea(child: Center(child: ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 760),
@@ -877,7 +877,7 @@ class _NearbyState extends State<Nearby> {
   bool newest = false;
   bool manual = false;
   String category = 'all';
-  final city = TextEditingController();
+  final city = TextEditingController(text: 'Konya');
   final district = TextEditingController();
 
   @override
@@ -944,12 +944,12 @@ class _NearbyState extends State<Nearby> {
     return ListView(
     padding: const EdgeInsets.all(18), children: [
       Spotlight(
-        icon: Icons.near_me_rounded,
-        title: 'Yakınımdaki ilanlar',
-        subtitle: 'Konumunu bu aramada kullan. İlanların mesafesi yaklaşık gösterilir.',
-        action: loading ? 'Aranıyor…' : 'Konumumla ara',
-        actionIcon: Icons.my_location_rounded,
-        onTap: loading ? null : () => find(),
+        icon: Icons.location_city_rounded,
+        title: 'Konya ve çevresindeki ilanlar',
+        subtitle: 'İlanların il ve ilçe bilgisine göre ara; GPS izni gerekmez.',
+        action: loading ? 'Aranıyor…' : 'Konya’da ara',
+        actionIcon: Icons.search_rounded,
+        onTap: loading ? null : () => find(useLocation: false),
       ),
       const SizedBox(height: 12),
       Wrap(spacing: 8, children: [
@@ -1029,13 +1029,13 @@ class RoadHelp extends StatefulWidget {
 
 class _RoadHelpState extends State<RoadHelp> {
   String category = 'tow';
-  final city = TextEditingController();
+  final city = TextEditingController(text: 'Konya');
   late Future<List<YukListing>> results;
 
   @override
   void initState() {
     super.initState();
-    results = api.listings(category: category);
+    results = api.listings(category: category, city: city.text);
   }
 
   Future<void> refresh() async {
@@ -1090,6 +1090,34 @@ class _RoadHelpState extends State<RoadHelp> {
       },
     )),
   ]);
+}
+
+class OpportunityHub extends StatefulWidget {
+  const OpportunityHub({super.key});
+  @override State<OpportunityHub> createState() => _OpportunityHubState();
+}
+class _OpportunityHubState extends State<OpportunityHub> {
+  int tab = 0;
+  @override Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('İş fırsatları')),
+    body: Column(children: [
+      Padding(padding: const EdgeInsets.all(16), child: SegmentedButton<int>(
+        segments: const [
+          ButtonSegment(value: 0, label: Text('İş talepleri'), icon: Icon(Icons.work_outline)),
+          ButtonSegment(value: 1, label: Text('İhaleler'), icon: Icon(Icons.gavel_outlined)),
+        ],
+        selected: {tab}, onSelectionChanged: (value) => setState(() => tab = value.first),
+      )),
+      Expanded(child: Center(child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(tab == 0
+          ? 'Açık iş talepleri uygulama içinde gösterilir. Şu anda görüntülenebilir talep yok.'
+          : 'Yeni ihale ve radar fırsatları uygulama içi akışa ekleniyor.',
+          textAlign: TextAlign.center,
+        ),
+      ))),
+    ]),
+  );
 }
 
 class FavoriteListings extends StatefulWidget {
@@ -1288,9 +1316,11 @@ class Account extends StatelessWidget {
       AccountLink(icon: Icons.add_circle_outline, title: 'İlan ver',
         subtitle: 'Fotoğraflı hizmet veya operatör ilanı oluştur',
         onTap: () => _openMemberScreen(context, const ListingEditorScreen())),
-      AccountLink(icon: Icons.work_outline_rounded, title: 'İş talepleri',
-        subtitle: 'Yayındaki talepleri incele',
-        onTap: () => openSite(context, '/is-talepleri/')),
+      AccountLink(icon: Icons.work_outline_rounded, title: 'İş talepleri ve ihaleler',
+        subtitle: 'Açık talepleri ve ihale fırsatlarını görüntüle',
+        onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => const OpportunityHub(),
+        ))),
     ]);
 }
 
