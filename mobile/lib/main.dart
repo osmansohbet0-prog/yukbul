@@ -251,10 +251,17 @@ class YukApi {
       .map((item) => Map<String, dynamic>.from(item)).toList(growable: false);
   }
 
-  Future<List<YukListing>> nearby(double lat, double lng, {int radiusKm = 100}) async {
+  Future<List<YukListing>> nearby(double lat, double lng,
+      {int radiusKm = 100, String category = 'all'}) async {
+    final body = <String, dynamic>{
+      'latitude': lat,
+      'longitude': lng,
+      'radius_km': radiusKm,
+    };
+    if (category != 'all') body['category'] = category;
     return _parse(await client.post(Uri.parse(baseUrl + '/api/ai/nearby'),
       headers: const {'Content-Type': 'application/json', 'Origin': baseUrl},
-      body: jsonEncode({'latitude': lat, 'longitude': lng, 'radius_km': radiusKm}),
+      body: jsonEncode(body),
     ).timeout(const Duration(seconds: 15)));
   }
   Future<({YukListing listing, List<String> photos})> detail(String id) async {
@@ -365,6 +372,12 @@ final api = YukApi();
 Future<void> openSite(BuildContext context, String path) async {
   if (!context.mounted) return;
   switch (path) {
+    case '/hesabim':
+    case '/hesabim/':
+      await Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => const Account(),
+      ));
+      return;
     case '/ilan-ver/':
       _openMemberScreen(context, const ListingEditorScreen());
       return;
@@ -871,7 +884,8 @@ class _NearbyState extends State<Nearby> {
       final p = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.medium, timeLimit: Duration(seconds: 10)));
-      final result = await api.nearby(p.latitude, p.longitude, radiusKm: radius);
+      final result = await api.nearby(
+        p.latitude, p.longitude, radiusKm: radius, category: category);
       if (mounted) setState(() => items = result);
     } catch (e) {
       if (mounted) setState(() => error =
@@ -888,12 +902,12 @@ class _NearbyState extends State<Nearby> {
     return ListView(
     padding: const EdgeInsets.all(18), children: [
       Spotlight(
-        icon: Icons.location_city_rounded,
-        title: 'Konya ve çevresindeki ilanlar',
-        subtitle: 'İlanların il ve ilçe bilgisine göre ara; GPS izni gerekmez.',
-        action: loading ? 'Aranıyor…' : 'Konya’da ara',
-        actionIcon: Icons.search_rounded,
-        onTap: loading ? null : () => find(useLocation: false),
+        icon: Icons.near_me_outlined,
+        title: 'Yakındaki ilanları bul',
+        subtitle: 'Konumunu kullanarak seçtiğin kategoride ara. İzin vermezsen Konya’yı il ve ilçeyle arayabilirsin.',
+        action: loading ? 'Aranıyor…' : 'Konumumdan ara',
+        actionIcon: Icons.my_location_rounded,
+        onTap: loading ? null : () => find(useLocation: true),
       ),
       const SizedBox(height: 12),
       Wrap(spacing: 8, children: [
@@ -901,7 +915,14 @@ class _NearbyState extends State<Nearby> {
           ChoiceChip(label: Text('$km km'), selected: km == radius,
             onSelected: loading ? null : (selected) {
               if (!selected) return;
-              setState(() { radius = km; if (!manual) items = null; });
+              final refreshLocationResults = !manual && items != null;
+              setState(() {
+                radius = km;
+                if (refreshLocationResults) items = null;
+              });
+              if (refreshLocationResults) {
+                unawaited(find(useLocation: true));
+              }
             }),
       ]),
       DropdownButtonFormField<String>(
@@ -909,10 +930,17 @@ class _NearbyState extends State<Nearby> {
         decoration: const InputDecoration(labelText: 'Kategori'),
         items: [for (final option in _ListingsState.filters.entries)
           DropdownMenuItem(value: option.key, child: Text(option.value))],
-        onChanged: loading ? null : (value) => setState(() {
-          category = value ?? 'all';
-          if (manual) items = null;
-        }),
+        onChanged: loading ? null : (value) {
+          if (value == null || value == category) return;
+          final refreshLocationResults = !manual && items != null;
+          setState(() {
+            category = value;
+            if (manual || refreshLocationResults) items = null;
+          });
+          if (refreshLocationResults) {
+            unawaited(find(useLocation: true));
+          }
+        },
       ),
       SwitchListTile(
         title: const Text('En yeni ilanlar önce'),

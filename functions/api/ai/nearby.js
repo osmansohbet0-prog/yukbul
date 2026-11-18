@@ -7,9 +7,15 @@ export async function onRequestPost({request,env}){
  if(!env.DB)return fail('Arama şu anda kullanılamıyor.',503);
  try{const point=await readJson(request,512);if(!validateToolCall('nearby_search',point))return fail('Konum verisi geçersiz.');
  if(await limited(env,request,'ai',10,900))return fail('Lütfen bir süre sonra tekrar arayın.',429);
- const{results:coordinates=[]}=await env.DB.prepare("SELECT g.listing_id,g.latitude,g.longitude FROM listing_locations g JOIN listings l ON l.id=g.listing_id WHERE l.status='approved' AND g.verified_by IS NOT NULL AND (COALESCE(l.service_category,l.category_detail,l.category)='operator' OR EXISTS(SELECT 1 FROM users u WHERE u.id=l.user_id AND u.role='admin') OR l.trial_expires_at>unixepoch() OR l.paid_until>unixepoch()) LIMIT 1000").all();
+ const category=point.category&&point.category!=='all'?point.category:null;
+ let coordinateSql="SELECT g.listing_id,g.latitude,g.longitude FROM listing_locations g JOIN listings l ON l.id=g.listing_id WHERE l.status='approved' AND g.verified_by IS NOT NULL AND (COALESCE(l.service_category,l.category_detail,l.category)='operator' OR EXISTS(SELECT 1 FROM users u WHERE u.id=l.user_id AND u.role='admin') OR l.trial_expires_at>unixepoch() OR l.paid_until>unixepoch())";
+ if(category)coordinateSql+=" AND COALESCE(l.service_category,l.category_detail,l.category)=?";
+ coordinateSql+=" LIMIT 1000";
+ const coordinateStatement=env.DB.prepare(coordinateSql);
+ const coordinateQuery=category?coordinateStatement.bind(category):coordinateStatement;
+ const{results:coordinates=[]}=await coordinateQuery.all();
  const closest=rankNearby(coordinates.map(x=>({...x,id:x.listing_id})),point,point.radius_km||100).slice(0,100),ids=closest.map(x=>x.id);
- const publicItems=await assistantPublicItems(env.DB,{ids,limit:100}),byId=new Map(publicItems.map(x=>[x.id,x]));
+ const publicItems=await assistantPublicItems(env.DB,{ids,category:category||undefined,limit:100}),byId=new Map(publicItems.map(x=>[x.id,x]));
  const items=closest.map(x=>{const item=byId.get(x.id);return item?{...item,distance_km:x.distance_km}:null}).filter(Boolean).slice(0,3);
  // Coordinates never enter logs, conversations, audit metadata or model inputs.
  return json({items,message:items.length?'Doğrulanmış ilan konumlarına göre yaklaşık mesafe.':'Bu mesafede doğrulanmış konumu olan yayındaki ilan bulunamadı. İl/ilçe filtresini kullanabilirsin.'});
