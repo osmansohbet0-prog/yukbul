@@ -26,7 +26,7 @@ export async function onRequestPost({request,env}){
   try{
     if(await limited(env,request,'login',8,900))return fail('Çok fazla giriş denemesi. 15 dakika sonra tekrar dene.',429);
     const d=await readMemberJson(request,12000);
-    if(!await verifyTurnstile(d.turnstile_token,request,env))return fail('Bot doğrulamasını tamamla.',403);
+    if(d.platform!=='android'&&!await verifyTurnstile(d.turnstile_token,request,env))return fail('Bot doğrulamasını tamamla.',403);
     const identity=await verifyGoogleCredential(d.credential,env.GOOGLE_CLIENT_ID);
     if(!identity)return fail('Google doğrulaması geçersiz veya süresi dolmuş. Tekrar dene.',401);
     let user=await env.DB.prepare("SELECT id,email,google_sub,role,active FROM users WHERE google_sub=? AND role='member'").bind(identity.subject).first();

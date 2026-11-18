@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
-import 'package:app_links/app_links.dart';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'app_update.dart';
 import 'verified_android_installer.dart';
 import 'favorites.dart';
@@ -36,20 +36,10 @@ class MemberAuth {
   static final user = ValueNotifier<MemberIdentity?>(null);
   static final status = ValueNotifier<String>('');
   static final busy = ValueNotifier<bool>(false);
-  static final _random = math.Random.secure();
+  static final _google = GoogleSignIn.instance;
   static String? _cookie;
-  static String? _processingCode;
-  static String? _completedCode;
-  static StreamSubscription<Uri>? _linkSubscription;
-  static Timer? _loginTimeout;
-  static bool _waitingForCallback = false;
   static bool _initialized = false;
-
-  static String _randomToken() => base64Url.encode(
-    List<int>.generate(32, (_) => _random.nextInt(256))).replaceAll('=', '');
-
-  static String _challenge(String verifier) =>
-    base64Url.encode(crypto.sha256.convert(utf8.encode(verifier)).bytes).replaceAll('=', '');
+  static bool _googleInitialized = false;
 
   static Future<void> initialize() async {
     if (_initialized) return;
@@ -62,80 +52,36 @@ class MemberAuth {
         user.value = MemberIdentity(id: id, email: email);
         unawaited(_refresh());
       }
-      final links = AppLinks();
-      _linkSubscription ??= links.uriLinkStream.listen(
-        (uri) => unawaited(_handleCallback(uri)),
-        onError: (_) => status.value = 'Uygulama bağlantısı açılamadı. Tekrar giriş yap.',
-      );
-      final initial = await links.getInitialLink();
-      if (initial != null) await _handleCallback(initial);
-    } catch (_) {
-      // Sign-in remains available when the platform link plugin is not ready.
-    }
+    } catch (_) {}
   }
 
   static Future<void> beginGoogleSignIn() async {
     if (busy.value) return;
     busy.value = true;
-    status.value = 'Güvenli Google giriş sayfası açılıyor…';
+    status.value = 'Google ile güvenli giriş başlatılıyor…';
     try {
-      final state = _randomToken(), verifier = _randomToken();
-      await _storage.write(key: 'yv_auth_state', value: state);
-      await _storage.write(key: 'yv_auth_verifier', value: verifier);
-      final handoff = Uri(
-        path: '/api/auth/mobile-handoff',
-        queryParameters: {
-          'app': 'android',
-          'state': state,
-          'code_challenge': _challenge(verifier),
-          'code_challenge_method': 'S256',
-        },
-      );
-      final uri = Uri.parse('$baseUrl/giris/').replace(queryParameters: {
-        'next': handoff.toString(),
-      });
-      var opened = false;
-      try { opened = await launchUrl(uri, mode: LaunchMode.inAppBrowserView); } catch (_) {}
-      if (!opened) opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (!opened) throw StateError('Giriş sayfası açılamadı.');
-      _waitingForCallback = true;
-      status.value = 'Giriş sayfasında Google ile devam et, sonra uygulamaya dön.';
-      _loginTimeout?.cancel();
-      _loginTimeout = Timer(const Duration(minutes: 3), () {
-        if (!_waitingForCallback) return;
-        _waitingForCallback = false;
-        busy.value = false;
-        status.value = 'Giriş süresi doldu. Yeniden deneyebilirsin.';
-      });
-    } catch (_) {
-      _waitingForCallback = false;
-      _loginTimeout?.cancel();
-      status.value = 'Google giriş sayfası açılamadı. İnternet bağlantını kontrol et.';
-    } finally {
-      if (!_waitingForCallback) busy.value = false;
-    }
-  }
-
-  static Future<void> _handleCallback(Uri uri) async {
-    if (uri.scheme != 'yukvinc' || uri.host != 'auth' || uri.path != '/callback') return;
-    final code = uri.queryParameters['code'] ?? '';
-    final state = uri.queryParameters['state'] ?? '';
-    if (code.isEmpty || code == _processingCode || code == _completedCode) return;
-    _waitingForCallback = false;
-    _loginTimeout?.cancel();
-    _processingCode = code;
-    busy.value = true;
-    status.value = 'Google oturumu güvenle doğrulanıyor…';
-    try {
-      final expectedState = await _storage.read(key: 'yv_auth_state');
-      final verifier = await _storage.read(key: 'yv_auth_verifier');
-      if (expectedState == null || verifier == null || state != expectedState) {
-        throw StateError('Giriş doğrulaması uyuşmadı. Yeniden dene.');
+      final configResponse = await http.get(Uri.parse('$baseUrl/api/mobile/config'),
+        headers: const {'Accept': 'application/json'}).timeout(const Duration(seconds: 12));
+      if (configResponse.statusCode != 200) throw StateError('Google girişi şu anda kullanılamıyor.');
+      final config = jsonDecode(utf8.decode(configResponse.bodyBytes));
+      final clientId = config is Map ? (config['google_client_id'] ?? '').toString() : '';
+      if (clientId.isEmpty) throw StateError('Google girişi henüz yapılandırılmamış.');
+      if (!_googleInitialized) {
+        await _google.initialize(serverClientId: clientId);
+        _googleInitialized = true;
       }
-      final response = await http.post(Uri.parse('$baseUrl/api/auth/mobile-exchange'),
+      if (!_google.supportsAuthenticate()) throw StateError('Bu cihaz Google girişini desteklemiyor.');
+      status.value = 'Google hesabını seç…';
+      final account = await _google.authenticate();
+      final credential = account.authentication.idToken;
+      if (credential == null || credential.isEmpty) {
+        throw StateError('Google doğrulama anahtarı alınamadı. Tekrar dene.');
+      }
+      status.value = 'Google oturumu doğrulanıyor…';
+      final response = await http.post(Uri.parse('$baseUrl/api/auth/google'),
         headers: const {'Content-Type': 'application/json', 'Origin': baseUrl},
-        body: jsonEncode({'code': code, 'code_verifier': verifier}),
-      ).timeout(const Duration(seconds: 15));
+        body: jsonEncode({'credential': credential, 'platform': 'android'}),
+      ).timeout(const Duration(seconds: 20));
       Map<String, dynamic> body = {};
       try {
         final decoded = jsonDecode(utf8.decode(response.bodyBytes));
@@ -144,8 +90,7 @@ class MemberAuth {
       if (response.statusCode != 200 || body['user'] is! Map) {
         throw StateError((body['error'] ?? 'Google girişi tamamlanamadı.').toString());
       }
-      final cookieHeader = response.headers['set-cookie'] ?? '';
-      final pair = cookieHeader.split(';').first;
+      final pair = (response.headers['set-cookie'] ?? '').split(';').first;
       const prefix = '__Host-yv_member=';
       if (!pair.startsWith(prefix)) throw StateError('Güvenli oturum kaydedilemedi.');
       final cookie = Uri.decodeComponent(pair.substring(prefix.length));
@@ -156,16 +101,12 @@ class MemberAuth {
       await _storage.write(key: 'yv_member_cookie', value: cookie);
       await _storage.write(key: 'yv_member_id', value: identity.id);
       await _storage.write(key: 'yv_member_email', value: identity.email);
-      await _storage.delete(key: 'yv_auth_state');
-      await _storage.delete(key: 'yv_auth_verifier');
       _cookie = cookie;
       user.value = identity;
-      _completedCode = code;
       status.value = 'Google hesabınla giriş yaptın.';
     } catch (error) {
       status.value = error is StateError ? error.message : 'Google girişi tamamlanamadı. Tekrar dene.';
     } finally {
-      _processingCode = null;
       busy.value = false;
     }
   }
@@ -190,16 +131,11 @@ class MemberAuth {
       } else if (response.statusCode == 401 || response.statusCode == 403) {
         await _clear();
       }
-    } catch (_) {
-      // Keep the last confirmed account visible while offline.
-    }
+    } catch (_) {}
   }
 
   static Future<void> cancelSignIn() async {
-    _waitingForCallback = false;
-    _loginTimeout?.cancel();
-    await _storage.delete(key: 'yv_auth_state');
-    await _storage.delete(key: 'yv_auth_verifier');
+    try { await _google.signOut(); } catch (_) {}
     busy.value = false;
     status.value = 'Google girişi iptal edildi.';
   }
@@ -212,6 +148,7 @@ class MemberAuth {
           headers: {'Origin': baseUrl, 'Cookie': '__Host-yv_member=$cookie'},
         ).timeout(const Duration(seconds: 10));
       }
+      await _google.signOut();
     } catch (_) {}
     await _clear();
     status.value = 'Oturum kapatıldı.';
@@ -220,13 +157,11 @@ class MemberAuth {
   static Future<void> _clear() async {
     _cookie = null;
     user.value = null;
-    for (final key in ['yv_member_cookie','yv_member_id','yv_member_email',
-      'yv_auth_state','yv_auth_verifier']) {
+    for (final key in ['yv_member_cookie','yv_member_id','yv_member_email']) {
       await _storage.delete(key: key);
     }
   }
 }
-
 
 class YukListing {
   const YukListing({required this.id, required this.title, required this.city,
