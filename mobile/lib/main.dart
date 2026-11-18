@@ -306,6 +306,17 @@ class YukApi {
     }
   }
 
+  Future<List<Map<String, dynamic>>> mobileFeed(String type) async {
+    if (type != 'jobs' && type != 'tenders') throw ArgumentError.value(type);
+    final response = await client.get(Uri.parse('$baseUrl/api/mobile/$type'),
+      headers: const {'Accept': 'application/json'}).timeout(const Duration(seconds: 15));
+    if (response.statusCode != 200) throw StateError('Fırsatlar yüklenemedi.');
+    final body = jsonDecode(utf8.decode(response.bodyBytes));
+    if (body is! Map || body['items'] is! List) throw const FormatException('Fırsat yanıtı geçersiz.');
+    return (body['items'] as List).whereType<Map>()
+      .map((item) => Map<String, dynamic>.from(item)).toList(growable: false);
+  }
+
   Future<List<YukListing>> nearby(double lat, double lng, {int radiusKm = 100}) async {
     return _parse(await client.post(Uri.parse(baseUrl + '/api/ai/nearby'),
       headers: const {'Content-Type': 'application/json', 'Origin': baseUrl},
@@ -1098,6 +1109,17 @@ class OpportunityHub extends StatefulWidget {
 }
 class _OpportunityHubState extends State<OpportunityHub> {
   int tab = 0;
+  late Future<List<Map<String, dynamic>>> future;
+  @override void initState() { super.initState(); future = api.mobileFeed('jobs'); }
+  void select(int value) => setState(() {
+    tab = value;
+    future = api.mobileFeed(value == 0 ? 'jobs' : 'tenders');
+  });
+  Future<void> refresh() async {
+    final next = api.mobileFeed(tab == 0 ? 'jobs' : 'tenders');
+    setState(() => future = next);
+    try { await next; } catch (_) {}
+  }
   @override Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('İş fırsatları')),
     body: Column(children: [
@@ -1106,16 +1128,47 @@ class _OpportunityHubState extends State<OpportunityHub> {
           ButtonSegment(value: 0, label: Text('İş talepleri'), icon: Icon(Icons.work_outline)),
           ButtonSegment(value: 1, label: Text('İhaleler'), icon: Icon(Icons.gavel_outlined)),
         ],
-        selected: {tab}, onSelectionChanged: (value) => setState(() => tab = value.first),
+        selected: {tab}, onSelectionChanged: (value) => select(value.first),
       )),
-      Expanded(child: Center(child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Text(tab == 0
-          ? 'Açık iş talepleri uygulama içinde gösterilir. Şu anda görüntülenebilir talep yok.'
-          : 'Yeni ihale ve radar fırsatları uygulama içi akışa ekleniyor.',
-          textAlign: TextAlign.center,
-        ),
-      ))),
+      Expanded(child: FutureBuilder<List<Map<String, dynamic>>>(
+        future: future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) return const Loading();
+          if (snapshot.hasError) return Retry(onTap: refresh);
+          final items = snapshot.data ?? const <Map<String, dynamic>>[];
+          if (items.isEmpty) return RefreshIndicator(
+            onRefresh: refresh,
+            child: ListView(physics: const AlwaysScrollableScrollPhysics(), children: [
+              const SizedBox(height: 110),
+              Empty(tab == 0 ? 'Şu anda açık iş talebi yok.' : 'Şu anda yayında ihale fırsatı yok.'),
+            ]),
+          );
+          return RefreshIndicator(onRefresh: refresh, child: ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            itemCount: items.length,
+            itemBuilder: (context, index) {
+              final item = items[index];
+              final title = (item['title'] ?? 'Yeni fırsat').toString();
+              final place = [item['city'], item['district']]
+                .whereType<String>().where((part) => part.trim().isNotEmpty).join(' · ');
+              final detail = (item['public_summary'] ?? item['description'] ?? '').toString();
+              final organization = (item['organization'] ?? item['category'] ?? item['service_type'] ?? '').toString();
+              return Card(margin: const EdgeInsets.only(bottom: 12), child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  if (tab == 1) const Chip(avatar: Icon(Icons.fiber_new, size: 17), label: Text('Yeni ihale fırsatı')),
+                  Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                  if (place.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 7),
+                    child: Text(place, style: TextStyle(color: Theme.of(context).colorScheme.primary))),
+                  if (organization.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 5), child: Text(organization)),
+                  if (detail.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 9), child: Text(detail)),
+                ]),
+              ));
+            },
+          ));
+        },
+      )),
     ]),
   );
 }
