@@ -1369,7 +1369,7 @@ class Account extends StatelessWidget {
       AccountLink(icon: Icons.add_circle_outline, title: 'İlan ver',
         subtitle: 'Fotoğraflı hizmet veya operatör ilanı oluştur',
         onTap: () => _openMemberScreen(context, const ListingEditorScreen())),
-      AccountLink(icon: Icons.work_outline_rounded, title: 'İş talepleri ve ihaleler',
+      AccountLink(icon: Icons.work_outline_rounded, title: 'İş talepleri',
         subtitle: 'Açık talepleri ve ihale fırsatlarını görüntüle',
         onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
           builder: (_) => const OpportunityHub(),
