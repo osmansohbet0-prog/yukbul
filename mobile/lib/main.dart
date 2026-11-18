@@ -366,8 +366,7 @@ Future<void> openSite(BuildContext context, String path) async {
   if (!context.mounted) return;
   switch (path) {
     case '/ilan-ver/':
-      await Navigator.of(context).push(MaterialPageRoute<void>(
-        builder: (_) => const ListingEditorScreen()));
+      _openMemberScreen(context, const ListingEditorScreen());
       return;
     case '/is-talepleri/':
       await Navigator.of(context).push(MaterialPageRoute<void>(
