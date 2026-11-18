@@ -1088,10 +1088,16 @@ class _OpportunityHubState extends State<OpportunityHub> {
                 .whereType<String>().where((part) => part.trim().isNotEmpty).join(' · ');
               final detail = (item['public_summary'] ?? item['description'] ?? '').toString();
               final organization = (item['organization'] ?? item['category'] ?? item['service_type'] ?? '').toString();
+              final publishedValue = item['public_at'];
+              final publishedAt = publishedValue is num
+                ? DateTime.fromMillisecondsSinceEpoch((publishedValue * 1000).round())
+                : DateTime.tryParse((item['published_at'] ?? '').toString());
+              final age = publishedAt == null ? null : DateTime.now().difference(publishedAt);
+              final isNewTender = tab == 1 && age != null && !age.isNegative && age.inHours < 24;
               return Card(margin: const EdgeInsets.only(bottom: 12), child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  if (tab == 1) const Chip(avatar: Icon(Icons.fiber_new, size: 17), label: Text('Yeni ihale fırsatı')),
+                  if (isNewTender) const Chip(avatar: Icon(Icons.fiber_new, size: 17), label: Text('Son 24 saatte yayımlandı')),
                   Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
                   if (place.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 7),
                     child: Text(place, style: TextStyle(color: Theme.of(context).colorScheme.primary))),
