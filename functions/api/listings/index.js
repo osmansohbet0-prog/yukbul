@@ -4,12 +4,40 @@ import {validateListing,contentHash,moderation,savePhotos,validatePhotoPayloads,
 import {listingError,listingFailure} from '../../_lib/listing-errors.js';
 import {notifyListingSubmitted} from '../../_lib/notifications.js';
 
+function decodeListingCursor(value){
+  if(!value||value.length>1024||!/^[A-Za-z0-9_-]+$/.test(value))return null;
+  try{
+    const padded=value.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-value.length%4)%4);
+    const item=JSON.parse(atob(padded));
+    const tier=Number(item.tier),created_at=Number(item.created_at),id=String(item.id||'');
+    if(![0,1,2].includes(tier)||!Number.isSafeInteger(created_at)||created_at<1||!/^[A-Za-z0-9_-]{8,80}$/.test(id))return null;
+    return{tier,created_at,id};
+  }catch{return null}
+}
+function encodeListingCursor(item,sortNewest){
+  const tier=sortNewest?0:item.package_tier==='premium'?2:item.package_tier==='featured'?1:0;
+  return btoa(JSON.stringify({tier,created_at:Number(item.created_at),id:String(item.id)}))
+    .replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
+}
 export async function onRequestGet({request,env}){
   if(!env.DB)return listingError('DB_BINDING_MISSING',request,503);
   try{
-    const u=new URL(request.url);
-    const items=await publicItems(env.DB,{q:u.searchParams.get('q'),category:u.searchParams.get('category'),city:u.searchParams.get('city')});
-    return json({items});
+    const u=new URL(request.url),rawLimit=u.searchParams.get('limit'),rawCursor=u.searchParams.get('cursor');
+    const paged=rawLimit!==null||rawCursor!==null;
+    const limit=rawLimit===null?20:Number(rawLimit);
+    if(paged&&(!Number.isInteger(limit)||limit<1||limit>50))return listingError('VALIDATION_FAILED',request,400,'limit');
+    const cursor=rawCursor===null?null:decodeListingCursor(rawCursor);
+    if(rawCursor!==null&&!cursor)return listingError('VALIDATION_FAILED',request,400,'cursor');
+    const sort=u.searchParams.get('sort')||'';
+    if(sort&&sort!=='newest')return listingError('VALIDATION_FAILED',request,400,'sort');
+    const rows=await publicItems(env.DB,{
+      q:u.searchParams.get('q'),category:u.searchParams.get('category'),city:u.searchParams.get('city'),
+      limit:paged?limit+1:100,cursor,sort,
+    });
+    if(!paged)return json({items:rows});
+    const hasMore=rows.length>limit,items=hasMore?rows.slice(0,limit):rows;
+    const next_cursor=hasMore?encodeListingCursor(items[items.length-1],sort==='newest'):null;
+    return json({items,next_cursor});
   }catch(error){
     return listingFailure(error,request,'listings-read',503);
   }

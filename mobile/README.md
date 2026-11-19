@@ -4,10 +4,15 @@ Bu dizin, YükVinç ana sitesinden **ayrı** Flutter Android başlangıç uygula
 Ana siteye, D1 verilerine, canlı üyelik tablolarına veya yayınlanan Worker'a değişiklik yapılmamıştır.
 
 ## Gerçekte çalışan ilk akışlar
-- Açık ilanlar, arama ve kategori filtreleri: `GET https://yukvinc.com.tr/api/listings`.
-- İlan detayını uygulama içi tarayıcıda açma.
+- Açık ilanlar, arama ve kategori filtreleri: aynı YükVinç API'si; cursor sayfalaması, aşağı kaydırma ve çevrimdışı son sayfa önbelleği.
+- İlan detayını ve ilan kartlarını uygulama içinde görüntüleme.
+- Kaynak incelemesi ve robots/kullanım durumu: [SOURCE_ANALYSIS.md](SOURCE_ANALYSIS.md).
+- Google oturumuyla kendi ilanlarını uygulama içinde listeleme, düzenleme ve kaldırma.
+- Yeni ilan formu, doğrulanmış il/ilçe seçimi, fotoğraf ekleme (en fazla 3), oluşturma ve durum takibi; sunucu doğrulaması ve moderasyon kuralları korunur.
+- İncelemede, işaretli veya reddedilmiş ilan için uygulama içinden itiraz gönderme.
 - Konum izni sonrası doğrulanmış ilana göre **yaklaşık** mesafe sorgulama: `POST /api/ai/nearby`.
-- "İş İlanı Ver" ve "İlan Ver" erişimi: mevcut `/ilan-ver/` sayfasında; güvenli mevcut kimlik doğrulama korunur.
+- Yeni ilan push bildirimi ve kayıtlı arama eşleşmeleri için FCM backend/cihaz kaydı henüz yok.
+- İşveren iş talebi, teklif verme, profil/firma bilgilerini düzenleme ve yol yardımı işlemleri henüz tam yerel ekran ve doğrulanmış API bağlantısına sahip değil.
 - İş ve hizmet ilanlarının öne çıkarıldığı sade ana sayfa.
 
 ## Henüz hayata geçmeyenler
@@ -32,4 +37,4 @@ flutter test
 flutter run
 ```
 
-Uygulamadaki mevcut "İş İlanı Ver" butonu web sitesinin formunu açar. Mevcut web API'sinde `operator_job` kategorisi **iş arayan operatör ilanıdır**, işverenin açtığı yeni bir iş talebi değildir. İşveren talebi akışı daha sonra ayrı, doğrulanmış API ile tasarlanmalıdır.
+İlan oluşturma, düzenleme ve kaldırma mevcut web API sözleşmesini kullanır; uygulama içi formdan çıkan ilanlar da aynı sunucu doğrulaması ve moderasyondan geçer. `operator` kategorisi iş arayan operatör ilanıdır; işveren talebi yerine geçmez.

@@ -1,10 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math' as math;
-import 'package:app_links/app_links.dart';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'app_update.dart';
 import 'verified_android_installer.dart';
 import 'favorites.dart';
@@ -13,6 +12,8 @@ import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 const baseUrl = 'https://yukvinc.com.tr';
@@ -34,20 +35,10 @@ class MemberAuth {
   static final user = ValueNotifier<MemberIdentity?>(null);
   static final status = ValueNotifier<String>('');
   static final busy = ValueNotifier<bool>(false);
-  static final _random = math.Random.secure();
+  static final _google = GoogleSignIn.instance;
   static String? _cookie;
-  static String? _processingCode;
-  static String? _completedCode;
-  static StreamSubscription<Uri>? _linkSubscription;
-  static Timer? _loginTimeout;
-  static bool _waitingForCallback = false;
   static bool _initialized = false;
-
-  static String _randomToken() => base64Url.encode(
-    List<int>.generate(32, (_) => _random.nextInt(256))).replaceAll('=', '');
-
-  static String _challenge(String verifier) =>
-    base64Url.encode(crypto.sha256.convert(utf8.encode(verifier)).bytes).replaceAll('=', '');
+  static bool _googleInitialized = false;
 
   static Future<void> initialize() async {
     if (_initialized) return;
@@ -60,80 +51,36 @@ class MemberAuth {
         user.value = MemberIdentity(id: id, email: email);
         unawaited(_refresh());
       }
-      final links = AppLinks();
-      _linkSubscription ??= links.uriLinkStream.listen(
-        (uri) => unawaited(_handleCallback(uri)),
-        onError: (_) => status.value = 'Uygulama bağlantısı açılamadı. Tekrar giriş yap.',
-      );
-      final initial = await links.getInitialLink();
-      if (initial != null) await _handleCallback(initial);
-    } catch (_) {
-      // Sign-in remains available when the platform link plugin is not ready.
-    }
+    } catch (_) {}
   }
 
   static Future<void> beginGoogleSignIn() async {
     if (busy.value) return;
     busy.value = true;
-    status.value = 'Güvenli Google giriş sayfası açılıyor…';
+    status.value = 'Google ile güvenli giriş başlatılıyor…';
     try {
-      final state = _randomToken(), verifier = _randomToken();
-      await _storage.write(key: 'yv_auth_state', value: state);
-      await _storage.write(key: 'yv_auth_verifier', value: verifier);
-      final handoff = Uri(
-        path: '/api/auth/mobile-handoff',
-        queryParameters: {
-          'app': 'android',
-          'state': state,
-          'code_challenge': _challenge(verifier),
-          'code_challenge_method': 'S256',
-        },
-      );
-      final uri = Uri.parse('$baseUrl/giris/').replace(queryParameters: {
-        'next': handoff.toString(),
-      });
-      var opened = false;
-      try { opened = await launchUrl(uri, mode: LaunchMode.inAppBrowserView); } catch (_) {}
-      if (!opened) opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (!opened) throw StateError('Giriş sayfası açılamadı.');
-      _waitingForCallback = true;
-      status.value = 'Giriş sayfasında Google ile devam et, sonra uygulamaya dön.';
-      _loginTimeout?.cancel();
-      _loginTimeout = Timer(const Duration(minutes: 3), () {
-        if (!_waitingForCallback) return;
-        _waitingForCallback = false;
-        busy.value = false;
-        status.value = 'Giriş süresi doldu. Yeniden deneyebilirsin.';
-      });
-    } catch (_) {
-      _waitingForCallback = false;
-      _loginTimeout?.cancel();
-      status.value = 'Google giriş sayfası açılamadı. İnternet bağlantını kontrol et.';
-    } finally {
-      if (!_waitingForCallback) busy.value = false;
-    }
-  }
-
-  static Future<void> _handleCallback(Uri uri) async {
-    if (uri.scheme != 'yukvinc' || uri.host != 'auth' || uri.path != '/callback') return;
-    final code = uri.queryParameters['code'] ?? '';
-    final state = uri.queryParameters['state'] ?? '';
-    if (code.isEmpty || code == _processingCode || code == _completedCode) return;
-    _waitingForCallback = false;
-    _loginTimeout?.cancel();
-    _processingCode = code;
-    busy.value = true;
-    status.value = 'Google oturumu güvenle doğrulanıyor…';
-    try {
-      final expectedState = await _storage.read(key: 'yv_auth_state');
-      final verifier = await _storage.read(key: 'yv_auth_verifier');
-      if (expectedState == null || verifier == null || state != expectedState) {
-        throw StateError('Giriş doğrulaması uyuşmadı. Yeniden dene.');
+      final configResponse = await http.get(Uri.parse('$baseUrl/api/mobile/config'),
+        headers: const {'Accept': 'application/json'}).timeout(const Duration(seconds: 12));
+      if (configResponse.statusCode != 200) throw StateError('Google girişi şu anda kullanılamıyor.');
+      final config = jsonDecode(utf8.decode(configResponse.bodyBytes));
+      final clientId = config is Map ? (config['google_client_id'] ?? '').toString() : '';
+      if (clientId.isEmpty) throw StateError('Google girişi henüz yapılandırılmamış.');
+      if (!_googleInitialized) {
+        await _google.initialize(serverClientId: clientId);
+        _googleInitialized = true;
       }
-      final response = await http.post(Uri.parse('$baseUrl/api/auth/mobile-exchange'),
+      if (!_google.supportsAuthenticate()) throw StateError('Bu cihaz Google girişini desteklemiyor.');
+      status.value = 'Google hesabını seç…';
+      final account = await _google.authenticate();
+      final credential = account.authentication.idToken;
+      if (credential == null || credential.isEmpty) {
+        throw StateError('Google doğrulama anahtarı alınamadı. Tekrar dene.');
+      }
+      status.value = 'Google oturumu doğrulanıyor…';
+      final response = await http.post(Uri.parse('$baseUrl/api/auth/google'),
         headers: const {'Content-Type': 'application/json', 'Origin': baseUrl},
-        body: jsonEncode({'code': code, 'code_verifier': verifier}),
-      ).timeout(const Duration(seconds: 15));
+        body: jsonEncode({'credential': credential, 'platform': 'android'}),
+      ).timeout(const Duration(seconds: 20));
       Map<String, dynamic> body = {};
       try {
         final decoded = jsonDecode(utf8.decode(response.bodyBytes));
@@ -142,8 +89,7 @@ class MemberAuth {
       if (response.statusCode != 200 || body['user'] is! Map) {
         throw StateError((body['error'] ?? 'Google girişi tamamlanamadı.').toString());
       }
-      final cookieHeader = response.headers['set-cookie'] ?? '';
-      final pair = cookieHeader.split(';').first;
+      final pair = (response.headers['set-cookie'] ?? '').split(';').first;
       const prefix = '__Host-yv_member=';
       if (!pair.startsWith(prefix)) throw StateError('Güvenli oturum kaydedilemedi.');
       final cookie = Uri.decodeComponent(pair.substring(prefix.length));
@@ -154,16 +100,12 @@ class MemberAuth {
       await _storage.write(key: 'yv_member_cookie', value: cookie);
       await _storage.write(key: 'yv_member_id', value: identity.id);
       await _storage.write(key: 'yv_member_email', value: identity.email);
-      await _storage.delete(key: 'yv_auth_state');
-      await _storage.delete(key: 'yv_auth_verifier');
       _cookie = cookie;
       user.value = identity;
-      _completedCode = code;
       status.value = 'Google hesabınla giriş yaptın.';
     } catch (error) {
       status.value = error is StateError ? error.message : 'Google girişi tamamlanamadı. Tekrar dene.';
     } finally {
-      _processingCode = null;
       busy.value = false;
     }
   }
@@ -188,16 +130,11 @@ class MemberAuth {
       } else if (response.statusCode == 401 || response.statusCode == 403) {
         await _clear();
       }
-    } catch (_) {
-      // Keep the last confirmed account visible while offline.
-    }
+    } catch (_) {}
   }
 
   static Future<void> cancelSignIn() async {
-    _waitingForCallback = false;
-    _loginTimeout?.cancel();
-    await _storage.delete(key: 'yv_auth_state');
-    await _storage.delete(key: 'yv_auth_verifier');
+    try { await _google.signOut(); } catch (_) {}
     busy.value = false;
     status.value = 'Google girişi iptal edildi.';
   }
@@ -210,6 +147,7 @@ class MemberAuth {
           headers: {'Origin': baseUrl, 'Cookie': '__Host-yv_member=$cookie'},
         ).timeout(const Duration(seconds: 10));
       }
+      await _google.signOut();
     } catch (_) {}
     await _clear();
     status.value = 'Oturum kapatıldı.';
@@ -218,13 +156,11 @@ class MemberAuth {
   static Future<void> _clear() async {
     _cookie = null;
     user.value = null;
-    for (final key in ['yv_member_cookie','yv_member_id','yv_member_email',
-      'yv_auth_state','yv_auth_verifier']) {
+    for (final key in ['yv_member_cookie','yv_member_id','yv_member_email']) {
       await _storage.delete(key: key);
     }
   }
 }
-
 
 class YukListing {
   const YukListing({required this.id, required this.title, required this.city,
@@ -268,10 +204,64 @@ class YukApi {
     return _parse(await client.get(uri, headers: const {'Accept': 'application/json'})
         .timeout(const Duration(seconds: 15)));
   }
-  Future<List<YukListing>> nearby(double lat, double lng, {int radiusKm = 100}) async {
+  Future<({List<YukListing> items,String? nextCursor,bool offline})> listingPage({
+    String category='all',String query='',String city='',String? cursor,int limit=20,
+  }) async {
+    final q=<String,String>{'limit':limit.toString(),'sort':'newest'};
+    if(category!='all')q['category']=category;
+    if(city.trim().isNotEmpty)q['city']=city.trim();
+    if(query.trim().isNotEmpty)q['q']=query.trim();
+    if(cursor!=null&&cursor.isNotEmpty)q['cursor']=cursor;
+    final uri=Uri.parse(baseUrl+'/api/listings').replace(queryParameters:q);
+    final cacheKey='yv_feed_page_'+crypto.sha256.convert(utf8.encode(uri.toString())).toString();
+    ({List<YukListing> items,String? nextCursor,bool offline}) parse(String raw,bool offline){
+      final body=jsonDecode(raw);
+      if(body is! Map||body['items'] is! List)throw const FormatException('Beklenmeyen ilan yanıtı');
+      final items=(body['items'] as List).whereType<Map>()
+        .map((v)=>YukListing.fromJson(Map<String,dynamic>.from(v)))
+        .where((v)=>v.title.isNotEmpty&&v.id.isNotEmpty).toList(growable:false);
+      final next=body['next_cursor'];
+      return(items:items,nextCursor:next is String&&next.isNotEmpty?next:null,offline:offline);
+    }
+    try{
+      final response=await client.get(uri,headers:const {'Accept':'application/json'})
+        .timeout(const Duration(seconds:15));
+      if(response.statusCode!=200)throw Exception('Sunucu hatası: '+response.statusCode.toString());
+      final raw=utf8.decode(response.bodyBytes);
+      final page=parse(raw,false);
+      unawaited(SharedPreferences.getInstance().then((prefs)=>prefs.setString(cacheKey,raw)).catchError((_)=>false));
+      return page;
+    }catch(error){
+      try{
+        final cached=await SharedPreferences.getInstance().then((prefs)=>prefs.getString(cacheKey));
+        if(cached!=null)return parse(cached,true);
+      }catch(_){}
+      rethrow;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> mobileFeed(String type) async {
+    if (type != 'jobs' && type != 'tenders') throw ArgumentError.value(type);
+    final response = await client.get(Uri.parse('$baseUrl/api/mobile/$type'),
+      headers: const {'Accept': 'application/json'}).timeout(const Duration(seconds: 15));
+    if (response.statusCode != 200) throw StateError('Fırsatlar yüklenemedi.');
+    final body = jsonDecode(utf8.decode(response.bodyBytes));
+    if (body is! Map || body['items'] is! List) throw const FormatException('Fırsat yanıtı geçersiz.');
+    return (body['items'] as List).whereType<Map>()
+      .map((item) => Map<String, dynamic>.from(item)).toList(growable: false);
+  }
+
+  Future<List<YukListing>> nearby(double lat, double lng,
+      {int radiusKm = 100, String category = 'all'}) async {
+    final body = <String, dynamic>{
+      'latitude': lat,
+      'longitude': lng,
+      'radius_km': radiusKm,
+    };
+    if (category != 'all') body['category'] = category;
     return _parse(await client.post(Uri.parse(baseUrl + '/api/ai/nearby'),
       headers: const {'Content-Type': 'application/json', 'Origin': baseUrl},
-      body: jsonEncode({'latitude': lat, 'longitude': lng, 'radius_km': radiusKm}),
+      body: jsonEncode(body),
     ).timeout(const Duration(seconds: 15)));
   }
   Future<({YukListing listing, List<String> photos})> detail(String id) async {
@@ -295,6 +285,49 @@ class YukApi {
         .where((path) => path.startsWith('/api/listing-photo/') && !path.contains('..'))
         .toList(growable: false);
     return (listing: listing, photos: photos);
+  }
+
+  Map<String, String> memberHeaders({bool jsonBody = false}) {
+    final cookie = MemberAuth._cookie;
+    if (cookie == null || cookie.isEmpty) throw StateError('Önce hesabına giriş yap.');
+    return {'Accept':'application/json','Origin':baseUrl,'Cookie':'__Host-yv_member=' + cookie,
+      if (jsonBody) 'Content-Type':'application/json'};
+  }
+
+  Map<String, dynamic> memberBody(http.Response response) {
+    Map<String, dynamic> body = {};
+    try { final d = jsonDecode(utf8.decode(response.bodyBytes)); if (d is Map) body = Map<String,dynamic>.from(d); } catch (_) {}
+    if (response.statusCode < 200 || response.statusCode >= 300)
+      throw StateError((body['error'] ?? body['message'] ?? 'İşlem tamamlanamadı.').toString());
+    return body;
+  }
+
+  Future<List<Map<String,dynamic>>> myListings() async {
+    final response = await client.get(Uri.parse(baseUrl + '/api/listings/mine'),headers:memberHeaders()).timeout(const Duration(seconds:15));
+    final items = memberBody(response)['items'];
+    if (items is! List) throw const FormatException('İlan yanıtı geçersiz.');
+    return items.whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList(growable:false);
+  }
+  Future<Map<String,dynamic>> createListing(Map<String,dynamic> listing,List<Map<String,dynamic>> photos) async {
+    final response=await client.post(Uri.parse(baseUrl+'/api/listings'),headers:memberHeaders(jsonBody:true),
+      body:jsonEncode({'listing':listing,'photos':photos,'privacy_ok':true,'hp':''})).timeout(const Duration(seconds:30));
+    return memberBody(response);
+  }
+  Future<Map<String,dynamic>> updateListing(String id,Map<String,dynamic> listing,List<Map<String,dynamic>>? photos) async {
+    final payload=<String,dynamic>{'listing':listing,'privacy_ok':true}; if(photos!=null) payload['photos']=photos;
+    final response=await client.patch(Uri.parse(baseUrl+'/api/listings/'+Uri.encodeComponent(id)),headers:memberHeaders(jsonBody:true),body:jsonEncode(payload)).timeout(const Duration(seconds:30));
+    return memberBody(response);
+  }
+  Future<void> appealListing(String id, String message) async {
+    final response=await client.patch(Uri.parse(baseUrl+'/api/listings/'+Uri.encodeComponent(id)),
+      headers:memberHeaders(jsonBody:true),body:jsonEncode({'action':'appeal','message':message}))
+      .timeout(const Duration(seconds:15));
+    memberBody(response);
+  }
+
+  Future<void> deleteListing(String id) async {
+    final response=await client.delete(Uri.parse(baseUrl+'/api/listings/'+Uri.encodeComponent(id)),headers:memberHeaders()).timeout(const Duration(seconds:15));
+    memberBody(response);
   }
 
   Future<List<YukListing>> savedListings(Iterable<String> ids) async {
@@ -337,16 +370,24 @@ class YukApi {
 
 final api = YukApi();
 Future<void> openSite(BuildContext context, String path) async {
-  try {
-    final uri = Uri.parse(baseUrl + path);
-    final external = path == '/hesabim/' || path == '/ilan-ver/';
-    final opened = !external && await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
-    final ok = opened || await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!ok) throw Exception('Bağlantı açılamadı');
-  } catch (_) {
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Sayfa açılamadı. İnternet bağlantını kontrol et.')));
+  if (!context.mounted) return;
+  switch (path) {
+    case '/hesabim':
+    case '/hesabim/':
+      await Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => const Account(),
+      ));
+      return;
+    case '/ilan-ver/':
+      _openMemberScreen(context, const ListingEditorScreen());
+      return;
+    case '/is-talepleri/':
+      await Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => const OpportunityHub()));
+      return;
+    default:
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bu bölüm uygulama içi ekrana taşınıyor.')));
   }
 }
 
@@ -506,10 +547,7 @@ class _ShellState extends State<Shell> {
           tooltip: 'Güncellemeleri kontrol et',
           onPressed: () => checkUpdate(manual: true),
         ),
-        IconButton(
-        icon: const Icon(Icons.open_in_browser_rounded), tooltip: 'Web sitesi',
-        onPressed: () => openSite(context, '/'),
-      )],
+      ],
     ),
     body: SafeArea(child: Center(child: ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 760),
@@ -685,64 +723,99 @@ class ListingsScreen extends StatefulWidget {
   @override State<ListingsScreen> createState() => _ListingsState();
 }
 class _ListingsState extends State<ListingsScreen> {
-  final search = TextEditingController();
+  final search=TextEditingController();
+  final scroll=ScrollController();
+  final appended=<YukListing>[];
   Timer? timer;
-  String category = 'all';
+  String category='all';
+  String? cursor;
+  bool hasMore=true,loadingMore=false,offline=false;
+  int generation=0;
   late Future<List<YukListing>> future;
-  static const filters = <String, String>{
-    'all': 'Tümü', 'crane': 'Vinç', 'tow': 'Çekici',
-    'basket': 'Sepetli', 'mobile_tire': 'Lastik', 'manlift': 'Manlift',
-    'machine': 'Makine', 'lift': 'Asansör', 'operator': 'Operatör',
+  static const filters=<String,String>{
+    'all':'Tümü','crane':'Vinç','tow':'Çekici','basket':'Sepetli',
+    'mobile_tire':'Lastik','manlift':'Manlift','machine':'Makine',
+    'lift':'Asansör','operator':'Operatör',
   };
-  @override void initState() {
+  @override void initState(){
     super.initState();
-    search.text = widget.initialQuery;
-    future = search.text.isEmpty ? api.initialListings() : api.listings(query: search.text);
+    search.text=widget.initialQuery;
+    scroll.addListener(checkForMore);
+    future=firstPage(generation);
   }
-  void load() => setState(() =>
-    future = api.listings(query: search.text, category: category));
-  Future<void> refresh() async { load(); try { await future; } catch (_) {} }
-  @override void dispose() { timer?.cancel(); search.dispose(); super.dispose(); }
-  @override Widget build(BuildContext context) => Column(children: [
-    Padding(padding: const EdgeInsets.fromLTRB(18, 12, 18, 3),
-      child: TextField(
-        controller: search, textInputAction: TextInputAction.search,
-        decoration: InputDecoration(
-          hintText: 'Şehir, ilan veya ekipman ara',
-          prefixIcon: const Icon(Icons.search),
-          filled: true,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(15),
-            borderSide: BorderSide.none)),
-        onSubmitted: (_) { timer?.cancel(); load(); },
-        onChanged: (_) { timer?.cancel();
-          timer = Timer(const Duration(milliseconds: 450), load); },
-      )),
-    SizedBox(height: 53, child: ListView(scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 18),
-      children: [for (final filter in filters.entries)
-        Padding(padding: const EdgeInsets.only(right: 7),
-          child: ChoiceChip(label: Text(filter.value),
-            selected: category == filter.key,
-            onSelected: (selected) {
-              if (!selected || category == filter.key) return;
-              timer?.cancel();
-              category = filter.key;
-              load();
-            }))])),
-    Expanded(child: FutureBuilder<List<YukListing>>(
-      future: future, builder: (context, snap) {
-        if (!snap.hasData && !snap.hasError) return const Loading();
-        if (snap.hasError) return Retry(onTap: refresh);
-        final items = snap.data ?? [];
-        if (items.isEmpty) return const Empty('Bu aramaya uygun ilan yok.');
-        return RefreshIndicator(onRefresh: refresh, child: ListView.builder(
-          padding: const EdgeInsets.fromLTRB(18, 4, 18, 20),
-          physics: const AlwaysScrollableScrollPhysics(),
-          itemCount: items.length,
-          itemBuilder: (context, i) => ListingCard(item: items[i]),
-        ));
-      },
+  Future<List<YukListing>> firstPage(int requestGeneration)async{
+    final requestedQuery=search.text,requestedCategory=category;
+    final page=await api.listingPage(query:requestedQuery,category:requestedCategory);
+    if(mounted&&generation==requestGeneration)setState((){cursor=page.nextCursor;hasMore=cursor!=null;offline=page.offline;});
+    return page.items;
+  }
+  void load(){
+    timer?.cancel();
+    generation++;
+    setState((){
+      appended.clear();cursor=null;hasMore=true;loadingMore=false;offline=false;
+      future=firstPage(generation);
+    });
+    if(scroll.hasClients)scroll.jumpTo(0);
+  }
+  Future<void> refresh()async{
+    load();
+    try{await future;}catch(_){}
+  }
+  void checkForMore(){
+    if(scroll.hasClients&&scroll.position.extentAfter<500)unawaited(loadMore());
+  }
+  Future<void> loadMore()async{
+    if(loadingMore||!hasMore||cursor==null)return;
+    final requestGeneration=generation,requestedCursor=cursor;
+    final requestedQuery=search.text,requestedCategory=category;
+    setState(()=>loadingMore=true);
+    try{
+      final page=await api.listingPage(query:requestedQuery,category:requestedCategory,cursor:requestedCursor);
+      if(!mounted||generation!=requestGeneration)return;
+      setState((){
+        appended.addAll(page.items);
+        cursor=page.nextCursor;
+        hasMore=cursor!=null;offline=page.offline;
+      });
+    }catch(_){
+      if(mounted&&generation==requestGeneration)ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:const Text('Diğer ilanlar yüklenemedi.'),action:SnackBarAction(label:'Tekrar dene',onPressed:()=>unawaited(loadMore()))));
+    }finally{if(mounted&&generation==requestGeneration)setState(()=>loadingMore=false);}
+  }
+  @override void dispose(){
+    timer?.cancel();search.dispose();scroll.dispose();super.dispose();
+  }
+  @override Widget build(BuildContext context)=>Column(children:[
+    Padding(padding:const EdgeInsets.fromLTRB(18,12,18,3),child:TextField(
+      controller:search,textInputAction:TextInputAction.search,
+      decoration:InputDecoration(hintText:'Şehir, ilan veya ekipman ara',
+        prefixIcon:const Icon(Icons.search),filled:true,
+        border:OutlineInputBorder(borderRadius:BorderRadius.circular(15),borderSide:BorderSide.none)),
+      onSubmitted:(_){timer?.cancel();load();},
+      onChanged:(_){timer?.cancel();timer=Timer(const Duration(milliseconds:450),load);},
     )),
+    SizedBox(height:53,child:ListView(scrollDirection:Axis.horizontal,padding:const EdgeInsets.symmetric(horizontal:18),
+      children:[for(final filter in filters.entries)Padding(padding:const EdgeInsets.only(right:7),
+        child:ChoiceChip(label:Text(filter.value),selected:category==filter.key,onSelected:(selected){
+          if(!selected||category==filter.key)return;
+          category=filter.key;load();
+        }))])),
+    if(offline)const Padding(padding:EdgeInsets.symmetric(horizontal:18,vertical:4),
+      child:Align(alignment:Alignment.centerLeft,child:Text('Çevrimdışısın · kaydedilmiş ilanlar gösteriliyor.'))),
+    Expanded(child:FutureBuilder<List<YukListing>>(future:future,builder:(context,snap){
+      if(!snap.hasData&&!snap.hasError)return const Loading();
+      if(snap.hasError)return Retry(onTap:refresh);
+      final items=[...(snap.data??const <YukListing>[]),...appended];
+      if(items.isEmpty)return const Empty('Bu aramaya uygun ilan yok.');
+      return RefreshIndicator(onRefresh:refresh,child:ListView.builder(
+        controller:scroll,padding:const EdgeInsets.fromLTRB(18,4,18,20),
+        physics:const AlwaysScrollableScrollPhysics(),
+        itemCount:items.length+(loadingMore?1:0),
+        itemBuilder:(context,i)=>i<items.length?ListingCard(item:items[i]):
+          const Padding(padding:EdgeInsets.all(20),child:Center(child:CircularProgressIndicator())),
+      ));
+    })),
   ]);
 }
 
@@ -761,7 +834,7 @@ class _NearbyState extends State<Nearby> {
   bool newest = false;
   bool manual = false;
   String category = 'all';
-  final city = TextEditingController();
+  final city = TextEditingController(text: 'Konya');
   final district = TextEditingController();
 
   @override
@@ -811,7 +884,8 @@ class _NearbyState extends State<Nearby> {
       final p = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.medium, timeLimit: Duration(seconds: 10)));
-      final result = await api.nearby(p.latitude, p.longitude, radiusKm: radius);
+      final result = await api.nearby(
+        p.latitude, p.longitude, radiusKm: radius, category: category);
       if (mounted) setState(() => items = result);
     } catch (e) {
       if (mounted) setState(() => error =
@@ -828,12 +902,12 @@ class _NearbyState extends State<Nearby> {
     return ListView(
     padding: const EdgeInsets.all(18), children: [
       Spotlight(
-        icon: Icons.near_me_rounded,
-        title: 'Yakınımdaki ilanlar',
-        subtitle: 'Konumunu bu aramada kullan. İlanların mesafesi yaklaşık gösterilir.',
-        action: loading ? 'Aranıyor…' : 'Konumumla ara',
+        icon: Icons.near_me_outlined,
+        title: 'Yakındaki ilanları bul',
+        subtitle: 'Konumunu kullanarak seçtiğin kategoride ara. İzin vermezsen Konya’yı il ve ilçeyle arayabilirsin.',
+        action: loading ? 'Aranıyor…' : 'Konumumdan ara',
         actionIcon: Icons.my_location_rounded,
-        onTap: loading ? null : () => find(),
+        onTap: loading ? null : () => find(useLocation: true),
       ),
       const SizedBox(height: 12),
       Wrap(spacing: 8, children: [
@@ -841,7 +915,14 @@ class _NearbyState extends State<Nearby> {
           ChoiceChip(label: Text('$km km'), selected: km == radius,
             onSelected: loading ? null : (selected) {
               if (!selected) return;
-              setState(() { radius = km; if (!manual) items = null; });
+              final refreshLocationResults = !manual && items != null;
+              setState(() {
+                radius = km;
+                if (refreshLocationResults) items = null;
+              });
+              if (refreshLocationResults) {
+                unawaited(find(useLocation: true));
+              }
             }),
       ]),
       DropdownButtonFormField<String>(
@@ -849,10 +930,17 @@ class _NearbyState extends State<Nearby> {
         decoration: const InputDecoration(labelText: 'Kategori'),
         items: [for (final option in _ListingsState.filters.entries)
           DropdownMenuItem(value: option.key, child: Text(option.value))],
-        onChanged: loading ? null : (value) => setState(() {
-          category = value ?? 'all';
-          if (manual) items = null;
-        }),
+        onChanged: loading ? null : (value) {
+          if (value == null || value == category) return;
+          final refreshLocationResults = !manual && items != null;
+          setState(() {
+            category = value;
+            if (manual || refreshLocationResults) items = null;
+          });
+          if (refreshLocationResults) {
+            unawaited(find(useLocation: true));
+          }
+        },
       ),
       SwitchListTile(
         title: const Text('En yeni ilanlar önce'),
@@ -913,13 +1001,13 @@ class RoadHelp extends StatefulWidget {
 
 class _RoadHelpState extends State<RoadHelp> {
   String category = 'tow';
-  final city = TextEditingController();
+  final city = TextEditingController(text: 'Konya');
   late Future<List<YukListing>> results;
 
   @override
   void initState() {
     super.initState();
-    results = api.listings(category: category);
+    results = api.listings(category: category, city: city.text);
   }
 
   Future<void> refresh() async {
@@ -974,6 +1062,82 @@ class _RoadHelpState extends State<RoadHelp> {
       },
     )),
   ]);
+}
+
+class OpportunityHub extends StatefulWidget {
+  const OpportunityHub({super.key});
+  @override State<OpportunityHub> createState() => _OpportunityHubState();
+}
+class _OpportunityHubState extends State<OpportunityHub> {
+  int tab = 0;
+  late Future<List<Map<String, dynamic>>> future;
+  @override void initState() { super.initState(); future = api.mobileFeed('jobs'); }
+  void select(int value) => setState(() {
+    tab = value;
+    future = api.mobileFeed(value == 0 ? 'jobs' : 'tenders');
+  });
+  Future<void> refresh() async {
+    final next = api.mobileFeed(tab == 0 ? 'jobs' : 'tenders');
+    setState(() => future = next);
+    try { await next; } catch (_) {}
+  }
+  @override Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('İş fırsatları')),
+    body: Column(children: [
+      Padding(padding: const EdgeInsets.all(16), child: SegmentedButton<int>(
+        segments: const [
+          ButtonSegment(value: 0, label: Text('İş talepleri'), icon: Icon(Icons.work_outline)),
+          ButtonSegment(value: 1, label: Text('İhaleler'), icon: Icon(Icons.gavel_outlined)),
+        ],
+        selected: {tab}, onSelectionChanged: (value) => select(value.first),
+      )),
+      Expanded(child: FutureBuilder<List<Map<String, dynamic>>>(
+        future: future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) return const Loading();
+          if (snapshot.hasError) return Retry(onTap: refresh);
+          final items = snapshot.data ?? const <Map<String, dynamic>>[];
+          if (items.isEmpty) return RefreshIndicator(
+            onRefresh: refresh,
+            child: ListView(physics: const AlwaysScrollableScrollPhysics(), children: [
+              const SizedBox(height: 110),
+              Empty(tab == 0 ? 'Şu anda açık iş talebi yok.' : 'Şu anda yayında ihale fırsatı yok.'),
+            ]),
+          );
+          return RefreshIndicator(onRefresh: refresh, child: ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            itemCount: items.length,
+            itemBuilder: (context, index) {
+              final item = items[index];
+              final title = (item['title'] ?? 'Yeni fırsat').toString();
+              final place = [item['city'], item['district']]
+                .whereType<String>().where((part) => part.trim().isNotEmpty).join(' · ');
+              final detail = (item['public_summary'] ?? item['description'] ?? '').toString();
+              final organization = (item['organization'] ?? item['category'] ?? item['service_type'] ?? '').toString();
+              final publishedValue = item['public_at'];
+              final publishedAt = publishedValue is num
+                ? DateTime.fromMillisecondsSinceEpoch((publishedValue * 1000).round())
+                : DateTime.tryParse((item['published_at'] ?? '').toString());
+              final age = publishedAt == null ? null : DateTime.now().difference(publishedAt);
+              final isNewTender = tab == 1 && age != null && !age.isNegative && age.inHours < 24;
+              return Card(margin: const EdgeInsets.only(bottom: 12), child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  if (isNewTender) const Chip(avatar: Icon(Icons.fiber_new, size: 17), label: Text('Son 24 saatte yayımlandı')),
+                  Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                  if (place.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 7),
+                    child: Text(place, style: TextStyle(color: Theme.of(context).colorScheme.primary))),
+                  if (organization.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 5), child: Text(organization)),
+                  if (detail.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 9), child: Text(detail)),
+                ]),
+              ));
+            },
+          ));
+        },
+      )),
+    ]),
+  );
 }
 
 class FavoriteListings extends StatefulWidget {
@@ -1166,18 +1330,252 @@ class Account extends StatelessWidget {
         onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
           builder: (_) => const FavoriteListings(),
         ))),
-      AccountLink(icon: Icons.person_outline_rounded, title: 'Hesabımı aç',
-        subtitle: 'Profilini ve ilanlarını yönet',
-        onTap: () => openSite(context, '/hesabim/')),
+      AccountLink(icon: Icons.person_outline_rounded, title: 'İlanlarım',
+        subtitle: 'İlanlarını uygulama içinden yönet',
+        onTap: () => _openMemberScreen(context, const MyListingsScreen())),
       AccountLink(icon: Icons.add_circle_outline, title: 'İlan ver',
-        subtitle: 'Hizmetini veya operatör ilanını yayınla',
-        onTap: () => openSite(context, '/ilan-ver/')),
+        subtitle: 'Fotoğraflı hizmet veya operatör ilanı oluştur',
+        onTap: () => _openMemberScreen(context, const ListingEditorScreen())),
       AccountLink(icon: Icons.work_outline_rounded, title: 'İş talepleri',
-        subtitle: 'Yayındaki talepleri incele',
-        onTap: () => openSite(context, '/is-talepleri/')),
+        subtitle: 'Açık talepleri ve ihale fırsatlarını görüntüle',
+        onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => const OpportunityHub(),
+        ))),
     ]);
 }
 
+
+void _openMemberScreen(BuildContext context, Widget screen) {
+  if (MemberAuth.user.value == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Devam etmek için önce Google ile giriş yap.')));
+    return;
+  }
+  Navigator.of(context).push(MaterialPageRoute<bool>(builder: (_) => screen));
+}
+
+class MyListingsScreen extends StatefulWidget {
+  const MyListingsScreen({super.key});
+  @override State<MyListingsScreen> createState() => _MyListingsScreenState();
+}
+class _MyListingsScreenState extends State<MyListingsScreen> {
+  late Future<List<Map<String,dynamic>>> future;
+  @override void initState() { super.initState(); future=api.myListings(); }
+  Future<void> refresh() async {
+    final next=api.myListings(); setState(()=>future=next);
+    try { await next; } catch (_) {}
+  }
+  Future<void> edit(Map<String,dynamic> item) async {
+    final changed=await Navigator.of(context).push<bool>(MaterialPageRoute(
+      builder:(_)=>ListingEditorScreen(existing:item)));
+    if(changed==true && mounted) await refresh();
+  }
+  Future<void> appeal(Map<String,dynamic> item) async {
+    final controller=TextEditingController();
+    final message=await showDialog<String>(context:context,builder:(dialog)=>AlertDialog(
+      title:const Text('İlan incelemesine itiraz'),
+      content:TextField(controller:controller,minLines:3,maxLines:6,maxLength:1000,
+        decoration:const InputDecoration(hintText:'En az 10 karakterle açıklamanı yaz.')),
+      actions:[TextButton(onPressed:()=>Navigator.pop(dialog),child:const Text('Vazgeç')),
+        FilledButton(onPressed:()=>Navigator.pop(dialog,controller.text.trim()),child:const Text('Gönder'))]));
+    controller.dispose();
+    if(message==null||message.trim().length<10)return;
+    try{
+      await api.appealListing((item['id']??'').toString(),message.trim());
+      if(mounted){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('İtirazın iletildi.')));await refresh();}
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(e.toString().replaceFirst('Bad state: ',''))));}
+  }
+  Future<void> remove(Map<String,dynamic> item) async {
+    final yes=await showDialog<bool>(context:context,builder:(d)=>AlertDialog(
+      title:const Text('İlanı kaldır?'),
+      content:Text('"' + (item['title']??'İlan').toString() + '" yayından kaldırılacak.'),
+      actions:[TextButton(onPressed:()=>Navigator.pop(d,false),child:const Text('Vazgeç')),
+        FilledButton(onPressed:()=>Navigator.pop(d,true),child:const Text('Kaldır'))]));
+    if(yes!=true)return;
+    try {
+      await api.deleteListing((item['id']??'').toString());
+      if(mounted){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('İlan kaldırıldı.')));await refresh();}
+    } catch(e) {
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(e.toString().replaceFirst('Bad state: ',''))));
+    }
+  }
+  String statusLabel(String s)=>switch(s){
+    'approved'=>'Yayında','pending'=>'İncelemede','flagged'=>'Kontrol gerekiyor',
+    'rejected'=>'Reddedildi',_=>'Durum: '+s,
+  };
+  @override Widget build(BuildContext context)=>Scaffold(
+    appBar:AppBar(title:const Text('İlanlarım'),actions:[
+      IconButton(tooltip:'Yenile',onPressed:refresh,icon:const Icon(Icons.refresh))]),
+    floatingActionButton:FloatingActionButton.extended(
+      onPressed:()async{
+        final changed=await Navigator.of(context).push<bool>(MaterialPageRoute(builder:(_)=>const ListingEditorScreen()));
+        if(changed==true&&mounted)await refresh();
+      },icon:const Icon(Icons.add),label:const Text('Yeni ilan')),
+    body:FutureBuilder<List<Map<String,dynamic>>>(future:future,builder:(context,snap){
+      if(snap.connectionState==ConnectionState.waiting)return const Loading();
+      if(snap.hasError)return Retry(onTap:refresh);
+      final rows=snap.data??const <Map<String,dynamic>>[];
+      if(rows.isEmpty)return const Center(child:Empty('Henüz ilan vermedin.'));
+      return RefreshIndicator(onRefresh:refresh,child:ListView.separated(
+        padding:const EdgeInsets.fromLTRB(16,16,16,96),itemCount:rows.length,
+        separatorBuilder:(_,_)=>const SizedBox(height:10),
+        itemBuilder:(context,index){
+          final item=rows[index],loc=[item['city'],item['district']].where((v)=>v!=null&&v.toString().isNotEmpty).join(' / ');
+          return Card(child:ListTile(
+            title:Text((item['title']??'').toString(),maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.w800)),
+            subtitle:Text(loc+' · '+statusLabel((item['status']??'').toString())),
+            trailing:PopupMenuButton<String>(onSelected:(value){
+              if(value=='edit')unawaited(edit(item));
+              if(value=='appeal')unawaited(appeal(item));
+              if(value=='remove')unawaited(remove(item));
+            },itemBuilder:(_)=>[
+              const PopupMenuItem(value:'edit',child:Text('Düzenle')),
+              if(['flagged','rejected','pending'].contains(item['status']))
+                const PopupMenuItem(value:'appeal',child:Text('İtiraz et')),
+              const PopupMenuItem(value:'remove',child:Text('İlanı kaldır'))]),
+            onTap:()=>unawaited(edit(item))));
+        }));
+    }));
+}
+
+class ListingEditorScreen extends StatefulWidget {
+  const ListingEditorScreen({super.key,this.existing});
+  final Map<String,dynamic>? existing;
+  @override State<ListingEditorScreen> createState()=>_ListingEditorScreenState();
+}
+class _ListingEditorScreenState extends State<ListingEditorScreen>{
+  static const categories=<String,String>{
+    'crane':'Vinç','tow':'Çekici','basket':'Sepetli platform','machine':'İş makinesi',
+    'lift':'Nakliyat asansörü','manlift':'Manlift','mobile_tire':'Mobil lastik',
+    'operator':'İş arayan operatör',
+  };
+  final form=GlobalKey<FormState>();
+  final picker=ImagePicker();
+  late final TextEditingController title,description,city,district,address,price,phone,business;
+  final photos=<({Uint8List bytes,String mime})>[];
+  List<Map<String,dynamic>> locations=[];
+  String category='crane';
+  bool busy=false;
+  @override void initState(){
+    super.initState();
+    final d=widget.existing??const <String,dynamic>{};
+    category=categories.containsKey(d['category'])?(d['category'] as String):'crane';
+    title=TextEditingController(text:(d['title']??'').toString());
+    description=TextEditingController(text:(d['description']??'').toString());
+    city=TextEditingController(text:(d['city']??'').toString());
+    district=TextEditingController(text:(d['district']??'').toString());
+    address=TextEditingController(text:(d['address']??'').toString());
+    price=TextEditingController(text:(d['price_amount']??'').toString());
+    phone=TextEditingController(text:(d['contact_phone']??'').toString());
+    business=TextEditingController(text:(d['business_name']??'').toString());
+    unawaited(loadLocations());
+  }
+  Future<void> loadLocations() async {
+    try {
+      final decoded=jsonDecode(await rootBundle.loadString('assets/turkey-locations.json'));
+      if(decoded is List&&mounted)setState(()=>locations=decoded.whereType<Map>()
+        .map((v)=>Map<String,dynamic>.from(v)).toList(growable:false));
+    } catch (_) {
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content:Text('İl ve ilçe listesi yüklenemedi. Uygulamayı güncelle.')));
+    }
+  }
+  List<String> get cityNames=>locations.map((v)=>(v['name']??'').toString()).where((v)=>v.isNotEmpty).toList(growable:false);
+  List<String> get districtNames {
+    final match=locations.where((v)=>v['name']==city.text);
+    if(match.isEmpty)return const <String>[];
+    return (match.first['districts'] as List).map((v)=>v.toString()).toList(growable:false);
+  }
+  @override void dispose(){
+    for(final c in [title,description,city,district,address,price,phone,business]){c.dispose();}
+    super.dispose();
+  }
+  String? validateText(String? value,String label,int min,int max){
+    final n=(value??'').trim().length;
+    return n<min||n>max?label+' '+min.toString()+'–'+max.toString()+' karakter olmalı.':null;
+  }
+  Future<void> choosePhotos()async{
+    try{
+      final files=await picker.pickMultiImage(imageQuality:78,maxWidth:1600);
+      photos.clear();
+      for(final f in files.take(3)){
+        final bytes=await f.readAsBytes();
+        if(bytes.length>1800000){if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Bir fotoğraf 1,8 MB sınırını aşıyor. Daha küçük fotoğraf seç.')));continue;}
+        final ext=f.name.toLowerCase().split('.').last;
+        photos.add((bytes:bytes,mime:ext=='png'?'image/png':ext=='webp'?'image/webp':'image/jpeg'));
+      }
+      if(mounted)setState((){});
+    }catch(_){if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Fotoğraflar açılamadı. Tekrar dene.')));}
+  }
+  Future<void> submit()async{
+    if(busy||!form.currentState!.validate())return;
+    if(category!='operator'&&phone.text.trim().replaceAll(RegExp(r'\D'),'').length<10){
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('En az 10 rakamlı iletişim telefonu gir.')));return;
+    }
+    final amount=price.text.trim();
+    if(amount.isNotEmpty&&int.tryParse(amount)==null){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Fiyatı tam sayı olarak yaz.')));return;}
+    setState(()=>busy=true);
+    try{
+      final listing=<String,dynamic>{
+        'category':category,'title':title.text.trim(),'description':description.text.trim(),
+        'city':city.text.trim(),'district':district.text.trim(),'address':address.text.trim(),
+        'price_amount':category=='operator'||amount.isEmpty?null:int.parse(amount),
+        'price_unit':category=='operator'?null:amount.isEmpty?'teklif':'iş başı',
+        'contact_phone':phone.text.trim(),'business_name':business.text.trim(),
+      };
+      final payload=photos.map((p)=><String,dynamic>{'mime_type':p.mime,'data':base64Encode(p.bytes)}).toList(growable:false);
+      final d=widget.existing;
+      final result=d==null?await api.createListing(listing,payload):
+        await api.updateListing((d['id']??'').toString(),listing,photos.isEmpty?null:payload);
+      if(!mounted)return;
+      final flagged=result['status']=='flagged';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(
+        flagged?'İlanın ek kontrole alındı.':d==null?'İlan gönderildi; durumunu İlanlarım bölümünde görebilirsin.':'Değişiklik gönderildi; ilan tekrar incelemeye alındı.')));
+      Navigator.of(context).pop(true);
+    }catch(e){
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(e.toString().replaceFirst('Bad state: ',''))));
+    }finally{if(mounted)setState(()=>busy=false);}
+  }
+  @override Widget build(BuildContext context)=>Scaffold(
+    appBar:AppBar(title:Text(widget.existing==null?'Yeni ilan':'İlanı düzenle')),
+    body:Form(key:form,child:ListView(padding:const EdgeInsets.all(18),children:[
+      DropdownButtonFormField<String>(initialValue:category,decoration:const InputDecoration(labelText:'Kategori'),
+        items:categories.entries.map((e)=>DropdownMenuItem(value:e.key,child:Text(e.value))).toList(),
+        onChanged:busy?null:(v){if(v!=null)setState(()=>category=v);}),
+      const SizedBox(height:12),
+      TextFormField(controller:title,maxLength:120,decoration:const InputDecoration(labelText:'Başlık'),
+        validator:(v)=>validateText(v,'Başlık',5,120)),
+      TextFormField(controller:description,maxLength:3000,minLines:4,maxLines:8,decoration:const InputDecoration(labelText:'Açıklama'),
+        validator:(v)=>validateText(v,'Açıklama',20,3000)),
+      DropdownButtonFormField<String>(
+        initialValue:cityNames.contains(city.text)?city.text:null,
+        decoration:const InputDecoration(labelText:'İl'),
+        items:cityNames.map((v)=>DropdownMenuItem(value:v,child:Text(v))).toList(growable:false),
+        onChanged:busy||cityNames.isEmpty?null:(v){if(v!=null)setState(() { city.text=v; district.clear(); });},
+        validator:(v)=>v==null?'İl seç.':null),
+      DropdownButtonFormField<String>(
+        initialValue:districtNames.contains(district.text)?district.text:null,
+        decoration:InputDecoration(labelText:'İlçe',helperText:city.text.isEmpty?'Önce il seç.':null),
+        items:districtNames.map((v)=>DropdownMenuItem(value:v,child:Text(v))).toList(growable:false),
+        onChanged:busy||city.text.isEmpty?null:(v){if(v!=null)setState(()=>district.text=v);},
+        validator:(v)=>v==null?'İlçe seç.':null),
+      TextFormField(controller:address,maxLength:300,decoration:const InputDecoration(labelText:'Adres (isteğe bağlı)')),
+      if(category!='operator')TextFormField(controller:price,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'Fiyat (isteğe bağlı)')),
+      TextFormField(controller:phone,keyboardType:TextInputType.phone,decoration:const InputDecoration(labelText:'İletişim telefonu')),
+      TextFormField(controller:business,maxLength:120,decoration:const InputDecoration(labelText:'Firma adı (isteğe bağlı)')),
+      const SizedBox(height:14),
+      OutlinedButton.icon(onPressed:busy?null:choosePhotos,icon:const Icon(Icons.add_a_photo_outlined),label:Text('Fotoğraf ekle ('+photos.length.toString()+'/3)')),
+      if(photos.isNotEmpty)SizedBox(height:110,child:ListView.separated(scrollDirection:Axis.horizontal,itemCount:photos.length,
+        separatorBuilder:(_,_)=>const SizedBox(width:8),itemBuilder:(_,i)=>ClipRRect(borderRadius:BorderRadius.circular(10),
+          child:Image.memory(photos[i].bytes,width:140,height:100,fit:BoxFit.cover)))),
+      const SizedBox(height:10),
+      const Text('İlan, YükVinç’in mevcut doğrulama ve inceleme kurallarından geçer. Değişiklikler tekrar incelemeye alınır.'),
+      const SizedBox(height:18),
+      FilledButton.icon(onPressed:busy?null:submit,
+        icon:busy?const SizedBox.square(dimension:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.publish),
+        label:Text(busy?'Gönderiliyor…':'İlanı gönder')),
+    ])));
+}
 class AccountLink extends StatelessWidget {
   const AccountLink({super.key, required this.icon, required this.title,
     required this.subtitle, required this.onTap});

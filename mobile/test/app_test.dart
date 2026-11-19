@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -39,7 +40,7 @@ void main() {
     expect(values.single.title, 'İstanbul Yol Yardım');
   });
 
-  test('Nearby API sends location only on explicit action', () async {
+  test('Nearby API sends location and selected category on explicit action', () async {
     final client = MockClient((request) async {
       expect(request.url.path, '/api/ai/nearby');
       expect(request.headers['Origin'], baseUrl);
@@ -47,9 +48,12 @@ void main() {
       expect(body['latitude'], 41.0);
       expect(body['longitude'], 29.0);
       expect(body['radius_km'], 25);
+      expect(body['category'], 'tow');
       return http.Response('{"items":[]}', 200);
     });
-    expect(await YukApi(client: client).nearby(41.0, 29.0, radiusKm: 25), isEmpty);
+    expect(await YukApi(client: client).nearby(
+      41.0, 29.0, radiusKm: 25, category: 'tow',
+    ), isEmpty);
   });
 
   test('Manual search sends the city and district query on the public API', () async {
@@ -82,17 +86,32 @@ void main() {
     expect(calls, 2);
   });
 
-  testWidgets('Account shows working entry points for profile and listings',
+  testWidgets('Legacy account path opens the native account screen',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: Builder(builder: (context) => Scaffold(
+        body: Center(child: TextButton(
+          onPressed: () { unawaited(openSite(context, '/hesabim/')); },
+          child: const Text('Hesabım'),
+        )),
+      )),
+    ));
+    await tester.tap(find.text('Hesabım'));
+    await tester.pumpAndSettle();
+    expect(find.text('YükVinç hesabınla uygulamadan devam et.'), findsOneWidget);
+  });
+
+  testWidgets('Account exposes native listing entry points and work requests',
       (tester) async {
     await tester.pumpWidget(const MaterialApp(
       home: Scaffold(body: Account()),
     ));
     expect(find.text('Google ile devam et'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Hesabımı aç'), 150);
-    expect(find.text('Hesabımı aç'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('İlanlarım'), 150);
+    expect(find.text('İlanlarım'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('İlan ver'), 150);
     expect(find.text('İlan ver'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('İş talepleri'), 150);
     expect(find.text('İş talepleri'), findsOneWidget);
-    expect(find.text('Mesaiye Başla (yakında)'), findsNothing);
   });
 }

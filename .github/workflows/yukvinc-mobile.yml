@@ -2,7 +2,7 @@ name: YükVinç Android
 on:
   workflow_dispatch:
   push:
-    branches: [feature/yukvinc-mobile-mvp, feature/android-v060-in-app-installer-20261117, feature/android-v08-release]
+    branches: [feature/yukvinc-mobile-mvp, feature/android-v060-in-app-installer-20261117, feature/android-v08-release, feature/android-native-listing-management]
     paths:
       - "mobile/**"
       - ".github/workflows/yukvinc-mobile.yml"
@@ -39,6 +39,9 @@ jobs:
         run: rm -f test/widget_test.dart
       - name: Resolve dependencies
         run: flutter pub get
+      - name: Backend API regression tests
+        working-directory: .
+        run: npm test
       - name: Static analysis
         run: flutter analyze
       - name: Tests
