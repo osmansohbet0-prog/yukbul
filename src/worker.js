@@ -4,6 +4,9 @@ import * as listingMetrics from '../functions/api/admin-listing-metrics.js';
 import * as listingEvent from '../functions/api/listing-event.js';
 import {syncInbox} from '../functions/_lib/outreach.js';
 import * as nearbySearch from '../functions/api/ai/nearby.js';
+import * as mobileJobs from '../functions/api/mobile/jobs.js';
+import * as mobileTenders from '../functions/api/mobile/tenders.js';
+import * as mobileConfig from '../functions/api/mobile/config.js';
 import * as moderationAdmin from '../functions/api/admin-moderation.js';
 import * as priceCheck from '../functions/api/listings/price-check.js';
 import { renderHome } from "../functions/_lib/home-render.js";
@@ -52,6 +55,9 @@ const ROUTES = [
  {path:'/api/admin-listing-metrics',params:[],handlers:listingMetrics},
  {path:'/api/listing-event',params:[],handlers:listingEvent},
   {path:'/api/ai/nearby',params:[],handlers:nearbySearch},
+  {path:'/api/mobile/jobs',params:[],handlers:mobileJobs},
+  {path:'/api/mobile/tenders',params:[],handlers:mobileTenders},
+  {path:'/api/mobile/config',params:[],handlers:mobileConfig},
   {path:'/api/admin-moderation',params:[],handlers:moderationAdmin},
   {path:'/api/listings/price-check',params:[],handlers:priceCheck},
   { path: '/api/saglik', params: [], handlers: health },

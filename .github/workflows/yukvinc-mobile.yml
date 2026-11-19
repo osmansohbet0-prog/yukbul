@@ -1,0 +1,190 @@
+name: YükVinç Android
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/yukvinc-mobile-mvp, feature/android-v060-in-app-installer-20261117, feature/android-v08-release, feature/android-native-listing-management]
+    paths:
+      - "mobile/**"
+      - ".github/workflows/yukvinc-mobile.yml"
+
+concurrency:
+  group: yukvinc-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze-test-build:
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      signed: ${{ steps.sign.outputs.signed }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+          cache-dependency-path: mobile/pubspec.yaml
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Generate Flutter Android runner
+        run: flutter create --platforms android --org tr.com.yukvinc --project-name yukvinc_mobile .
+      - name: Remove Flutter template test (project has custom tests)
+        run: rm -f test/widget_test.dart
+      - name: Resolve dependencies
+        run: flutter pub get
+      - name: Backend API regression tests
+        working-directory: .
+        run: npm test
+      - name: Static analysis
+        run: flutter analyze
+      - name: Tests
+        run: flutter test
+      - name: Read APK version
+        id: version
+        run: |
+          set -euo pipefail
+          version="$(sed -nE 's/^version: ([0-9]+\.[0-9]+\.[0-9]+)\+[0-9]+$/\1/p' pubspec.yaml)"
+          test -n "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Set the fixed Android package ID
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          config = Path("android/app/build.gradle.kts")
+          original = config.read_text()
+          before = 'applicationId = "tr.com.yukvinc.yukvinc_mobile"'
+          if original.count(before) != 1:
+              raise SystemExit("Unexpected Android application ID")
+          after = 'applicationId = "tr.com.yukvinc.yukvinc_mobile.android"'
+          # AGP's release lint crashes inside URL Launcher's JavaDoc parser.
+          # Keep Flutter analysis, tests, APK verification, and install checks.
+          config.write_text(original.replace(before, after) + '\nandroid { lint { checkReleaseBuilds = false } }\n')
+          PY
+      - name: Build standalone Android APK
+        env:
+          YV_VERSION: ${{ steps.version.outputs.version }}
+        run: flutter build apk --release --target-platform android-arm,android-arm64,android-x64 --dart-define="YV_VERSION=$YV_VERSION"
+      - name: Sign APK with the permanent distribution key
+        id: sign
+        env:
+          YV_KEYSTORE_B64: ${{ secrets.YV_ANDROID_KEYSTORE_B64 }}
+          YV_KEYSTORE_PASSWORD: ${{ secrets.YV_ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$YV_KEYSTORE_B64" || -z "$YV_KEYSTORE_PASSWORD" ]]; then
+            echo 'signed=false' >> "$GITHUB_OUTPUT"
+            echo '::warning::Permanent Android signing secrets are missing. APK will be tested but not published.'
+            exit 0
+          fi
+          umask 077
+          keystore="$(mktemp)"
+          trap 'rm -f "$keystore"' EXIT
+          printf '%s' "$YV_KEYSTORE_B64" | base64 --decode > "$keystore"
+          apk=build/app/outputs/flutter-apk/app-release.apk
+          sdk_bin="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n1)"
+          "$sdk_bin/apksigner" sign --ks "$keystore" --ks-key-alias yukvinc \
+            --ks-pass env:YV_KEYSTORE_PASSWORD --key-pass env:YV_KEYSTORE_PASSWORD \
+            --out "${apk%.apk}-signed.apk" "$apk"
+          mv "${apk%.apk}-signed.apk" "$apk"
+          echo 'signed=true' >> "$GITHUB_OUTPUT"
+      - name: Retrieve the previous permanent release for the upgrade test
+        if: steps.sign.outputs.signed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          YV_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          previous="$(gh release list --repo "$GITHUB_REPOSITORY" --limit 100 --json tagName,isDraft,isPrerelease \
+            --jq '.[] | select(.isDraft == false and .isPrerelease == false) | .tagName' \
+            | awk '/^yukvinc-android-v[0-9]+\.[0-9]+\.[0-9]+$/' | sort -V | tail -n1)"
+          if [[ -n "$previous" && "$previous" != "yukvinc-android-v$YV_VERSION" ]]; then
+            gh release download "$previous" --repo "$GITHUB_REPOSITORY" \
+              --pattern "YukVinc-Android-${previous#yukvinc-android-v}.apk" \
+              --output "$RUNNER_TEMP/yukvinc-previous.apk"
+            apk=build/app/outputs/flutter-apk/app-release.apk
+            sdk_bin="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n1)"
+            old_code="$("$sdk_bin/aapt" dump badging "$RUNNER_TEMP/yukvinc-previous.apk" | sed -nE "s/^package:.*versionCode='([0-9]+)'.*/\1/p")"
+            new_code="$("$sdk_bin/aapt" dump badging "$apk" | sed -nE "s/^package:.*versionCode='([0-9]+)'.*/\1/p")"
+            test "$new_code" -gt "$old_code"
+            # A different signing certificate would force users to uninstall the app.
+            old_cert="$("$sdk_bin/apksigner" verify --print-certs "$RUNNER_TEMP/yukvinc-previous.apk" | grep -F 'certificate SHA-256 digest:' | head -n1 | sed -E 's/.*certificate SHA-256 digest:[[:space:]]*//')"
+            new_cert="$("$sdk_bin/apksigner" verify --print-certs "$apk" | grep -F 'certificate SHA-256 digest:' | head -n1 | sed -E 's/.*certificate SHA-256 digest:[[:space:]]*//')"
+            test -n "$old_cert" && test -n "$new_cert"
+            if [[ "$old_cert" != "$new_cert" ]]; then
+              echo "::error::APK signing certificate changed; in-place updates would fail."
+              exit 1
+            fi
+          fi
+      - name: Verify APK signature and supported architectures
+        run: |
+          set -euo pipefail
+          apk=build/app/outputs/flutter-apk/app-release.apk
+          sdk_bin="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n1)"
+          "$sdk_bin/apksigner" verify --verbose --print-certs "$apk"
+          "$sdk_bin/zipalign" -c -P 16 -v 4 "$apk" > /dev/null
+          "$sdk_bin/aapt" dump badging "$apk" | tee /tmp/yukvinc-apk-badging
+          grep -F "package: name='tr.com.yukvinc.yukvinc_mobile.android'" /tmp/yukvinc-apk-badging
+          grep -E "native-code:.*'arm64-v8a'" /tmp/yukvinc-apk-badging
+          grep -E "native-code:.*'armeabi-v7a'" /tmp/yukvinc-apk-badging
+          grep -E "native-code:.*'x86_64'" /tmp/yukvinc-apk-badging
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Install and open APK on Android 14
+        uses: reactivecircus/android-emulator-runner@v2.34.0
+        with:
+          api-level: 34
+          arch: x86_64
+          disable-animations: true
+          script: |
+            if [ -f "$RUNNER_TEMP/yukvinc-previous.apk" ]; then adb install "$RUNNER_TEMP/yukvinc-previous.apk" && adb install -r mobile/build/app/outputs/flutter-apk/app-release.apk; else adb install mobile/build/app/outputs/flutter-apk/app-release.apk; fi
+            adb shell am start -W -n tr.com.yukvinc.yukvinc_mobile.android/tr.com.yukvinc.yukvinc_mobile.MainActivity
+            sleep 3
+            adb shell pidof tr.com.yukvinc.yukvinc_mobile.android
+      - name: Upload verified test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: yukvinc-android-test-apk
+          path: mobile/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 14
+
+  publish-android:
+    needs: analyze-test-build
+    if: needs.analyze-test-build.outputs.signed == 'true' && github.ref == 'refs/heads/feature/yukvinc-mobile-mvp'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      YV_VERSION: ${{ needs.analyze-test-build.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: yukvinc-android-test-apk
+          path: release
+      - name: Publish verified APK and checksum
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="yukvinc-android-v$YV_VERSION"
+          asset="YukVinc-Android-$YV_VERSION.apk"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $tag already exists. Bump the version for a new release."
+            exit 0
+          fi
+          cd release
+          mv app-release.apk "$asset"
+          sha256sum "$asset" > "$asset.sha256"
+          gh release create "$tag" "$asset" "$asset.sha256" \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "YükVinç Android $YV_VERSION" \
+            --generate-notes
