@@ -22,6 +22,7 @@ import 'package:url_launcher/url_launcher.dart';
 part 'service_search.dart';
 part 'service_screen.dart';
 part 'service_contact.dart';
+part 'roadside_position.dart';
 
 const baseUrl = 'https://yukvinc.com.tr';
 const navy = Color(0xFF172D35);

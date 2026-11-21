@@ -159,7 +159,7 @@ class _LocationIssue implements Exception {
   final Future<bool> Function()? settings;
 }
 
-Future<GeoPoint> devicePoint() async {
+Future<Position> _devicePosition(LocationAccuracy accuracy) async {
   if (!await Geolocator.isLocationServiceEnabled()) {
     throw const _LocationIssue('Telefonda konum kapalı. İl seçerek arayabilirsin.', Geolocator.openLocationSettings);
   }
@@ -171,7 +171,15 @@ Future<GeoPoint> devicePoint() async {
   if (permission != LocationPermission.whileInUse && permission != LocationPermission.always) {
     throw const _LocationIssue('Konum izni verilmedi. İl seçerek arayabilirsin.');
   }
-  final fix = await Geolocator.getCurrentPosition(locationSettings: const LocationSettings(
-    accuracy: LocationAccuracy.medium, timeLimit: Duration(seconds: 10)));
+  final fix = await Geolocator.getCurrentPosition(locationSettings: LocationSettings(
+    accuracy: accuracy, timeLimit: const Duration(seconds: 15)));
+  if (!fix.latitude.isFinite || !fix.longitude.isFinite || fix.latitude.abs() > 90 || fix.longitude.abs() > 180) {
+    throw const _LocationIssue('Telefon geçerli bir konum veremedi. Tekrar deneyebilirsin.');
+  }
+  return fix;
+}
+
+Future<GeoPoint> devicePoint() async {
+  final fix = await _devicePosition(LocationAccuracy.medium);
   return (latitude: fix.latitude, longitude: fix.longitude);
 }

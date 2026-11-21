@@ -63,6 +63,9 @@ Future<void> showServiceContact(BuildContext context, YukListing item, YukApi so
       child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Text(item.title, style: Theme.of(sheet).textTheme.titleLarge),
         Text([item.city, item.district].where((v) => v.isNotEmpty).join(' / ')),
+        if (item.category == 'tow' || item.category == 'mobile_tire')
+          TextButton.icon(icon: const Icon(Icons.location_on_outlined), label: const Text('Konumumu göster'),
+            onPressed: () => showRoadsidePosition(sheet)),
         const SizedBox(height: 16),
         FutureBuilder<String>(future: future, builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) return const LinearProgressIndicator();
