@@ -460,6 +460,7 @@ class _ShellState extends State<Shell> {
     checkingUpdate = true;
     final client = http.Client();
     var installingUpdate = false;
+    var openingInstaller = false;
     try {
       final update = await AndroidUpdates.check(client);
       if (!mounted) return;
@@ -493,7 +494,7 @@ class _ShellState extends State<Shell> {
       installingUpdate = true;
       final progress = ValueNotifier<double?>(0.0);
       final messenger = ScaffoldMessenger.of(context);
-      messenger.showSnackBar(SnackBar(
+      final downloadBar = messenger.showSnackBar(SnackBar(
         duration: const Duration(minutes: 10),
         content: ValueListenableBuilder<double?>(
           valueListenable: progress,
@@ -510,32 +511,36 @@ class _ShellState extends State<Shell> {
           ),
         ),
       ));
-      try {
-        final apk = await VerifiedAndroidInstaller.downloadVerified(
-          client, update,
-          onProgress: (ratio) {
-            if (mounted) progress.value = ratio;
-          },
-        );
-        if (mounted) messenger.hideCurrentSnackBar();
-        await VerifiedAndroidInstaller.requestInstall(apk);
-        if (mounted) {
-          updateMessage('Güncelleme doğrulandı. Android kurulum '
-              'ekranından yüklemeyi onayla; uygulamanı silme.');
+      final apk = await VerifiedAndroidInstaller.downloadVerified(client, update,
+        onProgress: (ratio) { if (mounted) progress.value = ratio; },
+      ).whenComplete(() {
+        if (mounted) downloadBar.close();
+        unawaited(downloadBar.closed.then((_) => progress.dispose()));
+      });
+      if (!mounted) return;
+      openingInstaller = true;
+      if (!await VerifiedAndroidInstaller.mayInstall()) {
+        if (!mounted) return;
+        final open = await showDialog<bool>(context: context, builder: (dialog) => AlertDialog(
+          title: const Text('YükVinç için kurulum izni'),
+          content: const Text('Android, bu uygulamadan güncelleme kurma iznini kapalı gösteriyor. '
+              'APK hazır. İzni açıp geri döndüğünde kuruluma devam edebilirsin.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialog, false), child: const Text('Daha sonra')),
+            FilledButton(onPressed: () => Navigator.pop(dialog, true), child: const Text('YükVinç ayarını aç')),
+          ],
+        ));
+        if (open != true || !mounted) return;
+        if (!await VerifiedAndroidInstaller.openSettings()) {
+          if (mounted) updateMessage('Android, YükVinç için kurulum iznini hâlâ kapalı gösteriyor. APK telefonda hazır.');
+          return;
         }
-      } finally {
-        if (mounted) messenger.hideCurrentSnackBar();
-        progress.dispose();
       }
+      if (!mounted) return;
+      await VerifiedAndroidInstaller.requestInstall(apk);
     } catch (error) {
       if (mounted && (manual || installingUpdate)) {
-        final message = error is FormatException
-            ? error.message
-            : installingUpdate
-                ? 'Güncelleme tamamlanamadı. Bağlantını ve '
-                    'Android yükleme iznini kontrol edip tekrar dene.'
-                : 'Sürüm kontrolü yapılamadı. Biraz sonra tekrar dene.';
-        updateMessage(message);
+        updateMessage(VerifiedAndroidInstaller.describe(error, download: installingUpdate, installer: openingInstaller));
       }
     } finally {
       client.close();

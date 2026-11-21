@@ -37,6 +37,19 @@ void main() {
         endsWith('YukVinc-Android-0.11.0.apk.sha256'));
   });
 
+  test('uses the published asset digest, size and official API id', () {
+    final entry = release('1.3.1');
+    final asset = (entry['assets'] as List).first as Map;
+    final hash = 'ab' * 32;
+    asset['id'] = 478;
+    asset['digest'] = 'sha256:$hash';
+    final update = AndroidUpdates.newest([entry], '1.2.1')!;
+    expect(update.sha256Hex, hash);
+    expect(update.bytes, 1200);
+    expect(update.assetDownload.toString(),
+        'https://api.github.com/repos/osmansohbet0-prog/yukbul/releases/assets/478');
+  });
+
   test('ignores releases missing the verification file', () {
     final result = AndroidUpdates.newest([{
       ...release('0.9.0'),

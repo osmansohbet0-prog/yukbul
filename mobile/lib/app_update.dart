@@ -2,10 +2,12 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-const installedVersion = String.fromEnvironment('YV_VERSION', defaultValue: '1.3.1');
+const installedVersion = String.fromEnvironment('YV_VERSION', defaultValue: '1.3.2');
 
 class AndroidUpdate {
-  const AndroidUpdate(this.version, this.notes);
+  const AndroidUpdate(this.version, this.notes, {this.sha256Hex, this.assetId, this.bytes});
+  final String? sha256Hex;
+  final int? assetId, bytes;
   final String version;
   final String notes;
 
@@ -13,6 +15,9 @@ class AndroidUpdate {
 
   Uri get download => Uri.https('github.com',
       '/osmansohbet0-prog/yukbul/releases/download/yukvinc-android-v$version/$apkFilename');
+
+  Uri? get assetDownload => assetId == null ? null : Uri.https('api.github.com',
+      '/repos/osmansohbet0-prog/yukbul/releases/assets/$assetId');
 
   Uri get checksum => Uri.https('github.com',
       '/osmansohbet0-prog/yukbul/releases/download/yukvinc-android-v$version/$apkFilename.sha256');
@@ -34,8 +39,11 @@ class AndroidUpdates {
         '/repos/osmansohbet0-prog/yukbul/releases', {'per_page': '30'});
     final response = await client.get(uri, headers: {
       'Accept': 'application/vnd.github+json',
-    }).timeout(const Duration(seconds: 5));
-    if (response.statusCode != 200) throw const FormatException('Sürüm bilgisi alınamadı.');
+    }).timeout(const Duration(seconds: 15));
+    if (response.statusCode == 403 || response.statusCode == 429) {
+      throw const FormatException('Güncelleme sunucusunun istek sınırına ulaşıldı. Biraz sonra tekrar dene.');
+    }
+    if (response.statusCode != 200) throw FormatException('Sürüm sunucusu HTTP ${response.statusCode} döndürdü.');
     return newest(jsonDecode(utf8.decode(response.bodyBytes)), installedVersion);
   }
 
@@ -64,10 +72,15 @@ class AndroidUpdates {
           asset['size'] is int && (asset['size'] as int) > 0)) {
         continue;
       }
+      final apk = assets.whereType<Map<String, dynamic>>().firstWhere((a) =>
+          a['name'] == apkName && a['state'] == 'uploaded' && a['size'] is int && (a['size'] as int) > 0);
+      final hash = RegExp(r'^sha256:([0-9a-fA-F]{64})$').firstMatch('${apk['digest']}')?.group(1)?.toLowerCase();
+      final id = apk['id'];
       final notes = entry['body'];
       result = AndroidUpdate(version, notes is String && notes.trim().isNotEmpty
           ? String.fromCharCodes(notes.trim().runes.take(1500))
-          : 'Yeni YükVinç sürümü indirilmeye hazır.');
+          : 'Yeni YükVinç sürümü indirilmeye hazır.',
+          sha256Hex: hash, assetId: id is int && id > 0 ? id : null, bytes: apk['size'] as int);
       best = code;
     }
     return result;
