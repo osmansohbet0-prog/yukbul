@@ -120,6 +120,9 @@ class _NearbyState extends State<Nearby> {
           const SizedBox(height: 10),
           FilledButton.icon(icon: const Icon(Icons.my_location), label: Text(locating ? 'Konum alınıyor…' :
             byGps ? 'Konumumu yenile' : 'Konumumdan ara'), onPressed: data == null || locating ? null : locate),
+          if (widget.roadside) OutlinedButton.icon(
+            icon: const Icon(Icons.location_on_outlined), label: const Text('Konumumu göster'),
+            onPressed: locating ? null : () => showRoadsidePosition(context)),
           if (locationMessage != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(locationMessage!)),
           if (settings != null) TextButton(onPressed: () async { await settings?.call(); }, child: const Text('Ayarları aç')),
           if (byGps) ...[
