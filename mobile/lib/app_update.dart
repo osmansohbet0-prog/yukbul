@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-const installedVersion = String.fromEnvironment('YV_VERSION', defaultValue: '1.2.1');
+const installedVersion = String.fromEnvironment('YV_VERSION', defaultValue: '1.3.0');
 
 class AndroidUpdate {
   const AndroidUpdate(this.version, this.notes);
