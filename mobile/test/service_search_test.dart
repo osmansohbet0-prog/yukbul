@@ -73,16 +73,21 @@ void main() {
       final category = r.url.queryParameters['category']!;
       return ok({'items':[row(category,'Selçuklu',category)]});
     }));
+    Future<void> waitForText(Finder target) async {
+      // Platform preferences and the cached asset future can complete on the real event loop.
+      for (var frame = 0; frame < 80 && target.evaluate().isEmpty; frame++) {
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 10)));
+        await tester.pump(const Duration(milliseconds: 25));
+      }
+      expect(target, findsOneWidget);
+    }
     await tester.pumpWidget(MaterialApp(home: Scaffold(body: Nearby(roadside:true, client:api,
       locate: () async => throw StateError('GPS unavailable')))));
-    await tester.pumpAndSettle();
-    expect(find.text('Hizmet tow'),findsOneWidget);
+    await waitForText(find.text('Hizmet tow'));
     await tester.tap(find.text('Konumumdan ara'));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('Konum alınamadı'),findsOneWidget);
+    await waitForText(find.textContaining('Konum alınamadı'));
     await tester.tap(find.text('Mobil lastikçi'));
-    await tester.pumpAndSettle();
-    expect(find.text('Hizmet mobile_tire'),findsOneWidget);
+    await waitForText(find.text('Hizmet mobile_tire'));
     expect(find.text('Hizmet tow'),findsNothing);
   });
 
