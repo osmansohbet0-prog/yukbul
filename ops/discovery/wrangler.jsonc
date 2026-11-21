@@ -1,0 +1,8 @@
+{
+  "name": "yukvinc-sitejs-dedupe",
+  "main": "../../.discovery-build/worker.mjs",
+  "compatibility_date": "2026-10-23",
+  "services": [{"binding":"YUKBUL","service":"yukbul"}],
+  "observability": {"enabled":true},
+  "workers_dev": false
+}
