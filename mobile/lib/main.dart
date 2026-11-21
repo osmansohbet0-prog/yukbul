@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
+import 'dart:typed_data' show BytesBuilder;
 import 'package:html/parser.dart' as html;
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:flutter/foundation.dart';

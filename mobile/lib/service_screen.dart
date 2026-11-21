@@ -154,7 +154,7 @@ class _NearbyState extends State<Nearby> {
               onChanged: (v) => setState(() => newest = v)),
             if (result.incomplete) TextButton.icon(icon: const Icon(Icons.refresh),
               label: const Text('Sonuçlar eksik olabilir. Yenile'), onPressed: search),
-            if (hits.isEmpty) Padding(padding: const EdgeInsets.symmetric(vertical: 16),
+            if (hits.isEmpty && !result.incomplete) Padding(padding: const EdgeInsets.symmetric(vertical: 16),
               child: Text(byGps ? 'Bu mesafede ilan bulunamadı. Mesafeyi artırabilir veya il seçebilirsin.' :
                 'Seçtiğin bölge ve kategoride ilan bulunamadı.')),
           ],

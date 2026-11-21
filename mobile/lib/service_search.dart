@@ -83,7 +83,7 @@ class ServiceSearch {
       final args = {'city': city, 'limit': '50',
         if (district.isNotEmpty) 'q': district,
         if (category != 'all') 'category': category,
-        if (cursor != null) 'cursor': cursor,
+        'cursor': ?cursor,
       };
       final response = await api.client.get(Uri.parse('$baseUrl/api/listings').replace(queryParameters: args),
           headers: const {'Accept': 'application/json'}).timeout(const Duration(seconds: 10));
