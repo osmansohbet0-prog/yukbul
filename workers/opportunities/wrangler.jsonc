@@ -1,0 +1,53 @@
+{
+  "name": "yukvinc-opportunities",
+  "main": "./worker.mjs",
+  "compatibility_date": "2026-10-23",
+  "observability": {
+    "enabled": true
+  },
+  "services": [
+    {
+      "binding": "YUKBUL",
+      "service": "yukbul"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "yukvinc-db",
+      "database_id": "e7bba0a3-eb81-4122-9d16-7787d8fd531c",
+      "migrations_dir": "../../migrations"
+    }
+  ],
+  "send_email": [
+    {
+      "name": "EMAIL"
+    }
+  ],
+  "vars": {
+    "NOTIFICATION_FROM": "bildirim@yukvinc.com.tr"
+  },
+  "triggers": {
+    "crons": [
+      "*/5 * * * *"
+    ]
+  },
+  "routes": [
+    {
+      "pattern": "yukvinc.com.tr/ihale-duyurulari*",
+      "zone_id": "46c493a67dfdfff266d513de9704cf07"
+    },
+    {
+      "pattern": "yukvinc.com.tr/ihale-bildirimleri*",
+      "zone_id": "46c493a67dfdfff266d513de9704cf07"
+    },
+    {
+      "pattern": "yukvinc.com.tr/is-talepleri/",
+      "zone_id": "46c493a67dfdfff266d513de9704cf07"
+    },
+    {
+      "pattern": "yukvinc.com.tr/assets/job-board-v20261102private.js*",
+      "zone_id": "46c493a67dfdfff266d513de9704cf07"
+    }
+  ]
+}
