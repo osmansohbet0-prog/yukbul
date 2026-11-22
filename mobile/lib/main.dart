@@ -420,6 +420,18 @@ class YukApi {
 }
 
 final api = YukApi();
+Future<void> _openMemberScreen(BuildContext context, Widget screen) async {
+  if (!context.mounted) return;
+  if (MemberAuth.user.value == null) {
+    MemberAuth.status.value = 'İlanlarını yönetmek için önce Google ile giriş yap.';
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Devam etmek için Google ile giriş yap.')));
+    return;
+  }
+  await Navigator.of(context).push<void>(MaterialPageRoute<void>(
+    builder: (_) => screen,
+  ));
+}
 Future<void> openSite(BuildContext context, String path) async {
   if (!context.mounted) return;
   switch (path) {
@@ -1246,9 +1258,9 @@ class _FavoriteListingsState extends State<FavoriteListings> {
 
   Future<void> _openListings() async {
     await Navigator.of(context).push<void>(MaterialPageRoute<void>(
-      builder: (_) => const Scaffold(
-        appBar: AppBar(title: Text('İlanları keşfet')),
-        body: ListingsScreen(),
+      builder: (_) => Scaffold(
+        appBar: AppBar(title: const Text('İlanları keşfet')),
+        body: const ListingsScreen(),
       ),
     ));
     if (mounted) await _refresh();
@@ -1354,8 +1366,8 @@ class _AccountState extends State<Account> {
     await _open(screen);
   }
 
-  void _openListings() => unawaited(_open(const Scaffold(
-    appBar: AppBar(title: Text('İlanları keşfet')), body: ListingsScreen())));
+  void _openListings() => unawaited(_open(Scaffold(
+    appBar: AppBar(title: const Text('İlanları keşfet')), body: const ListingsScreen())));
 
   @override Widget build(BuildContext context) {
     final signedIn = MemberAuth.user.value != null;
@@ -1461,6 +1473,7 @@ class _AccountSummaryTile extends StatelessWidget {
             Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colors.onSurfaceVariant)),
           ]))));
+  }
 }
 
 class _SignInPanel extends StatelessWidget {
@@ -1900,8 +1913,11 @@ String categoryName(String category) => switch (category) {
   _ => 'Hizmet ilanı',
 };
 
-String formatListingPrice(num value) => '₺${value.toInt().toString().replaceAllMapped(
-  RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => '.')}';
+String formatListingPrice(num value) {
+  final formatted = value.toInt().toString().replaceAllMapped(
+    RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => '.');
+  return '₺$formatted';
+}
 
 String? listingPhotoUrl(YukListing item) {
   final photo = item.photoUrl;
