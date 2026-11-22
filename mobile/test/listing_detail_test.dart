@@ -56,6 +56,8 @@ void main() {
     await tester.pumpWidget(MaterialApp(
       home: ListingDetail(itemId: 'listing_123', client: api),
     ));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
     await tester.pumpAndSettle();
     expect(find.text('İlan sahibine ulaş'), findsOneWidget);
     expect(find.text('WhatsApp’ta paylaş'), findsNothing);
