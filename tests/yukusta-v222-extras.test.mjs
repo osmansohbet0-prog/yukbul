@@ -100,7 +100,7 @@ test('Android download serves resumable APK bytes from the latest complete stabl
    assert.equal(init.headers.get('range'),'bytes=0-3');
    return new Response(new Uint8Array([80,75,3,4]),{status:206,headers:{'Content-Length':'4','Content-Range':'bytes 0-3/8000'}});
  });
- const res=await worker.fetch(new Request('https://yukvinc.com.tr/indir/android',{headers:{Range:'bytes=0-3'}}),{});
+ const res=await worker.fetch(new Request('https://yukvinc.com.tr/indir/android/YukVinc.apk',{headers:{Range:'bytes=0-3'}}),{});
  assert.equal(res.status,206);
  assert.equal(res.headers.get('content-type'),'application/vnd.android.package-archive');
  assert.ok(res.headers.get('content-disposition').includes(apk));
