@@ -37,7 +37,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final api = YukApi(client: MockClient((request) async {
       expect(request.url.path, '/api/listings/listing_123');
-      return http.Response(jsonEncode({
+      return http.Response.bytes(utf8.encode(jsonEncode({
         'listing': {
           'id': 'listing_123',
           'title': 'Konya çekici hizmeti',
@@ -51,7 +51,7 @@ void main() {
           'view_count': 12,
         },
         'photos': [],
-      }), 200);
+      })), 200, headers: {'content-type': 'application/json; charset=utf-8'});
     }));
     await tester.pumpWidget(MaterialApp(
       home: ListingDetail(itemId: 'listing_123', client: api),
