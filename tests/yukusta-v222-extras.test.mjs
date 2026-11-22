@@ -80,11 +80,29 @@ test('standalone scoped assets are served with correct MIME types',async()=>{
 test('chat interface includes scroller, complaint sender, APK and fresh tender endpoint',()=>{
  const js=readFileSync(new URL('../edge/v222-extras.client.js',import.meta.url),'utf8');
  const css=readFileSync(new URL('../edge/v222-extras.css',import.meta.url),'utf8');
- for(const token of ['yv2-messages','yv2-report','/report','/tenders','yukvinc-android-v0.6.0','yv-buyer-cta-v191'])assert.ok(js.includes(token),token);
+ for(const token of ['yv2-messages','yv2-report','/report','/tenders','/indir/android','yv-buyer-cta-v191'])assert.ok(js.includes(token),token);
  assert.match(css,/overflow-y:auto/);assert.match(css,/yv2-tender-badge/);
 });
 
 test('shipped browser-side Yük Usta code must actually parse as JavaScript',()=>{
   const script=readFileSync(new URL('../edge/v222-extras.client.js',import.meta.url),'utf8');
   assert.doesNotThrow(()=>new Script(script,{filename:'v222-extras.client.js'}));
+});
+
+test('Android download serves resumable APK bytes from the latest complete stable release', async t=>{
+ const version='9.0.0', apk='YukVinc-Android-'+version+'.apk';
+ t.mock.method(globalThis,'fetch',async (input,init)=>{
+   if(String(input).includes('?per_page=')) return Response.json([
+     {tag_name:'yukvinc-android-v9.9.0',prerelease:true,assets:[]},
+     {tag_name:'yukvinc-android-v'+version,assets:[{id:42,name:apk,state:'uploaded',size:8000},
+       {name:apk+'.sha256',state:'uploaded',size:90}]}]);
+   assert.ok(String(input).endsWith(apk));
+   assert.equal(init.headers.get('range'),'bytes=0-3');
+   return new Response(new Uint8Array([80,75,3,4]),{status:206,headers:{'Content-Length':'4','Content-Range':'bytes 0-3/8000'}});
+ });
+ const res=await worker.fetch(new Request('https://yukvinc.com.tr/indir/android',{headers:{Range:'bytes=0-3'}}),{});
+ assert.equal(res.status,206);
+ assert.equal(res.headers.get('content-type'),'application/vnd.android.package-archive');
+ assert.ok(res.headers.get('content-disposition').includes(apk));
+ assert.deepEqual([...new Uint8Array(await res.arrayBuffer())],[80,75,3,4]);
 });

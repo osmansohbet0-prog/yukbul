@@ -1,7 +1,7 @@
 /* Additive YükVinç V222 experience — no base page replacements. */
 (()=>{'use strict';
 if(window.__yv2Ready)return;window.__yv2Ready=true;document.documentElement.dataset.yv2Script='loaded';
-const BASE='/api/yukusta-v2',APK='https://github.com/osmansohbet0-prog/yukbul/releases/download/yukvinc-android-v0.6.0/YukVinc-Android-0.6.0.apk';
+const BASE='/api/yukusta-v2',APK='https://yukvinc.com.tr/indir/android';
 const e=(tag,cls,txt)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(txt!==undefined)n.textContent=txt;return n};
 const add=(node,tag,cls,txt)=>{const n=e(tag,cls,txt);node.append(n);return n};
 const scroll=node=>{node.scrollTop=node.scrollHeight};
@@ -57,9 +57,9 @@ function apkCard(){
  const card=e('section','yv2-app-card');card.id='yv2-apk';
  const copy=add(card,'div');
  add(copy,'strong',null,'📲 YükVinç Android uygulaması');
- add(copy,'p',null,'Sürüm 0.6.0 · Resmî GitHub APK dosyası');
+ add(copy,'p',null,'Güncel Android sürümü (APK)');
  const anchor=add(card,'a',null,'Uygulamayı indir');
- anchor.href=APK;anchor.target='_blank';anchor.rel='noopener noreferrer';
+ anchor.href=APK;
  const listingAnchor=target.querySelector('#my-listings');if(listingAnchor?.parentElement)listingAnchor.parentElement.insertBefore(card,listingAnchor);else target.prepend(card);
 }
 async function tenderBadge(){
