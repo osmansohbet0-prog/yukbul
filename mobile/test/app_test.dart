@@ -98,7 +98,7 @@ void main() {
     ));
     await tester.tap(find.text('Hesabım'));
     await tester.pumpAndSettle();
-    expect(find.text('YükVinç hesabınla uygulamadan devam et.'), findsOneWidget);
+    expect(find.text('Hesabını ve ilanlarını uygulama içinden yönet.'), findsOneWidget);
   });
 
   testWidgets('Account exposes native listing entry points and work requests',

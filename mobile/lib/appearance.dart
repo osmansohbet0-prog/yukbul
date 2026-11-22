@@ -21,34 +21,52 @@ class AppAppearance {
   }
 
   static ThemeData theme(Brightness brightness) {
+    final dark = brightness == Brightness.dark;
     final colors = ColorScheme.fromSeed(
-      seedColor: const Color(0xFF0D6D5C), brightness: brightness,
-    );
+      seedColor: const Color(0xFF172D35),
+      brightness: brightness,
+    ).copyWith(secondary: const Color(0xFFE7A339));
     return ThemeData(
       useMaterial3: true,
       colorScheme: colors,
-      scaffoldBackgroundColor: colors.surface,
+      scaffoldBackgroundColor: dark ? const Color(0xFF101719) : const Color(0xFFF3F5F6),
       appBarTheme: AppBarTheme(
-        backgroundColor: colors.surface, foregroundColor: colors.onSurface,
+        backgroundColor: dark ? const Color(0xFF101719) : const Color(0xFFF3F5F6),
+        foregroundColor: colors.onSurface,
         centerTitle: false,
+        toolbarHeight: 68,
       ),
       cardTheme: CardThemeData(
-        color: colors.surfaceContainerLow, elevation: 0,
-        margin: const EdgeInsets.only(bottom: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        color: colors.surfaceContainerLow,
+        elevation: 0,
+        margin: const EdgeInsets.only(bottom: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       inputDecorationTheme: InputDecorationTheme(
-        filled: true, fillColor: colors.surfaceContainerHighest,
+        filled: true,
+        fillColor: colors.surface,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none,
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: colors.outlineVariant),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: colors.outlineVariant),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(style: FilledButton.styleFrom(
         minimumSize: const Size(48, 52),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        textStyle: const TextStyle(fontWeight: FontWeight.w800),
       )),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: colors.surfaceContainerLow,
-        indicatorColor: colors.primaryContainer,
+        height: 72,
+        backgroundColor: colors.surface,
+        indicatorColor: colors.secondaryContainer,
+        labelTextStyle: WidgetStateProperty.resolveWith((states) =>
+          TextStyle(fontSize: 11, fontWeight: states.contains(WidgetState.selected)
+            ? FontWeight.w800 : FontWeight.w500)),
       ),
     );
   }
