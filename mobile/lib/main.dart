@@ -1014,7 +1014,14 @@ class _ListingsState extends State<ListingsScreen> {
     timer?.cancel();search.dispose();scroll.dispose();super.dispose();
   }
   @override Widget build(BuildContext context)=>Column(children:[
-    Padding(padding:const EdgeInsets.fromLTRB(18,12,18,3),child:TextField(
+    Padding(padding:const EdgeInsets.fromLTRB(18,14,18,0),child:Column(
+      crossAxisAlignment:CrossAxisAlignment.start,children:[
+        Text('İlanlar',style:Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight:FontWeight.w900)),
+        const SizedBox(height:3),
+        Text('Şehir, kategori ve ekipman türüne göre ara.',
+          style:Theme.of(context).textTheme.bodySmall?.copyWith(color:Theme.of(context).colorScheme.onSurfaceVariant)),
+      ])),
+    Padding(padding:const EdgeInsets.fromLTRB(18,10,18,3),child:TextField(
       controller:search,textInputAction:TextInputAction.search,
       decoration:InputDecoration(hintText:'Şehir, ilan veya ekipman ara',
         prefixIcon:const Icon(Icons.search),filled:true,
@@ -1047,15 +1054,23 @@ class _ListingsState extends State<ListingsScreen> {
 }
 
 class OpportunityHub extends StatefulWidget {
-  const OpportunityHub({super.key});
+  const OpportunityHub({super.key, this.initialTab = 0});
+  final int initialTab;
   @override State<OpportunityHub> createState() => _OpportunityHubState();
 }
 class _OpportunityHubState extends State<OpportunityHub> {
-  int tab = 0;
+  late int tab;
+  final search = TextEditingController();
+  String query = '';
   late Future<List<Map<String, dynamic>>> future;
-  @override void initState() { super.initState(); future = api.mobileFeed('jobs'); }
+
+  @override void initState() {
+    super.initState();
+    tab = widget.initialTab == 1 ? 1 : 0;
+    future = api.mobileFeed(tab == 0 ? 'jobs' : 'tenders');
+  }
   void select(int value) => setState(() {
-    tab = value;
+    tab = value; query = ''; search.clear();
     future = api.mobileFeed(value == 0 ? 'jobs' : 'tenders');
   });
   Future<void> refresh() async {
@@ -1063,8 +1078,34 @@ class _OpportunityHubState extends State<OpportunityHub> {
     setState(() => future = next);
     try { await next; } catch (_) {}
   }
+  void showDetails(Map<String, dynamic> item) {
+    final place = [item['city'], item['district']].whereType<String>().where((v) => v.isNotEmpty).join(' · ');
+    final organization = (item['organization'] ?? item['category'] ?? item['service_type'] ?? '').toString();
+    final summary = (item['public_summary'] ?? item['description'] ?? '').toString().trim();
+    showDialog<void>(context: context, builder: (dialog) => AlertDialog(
+      title: Text((item['title'] ?? 'Fırsat ayrıntısı').toString()),
+      content: SingleChildScrollView(child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+          Text(tab == 1 ? 'İhale fırsatı' : 'Açık iş talebi',
+            style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w800)),
+          if (organization.trim().isNotEmpty) Padding(
+            padding: const EdgeInsets.only(top: 10), child: Text(organization)),
+          if (place.isNotEmpty) Padding(
+            padding: const EdgeInsets.only(top: 6), child: Text(place)),
+          const Divider(height: 24),
+          Text(summary.isEmpty ? 'Bu kayıt için ek açıklama paylaşılmamış.' : summary),
+        ],
+      )),
+      actions: [TextButton(onPressed: () => Navigator.pop(dialog), child: const Text('Kapat'))],
+    ));
+  }
+  @override void dispose() { search.dispose(); super.dispose(); }
+
   @override Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('İş fırsatları')),
+    appBar: AppBar(
+      title: Text(tab == 1 ? 'İhaleler' : 'İş talepleri'),
+      actions: [IconButton(tooltip: 'Yenile', onPressed: refresh, icon: const Icon(Icons.refresh_rounded))],
+    ),
     body: Column(children: [
       Padding(padding: const EdgeInsets.all(16), child: SegmentedButton<int>(
         segments: const [
@@ -1073,47 +1114,85 @@ class _OpportunityHubState extends State<OpportunityHub> {
         ],
         selected: {tab}, onSelectionChanged: (value) => select(value.first),
       )),
+      Padding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 12), child: TextField(
+        controller: search,
+        decoration: InputDecoration(
+          hintText: tab == 1 ? 'İhale, kurum veya şehir ara' : 'İş, kategori veya şehir ara',
+          prefixIcon: const Icon(Icons.search_rounded),
+          suffixIcon: query.isEmpty ? null : IconButton(
+            tooltip: 'Aramayı temizle',
+            onPressed: () { search.clear(); setState(() => query = ''); },
+            icon: const Icon(Icons.close_rounded)),
+        ),
+        onChanged: (value) => setState(() => query = value.trim().toLowerCase()),
+      )),
       Expanded(child: FutureBuilder<List<Map<String, dynamic>>>(
         future: future,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) return const Loading();
           if (snapshot.hasError) return Retry(onTap: refresh);
           final items = snapshot.data ?? const <Map<String, dynamic>>[];
-          if (items.isEmpty) return RefreshIndicator(
-            onRefresh: refresh,
-            child: ListView(physics: const AlwaysScrollableScrollPhysics(), children: [
-              const SizedBox(height: 110),
-              Empty(tab == 0 ? 'Şu anda açık iş talebi yok.' : 'Şu anda yayında ihale fırsatı yok.'),
-            ]),
+          final visible = items.where((item) {
+            final place = [item['city'], item['district']].whereType<String>().join(' ');
+            final organization = item['organization'] ?? item['category'] ?? item['service_type'] ?? '';
+            final summary = item['public_summary'] ?? item['description'] ?? '';
+            return [item['title'], place, organization, summary].join(' ').toLowerCase().contains(query);
+          }).toList(growable: false);
+          if (visible.isEmpty) return RefreshIndicator(
+            onRefresh: refresh, child: ListView(physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                const SizedBox(height: 80),
+                Empty(query.isEmpty
+                  ? (tab == 1 ? 'Şu anda yayınlanmış ihale fırsatı yok.' : 'Şu anda açık iş talebi yok.')
+                  : 'Aramana uygun kayıt bulunamadı.'),
+              ]),
           );
           return RefreshIndicator(onRefresh: refresh, child: ListView.builder(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(16),
-            itemCount: items.length,
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
+            itemCount: visible.length,
             itemBuilder: (context, index) {
-              final item = items[index];
-              final title = (item['title'] ?? 'Yeni fırsat').toString();
-              final place = [item['city'], item['district']]
-                .whereType<String>().where((part) => part.trim().isNotEmpty).join(' · ');
-              final detail = (item['public_summary'] ?? item['description'] ?? '').toString();
-              final organization = (item['organization'] ?? item['category'] ?? item['service_type'] ?? '').toString();
-              final publishedValue = item['public_at'];
-              final publishedAt = publishedValue is num
-                ? DateTime.fromMillisecondsSinceEpoch((publishedValue * 1000).round())
-                : DateTime.tryParse((item['published_at'] ?? '').toString());
-              final age = publishedAt == null ? null : DateTime.now().difference(publishedAt);
-              final isNewTender = tab == 1 && age != null && !age.isNegative && age.inHours < 24;
-              return Card(margin: const EdgeInsets.only(bottom: 12), child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  if (isNewTender) const Chip(avatar: Icon(Icons.fiber_new, size: 17), label: Text('Son 24 saatte yayımlandı')),
-                  Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
-                  if (place.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 7),
-                    child: Text(place, style: TextStyle(color: Theme.of(context).colorScheme.primary))),
-                  if (organization.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 5), child: Text(organization)),
-                  if (detail.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 9), child: Text(detail)),
-                ]),
-              ));
+              final item = visible[index];
+              final place = [item['city'], item['district']].whereType<String>()
+                .where((v) => v.trim().isNotEmpty).join(' · ');
+              final summary = (item['public_summary'] ?? item['description'] ?? '').toString().trim();
+              final organization = (item['organization'] ?? item['category'] ?? item['service_type'] ?? '').toString().trim();
+              final published = item['public_at'] ?? item['published_at'] ?? item['created_at'];
+              final date = published is num && published > 0
+                ? DateTime.fromMillisecondsSinceEpoch((published < 100000000000 ? published * 1000 : published).round())
+                : DateTime.tryParse(published?.toString() ?? '');
+              final age = date == null ? null : DateTime.now().difference(date);
+              final isNew = tab == 1 && age != null && !age.isNegative && age.inHours < 24;
+              return Card(margin: const EdgeInsets.only(bottom: 10),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () => showDetails(item),
+                  child: Padding(padding: const EdgeInsets.all(16), child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Wrap(spacing: 6, children: [
+                        Chip(visualDensity: VisualDensity.compact,
+                          avatar: Icon(tab == 1 ? Icons.gavel_outlined : Icons.work_outline, size: 16),
+                          label: Text(tab == 1 ? 'İhale' : 'İş talebi')),
+                        if (isNew) const Chip(visualDensity: VisualDensity.compact, label: Text('Yeni')),
+                      ]),
+                      Text((item['title'] ?? 'Yeni fırsat').toString(),
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+                      if (organization.isNotEmpty) Padding(
+                        padding: const EdgeInsets.only(top: 5),
+                        child: Text(organization, style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w700))),
+                      if (place.isNotEmpty) Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text(place, style: Theme.of(context).textTheme.bodySmall)),
+                      if (summary.isNotEmpty) Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(summary, maxLines: 3, overflow: TextOverflow.ellipsis)),
+                      Align(alignment: Alignment.centerRight, child: TextButton(
+                        onPressed: () => showDetails(item), child: const Text('Uygulama içinde incele'))),
+                    ],
+                  )),
+                ),
+              );
             },
           ));
         },
@@ -1127,146 +1206,261 @@ class FavoriteListings extends StatefulWidget {
   final bool recent;
   @override State<FavoriteListings> createState() => _FavoriteListingsState();
 }
-
 class _FavoriteListingsState extends State<FavoriteListings> {
   late Future<List<YukListing>> future;
-
-  @override
-  void initState() {
-    super.initState();
-    future = _load();
-  }
+  @override void initState() { super.initState(); future = _load(); }
 
   Future<List<YukListing>> _load() async {
-    final ids = widget.recent ? await RecentListingsStore.load() : await FavoritesStore.load();
-    return api.savedListings(ids);
+    final ids = widget.recent ? await RecentListingsStore.load() : await FavoritesStore.orderedLoad();
+    final items = await api.savedListings(ids);
+    final available = items.map((item) => item.id).toSet();
+    if (available.length != ids.length) {
+      if (widget.recent) {
+        await RecentListingsStore.retain(available);
+      } else {
+        await FavoritesStore.retain(available);
+      }
+    }
+    return items;
   }
 
   Future<void> _refresh() async {
-    final next = _load();
-    setState(() => future = next);
+    final next = _load(); setState(() => future = next);
     try { await next; } catch (_) {}
   }
 
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(widget.recent ? 'Son görüntülenenler' : 'Favorilerim'),
+  Future<void> _clearHistory() async {
+    final confirmed = await showDialog<bool>(context: context, builder: (dialog) => AlertDialog(
+      title: const Text('Görüntüleme geçmişi temizlensin mi?'),
+      content: const Text('Son görüntülenen ilanlar bu cihazdan kaldırılacak.'),
       actions: [
-        if (widget.recent) IconButton(
-          tooltip: 'Geçmişi temizle', icon: const Icon(Icons.delete_outline),
-          onPressed: () async {
-            try {
-              await RecentListingsStore.clear();
-              if (mounted) await _refresh();
-            } catch (_) {
-              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Geçmiş temizlenemedi.')),
-              );
-            }
-          },
-        ),
+        TextButton(onPressed: () => Navigator.pop(dialog, false), child: const Text('Vazgeç')),
+        FilledButton(onPressed: () => Navigator.pop(dialog, true), child: const Text('Temizle')),
       ],
-    ),
+    ));
+    if (confirmed != true) return;
+    try { await RecentListingsStore.clear(); if (mounted) await _refresh(); }
+    catch (_) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Geçmiş temizlenemedi.'))); }
+  }
+
+  Future<void> _openListings() async {
+    await Navigator.of(context).push<void>(MaterialPageRoute<void>(
+      builder: (_) => const Scaffold(
+        appBar: AppBar(title: Text('İlanları keşfet')),
+        body: ListingsScreen(),
+      ),
+    ));
+    if (mounted) await _refresh();
+  }
+
+  @override Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: Text(widget.recent ? 'Son görüntülenenler' : 'Favorilerim'),
+      actions: [if (widget.recent) IconButton(
+        tooltip: 'Geçmişi temizle', icon: const Icon(Icons.delete_outline_rounded),
+        onPressed: _clearHistory)]),
     body: FutureBuilder<List<YukListing>>(
       future: future,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) return const Loading();
         if (snapshot.hasError) return Retry(onTap: _refresh);
         final items = snapshot.data ?? const <YukListing>[];
-        if (items.isEmpty) return const Empty('Gösterilecek ilan yok. İlanları keşfederek başlayabilirsin.');
-        return RefreshIndicator(
-          onRefresh: _refresh,
-          child: ListView.builder(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(18),
-            itemCount: items.length,
-            itemBuilder: (context, index) => ListingCard(
-              item: items[index], onFavoriteChanged: _refresh,
-            ),
-          ),
-        );
+        return RefreshIndicator(onRefresh: _refresh, child: ListView.builder(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, 24),
+          itemCount: items.isEmpty ? 1 : items.length + 1,
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              if (items.isEmpty) return Column(children: [
+                const SizedBox(height: 50),
+                Icon(widget.recent ? Icons.history_rounded : Icons.bookmark_border_rounded,
+                  size: 42, color: Theme.of(context).colorScheme.primary),
+                Empty(widget.recent
+                  ? 'Henüz görüntüleme geçmişin yok. Bir ilanı açtığında burada görebilirsin.'
+                  : 'Henüz favori ilan eklemedin. İlan kartındaki yer imi simgesine dokun.'),
+                OutlinedButton.icon(onPressed: _openListings,
+                  icon: const Icon(Icons.search_rounded), label: const Text('İlanları keşfet')),
+              ]);
+              return Padding(padding: const EdgeInsets.only(bottom: 10), child: Text(
+                widget.recent ? 'En son baktığın ilanlar' : 'Kaydettiğin ilanlar · ${items.length}',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)));
+            }
+            return ListingCard(item: items[index - 1],
+              onFavoriteChanged: _refresh, onViewed: _refresh);
+          },
+        ));
       },
     ),
   );
 }
 
-class Account extends StatelessWidget {
+class Account extends StatefulWidget {
   const Account({super.key});
+  @override State<Account> createState() => _AccountState();
+}
+class _AccountState extends State<Account> {
+  final scroll = ScrollController();
+  int favorites = 0, recent = 0;
+  int? myListingCount;
+  bool statsReady = false;
+  int generation = 0;
 
-  @override
-  Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.fromLTRB(18, 14, 18, 30),
-    children: [
-      Text('Hesabım', style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-        fontWeight: FontWeight.w900, letterSpacing: -.5)),
-      const SizedBox(height: 5),
-      Text('Hesabını ve ilanlarını uygulama içinden yönet.',
-        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-          color: Theme.of(context).colorScheme.onSurfaceVariant)),
-      const SizedBox(height: 18),
-      ValueListenableBuilder<MemberIdentity?>(
-        valueListenable: MemberAuth.user,
-        builder: (context, member, child) => Card(
-          color: member == null ? navy : Theme.of(context).colorScheme.surfaceContainerLow,
-          child: Padding(
-            padding: const EdgeInsets.all(19),
-            child: member == null
-                ? _SignInPanel()
-                : _SignedInPanel(member: member),
-          ),
+  @override void initState() {
+    super.initState();
+    MemberAuth.user.addListener(_reload);
+    FavoritesStore.changes.addListener(_reload);
+    unawaited(_load());
+  }
+  @override void dispose() {
+    MemberAuth.user.removeListener(_reload);
+    FavoritesStore.changes.removeListener(_reload);
+    scroll.dispose(); super.dispose();
+  }
+  void _reload() => unawaited(_load());
+
+  Future<void> _load() async {
+    final request = ++generation;
+    Set<String> saved = {};
+    List<String> history = [];
+    int? mine;
+    try { saved = await FavoritesStore.load(); } catch (_) {}
+    try { history = await RecentListingsStore.load(); } catch (_) {}
+    if (MemberAuth.user.value != null) {
+      try { mine = (await api.myListings()).length; } catch (_) {}
+    }
+    if (!mounted || request != generation) return;
+    setState(() {
+      favorites = saved.length;
+      recent = history.length;
+      myListingCount = mine;
+      statsReady = true;
+    });
+  }
+
+  Future<void> _open(Widget screen) async {
+    await Navigator.of(context).push<void>(MaterialPageRoute<void>(builder: (_) => screen));
+    if (mounted) _reload();
+  }
+
+  Future<void> _openMember(Widget screen) async {
+    if (MemberAuth.user.value == null) {
+      MemberAuth.status.value = 'İlanlarını yönetmek için önce Google ile giriş yap.';
+      if (scroll.hasClients) await scroll.animateTo(0,
+        duration: const Duration(milliseconds: 280), curve: Curves.easeOut);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Devam etmek için Google ile giriş yap.')));
+      return;
+    }
+    await _open(screen);
+  }
+
+  void _openListings() => unawaited(_open(const Scaffold(
+    appBar: AppBar(title: Text('İlanları keşfet')), body: ListingsScreen())));
+
+  @override Widget build(BuildContext context) {
+    final signedIn = MemberAuth.user.value != null;
+    String count(int? value) => statsReady ? (value?.toString() ?? '—') : '…';
+    return ListView(controller: scroll,
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 30), children: [
+        Text('Hesabım', style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+          fontWeight: FontWeight.w900, letterSpacing: -.5)),
+        const SizedBox(height: 5),
+        Text('Hesabını ve ilanlarını uygulama içinden yönet.',
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        const SizedBox(height: 18),
+        ValueListenableBuilder<MemberIdentity?>(
+          valueListenable: MemberAuth.user,
+          builder: (context, member, child) => Card(
+            color: member == null ? navy : Theme.of(context).colorScheme.surfaceContainerLow,
+            child: Padding(padding: const EdgeInsets.all(19),
+              child: member == null ? _SignInPanel() : _SignedInPanel(member: member))),
         ),
-      ),
-      const SizedBox(height: 23),
-      Text('Hesap ve ilanlar', style: Theme.of(context).textTheme.titleMedium?.copyWith(
-        fontWeight: FontWeight.w900)),
-      const SizedBox(height: 10),
-      AccountLink(icon: Icons.inventory_2_outlined, title: 'İlanlarım',
-        subtitle: 'Yayınladığın ilanları görüntüle ve düzenle',
-        onTap: () => _openMemberScreen(context, const MyListingsScreen())),
-      AccountLink(icon: Icons.add_circle_outline_rounded, title: 'İlan ver',
-        subtitle: 'Makine veya operatör ilanı oluştur',
-        onTap: () => _openMemberScreen(context, const ListingEditorScreen())),
-      AccountLink(icon: Icons.work_outline_rounded, title: 'İş talepleri',
-        subtitle: 'Yeni iş fırsatlarını ve ihaleleri incele',
-        onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-          builder: (_) => const OpportunityHub(),
-        ))),
-      AccountLink(icon: Icons.bookmark_outline_rounded, title: 'Favorilerim',
-        subtitle: 'Kaydettiğin ilanlara hızlıca dön',
-        onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-          builder: (_) => const FavoriteListings(),
-        ))),
-      AccountLink(icon: Icons.history_rounded, title: 'Son görüntülenenler',
-        subtitle: 'Son baktığın 12 ilan',
-        onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-          builder: (_) => const FavoriteListings(recent: true),
-        ))),
-      const SizedBox(height: 8),
-      Card(child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ValueListenableBuilder<ThemeMode>(
-          valueListenable: AppAppearance.mode,
-          builder: (context, mode, child) => DropdownButtonFormField<ThemeMode>(
-            initialValue: mode,
-            decoration: const InputDecoration(labelText: 'Görünüm'),
-            items: const [
-              DropdownMenuItem(value: ThemeMode.system, child: Text('Telefon ayarı')),
-              DropdownMenuItem(value: ThemeMode.light, child: Text('Aydınlık')),
-              DropdownMenuItem(value: ThemeMode.dark, child: Text('Karanlık')),
-            ],
-            onChanged: (value) async {
-              if (value == null) return;
-              try { await AppAppearance.save(value); } catch (_) {
-                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Görünüm kaydedilemedi.')),
-                );
-              }
-            },
+        const SizedBox(height: 16),
+        Row(children: [
+          Expanded(child: _AccountSummaryTile(icon: Icons.inventory_2_outlined,
+            value: signedIn ? count(myListingCount) : '—', label: 'İlan',
+            onTap: () => unawaited(_openMember(const MyListingsScreen())))),
+          const SizedBox(width: 8),
+          Expanded(child: _AccountSummaryTile(icon: Icons.bookmark_border_rounded,
+            value: count(favorites), label: 'Favori',
+            onTap: () => unawaited(_open(const FavoriteListings())))),
+          const SizedBox(width: 8),
+          Expanded(child: _AccountSummaryTile(icon: Icons.history_rounded,
+            value: count(recent), label: 'Geçmiş',
+            onTap: () => unawaited(_open(const FavoriteListings(recent: true))))),
+        ]),
+        const SizedBox(height: 22),
+        Text('İlan yönetimi', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+        const SizedBox(height: 8),
+        AccountLink(icon: Icons.inventory_2_outlined, title: 'İlanlarım',
+          subtitle: 'Yayındaki ve incelemedeki ilanlarını yönet',
+          badge: signedIn && statsReady ? count(myListingCount) : null,
+          onTap: () => unawaited(_openMember(const MyListingsScreen()))),
+        AccountLink(icon: Icons.add_circle_outline_rounded, title: 'İlan ver',
+          subtitle: 'Makine veya operatör ilanı oluştur',
+          onTap: () => unawaited(_openMember(const ListingEditorScreen()))),
+        const SizedBox(height: 14),
+        Text('Keşfet ve takip et', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+        const SizedBox(height: 8),
+        AccountLink(icon: Icons.search_rounded, title: 'İlanları keşfet',
+          subtitle: 'Şehir ve kategoriye göre ilan ara', onTap: _openListings),
+        AccountLink(icon: Icons.gavel_outlined, title: 'İhaleler',
+          subtitle: 'İhale fırsatlarını uygulama içinde incele',
+          onTap: () => unawaited(_open(const OpportunityHub(initialTab: 1)))),
+        AccountLink(icon: Icons.work_outline_rounded, title: 'İş talepleri',
+          subtitle: 'Açık iş fırsatlarını görüntüle',
+          onTap: () => unawaited(_open(const OpportunityHub(initialTab: 0)))),
+        AccountLink(icon: Icons.bookmark_outline_rounded, title: 'Favorilerim',
+          subtitle: 'Kaydettiğin ilanlara hızlıca dön',
+          badge: statsReady ? favorites.toString() : null,
+          onTap: () => unawaited(_open(const FavoriteListings()))),
+        AccountLink(icon: Icons.history_rounded, title: 'Son görüntülenenler',
+          subtitle: 'Son baktığın ilanlara devam et',
+          badge: statsReady ? recent.toString() : null,
+          onTap: () => unawaited(_open(const FavoriteListings(recent: true)))),
+        const SizedBox(height: 8),
+        Card(child: Padding(padding: const EdgeInsets.all(16),
+          child: ValueListenableBuilder<ThemeMode>(
+            valueListenable: AppAppearance.mode,
+            builder: (context, mode, child) => DropdownButtonFormField<ThemeMode>(
+              initialValue: mode, decoration: const InputDecoration(labelText: 'Görünüm'),
+              items: const [
+                DropdownMenuItem(value: ThemeMode.system, child: Text('Telefon ayarı')),
+                DropdownMenuItem(value: ThemeMode.light, child: Text('Aydınlık')),
+                DropdownMenuItem(value: ThemeMode.dark, child: Text('Karanlık')),
+              ],
+              onChanged: (value) async {
+                if (value == null) return;
+                try { await AppAppearance.save(value); } catch (_) {
+                  if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Görünüm kaydedilemedi.')));
+                }
+              },
+            ),
           ),
-        ),
-      )),
-    ],
-  );
+        )),
+      ]);
+  }
+}
+
+class _AccountSummaryTile extends StatelessWidget {
+  const _AccountSummaryTile({required this.icon, required this.value, required this.label, required this.onTap});
+  final IconData icon;
+  final String value, label;
+  final VoidCallback onTap;
+  @override Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Material(color: colors.surfaceContainerLow, borderRadius: BorderRadius.circular(17),
+      child: InkWell(onTap: onTap, borderRadius: BorderRadius.circular(17),
+        child: Padding(padding: const EdgeInsets.fromLTRB(9, 12, 9, 11),
+          child: Column(children: [
+            Icon(icon, size: 20, color: colors.primary),
+            const SizedBox(height: 6),
+            Text(value, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+            Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colors.onSurfaceVariant)),
+          ]))));
 }
 
 class _SignInPanel extends StatelessWidget {
@@ -1361,97 +1555,183 @@ class _SignedInPanel extends StatelessWidget {
   );
 }
 
-void _openMemberScreen(BuildContext context, Widget screen) {
-  if (MemberAuth.user.value == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Devam etmek için önce Google ile giriş yap.')));
-    return;
-  }
-  Navigator.of(context).push(MaterialPageRoute<bool>(builder: (_) => screen));
-}
+
 
 class MyListingsScreen extends StatefulWidget {
   const MyListingsScreen({super.key});
   @override State<MyListingsScreen> createState() => _MyListingsScreenState();
 }
 class _MyListingsScreenState extends State<MyListingsScreen> {
-  late Future<List<Map<String,dynamic>>> future;
-  @override void initState() { super.initState(); future=api.myListings(); }
+  late Future<List<Map<String, dynamic>>> future;
+  String filter = 'all';
+  static const filters = <String, String>{
+    'all': 'Tümü', 'live': 'Yayında', 'review': 'İncelemede', 'attention': 'Dikkat gerekiyor',
+  };
+  @override void initState() { super.initState(); future = api.myListings(); }
   Future<void> refresh() async {
-    final next=api.myListings(); setState(()=>future=next);
+    final next = api.myListings(); setState(() => future = next);
     try { await next; } catch (_) {}
   }
-  Future<void> edit(Map<String,dynamic> item) async {
-    final changed=await Navigator.of(context).push<bool>(MaterialPageRoute(
-      builder:(_)=>ListingEditorScreen(existing:item)));
-    if(changed==true && mounted) await refresh();
+  Future<void> newListing() async {
+    final changed = await Navigator.of(context).push<bool>(MaterialPageRoute(
+      builder: (_) => const ListingEditorScreen()));
+    if (changed == true && mounted) await refresh();
   }
-  Future<void> appeal(Map<String,dynamic> item) async {
-    final controller=TextEditingController();
-    final message=await showDialog<String>(context:context,builder:(dialog)=>AlertDialog(
-      title:const Text('İlan incelemesine itiraz'),
-      content:TextField(controller:controller,minLines:3,maxLines:6,maxLength:1000,
-        decoration:const InputDecoration(hintText:'En az 10 karakterle açıklamanı yaz.')),
-      actions:[TextButton(onPressed:()=>Navigator.pop(dialog),child:const Text('Vazgeç')),
-        FilledButton(onPressed:()=>Navigator.pop(dialog,controller.text.trim()),child:const Text('Gönder'))]));
+  Future<void> edit(Map<String, dynamic> item) async {
+    final changed = await Navigator.of(context).push<bool>(MaterialPageRoute(
+      builder: (_) => ListingEditorScreen(existing: item)));
+    if (changed == true && mounted) await refresh();
+  }
+  Future<void> appeal(Map<String, dynamic> item) async {
+    final controller = TextEditingController();
+    final message = await showDialog<String>(context: context, builder: (dialog) => AlertDialog(
+      title: const Text('İlan incelemesine itiraz'),
+      content: TextField(controller: controller, minLines: 3, maxLines: 6, maxLength: 1000,
+        decoration: const InputDecoration(hintText: 'En az 10 karakterle açıklamanı yaz.')),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(dialog), child: const Text('Vazgeç')),
+        FilledButton(onPressed: () => Navigator.pop(dialog, controller.text.trim()), child: const Text('Gönder')),
+      ],
+    ));
     controller.dispose();
-    if(message==null||message.trim().length<10)return;
-    try{
-      await api.appealListing((item['id']??'').toString(),message.trim());
-      if(mounted){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('İtirazın iletildi.')));await refresh();}
-    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(e.toString().replaceFirst('Bad state: ',''))));}
-  }
-  Future<void> remove(Map<String,dynamic> item) async {
-    final yes=await showDialog<bool>(context:context,builder:(d)=>AlertDialog(
-      title:const Text('İlanı kaldır?'),
-      content:Text('"' + (item['title']??'İlan').toString() + '" yayından kaldırılacak.'),
-      actions:[TextButton(onPressed:()=>Navigator.pop(d,false),child:const Text('Vazgeç')),
-        FilledButton(onPressed:()=>Navigator.pop(d,true),child:const Text('Kaldır'))]));
-    if(yes!=true)return;
+    if (message == null || message.trim().length < 10) return;
     try {
-      await api.deleteListing((item['id']??'').toString());
-      if(mounted){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('İlan kaldırıldı.')));await refresh();}
-    } catch(e) {
-      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(e.toString().replaceFirst('Bad state: ',''))));
+      await api.appealListing((item['id'] ?? '').toString(), message.trim());
+      if (mounted) { ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('İtirazın iletildi.'))); await refresh(); }
+    } catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString().replaceFirst('Bad state: ', ''))));
     }
   }
-  String statusLabel(String s)=>switch(s){
-    'approved'=>'Yayında','pending'=>'İncelemede','flagged'=>'Kontrol gerekiyor',
-    'rejected'=>'Reddedildi',_=>'Durum: '+s,
+  Future<void> remove(Map<String, dynamic> item) async {
+    final title = (item['title'] ?? 'İlan').toString();
+    final yes = await showDialog<bool>(context: context, builder: (dialog) => AlertDialog(
+      title: const Text('İlanı kaldır?'),
+      content: Text('"$title" yayından kaldırılacak.'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(dialog, false), child: const Text('Vazgeç')),
+        FilledButton(onPressed: () => Navigator.pop(dialog, true), child: const Text('Kaldır')),
+      ],
+    ));
+    if (yes != true) return;
+    try {
+      await api.deleteListing((item['id'] ?? '').toString());
+      if (mounted) { ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('İlan kaldırıldı.'))); await refresh(); }
+    } catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString().replaceFirst('Bad state: ', ''))));
+    }
+  }
+  bool _matches(Map<String, dynamic> item, String selected) {
+    final status = (item['status'] ?? '').toString();
+    return switch (selected) {
+      'live' => status == 'approved',
+      'review' => status == 'pending',
+      'attention' => status == 'flagged' || status == 'rejected',
+      _ => true,
+    };
+  }
+  int _count(List<Map<String, dynamic>> rows, String selected) =>
+      rows.where((item) => _matches(item, selected)).length;
+  String statusLabel(String status) => switch (status) {
+    'approved' => 'Yayında', 'pending' => 'İncelemede',
+    'flagged' => 'Kontrol gerekiyor', 'rejected' => 'Reddedildi',
+    _ => 'Durum: $status',
   };
-  @override Widget build(BuildContext context)=>Scaffold(
-    appBar:AppBar(title:const Text('İlanlarım'),actions:[
-      IconButton(tooltip:'Yenile',onPressed:refresh,icon:const Icon(Icons.refresh))]),
-    floatingActionButton:FloatingActionButton.extended(
-      onPressed:()async{
-        final changed=await Navigator.of(context).push<bool>(MaterialPageRoute(builder:(_)=>const ListingEditorScreen()));
-        if(changed==true&&mounted)await refresh();
-      },icon:const Icon(Icons.add),label:const Text('Yeni ilan')),
-    body:FutureBuilder<List<Map<String,dynamic>>>(future:future,builder:(context,snap){
-      if(snap.connectionState==ConnectionState.waiting)return const Loading();
-      if(snap.hasError)return Retry(onTap:refresh);
-      final rows=snap.data??const <Map<String,dynamic>>[];
-      if(rows.isEmpty)return const Center(child:Empty('Henüz ilan vermedin.'));
-      return RefreshIndicator(onRefresh:refresh,child:ListView.separated(
-        padding:const EdgeInsets.fromLTRB(16,16,16,96),itemCount:rows.length,
-        separatorBuilder:(_,_)=>const SizedBox(height:10),
-        itemBuilder:(context,index){
-          final item=rows[index],loc=[item['city'],item['district']].where((v)=>v!=null&&v.toString().isNotEmpty).join(' / ');
-          return Card(child:ListTile(
-            title:Text((item['title']??'').toString(),maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.w800)),
-            subtitle:Text(loc+' · '+statusLabel((item['status']??'').toString())),
-            trailing:PopupMenuButton<String>(onSelected:(value){
-              if(value=='edit')unawaited(edit(item));
-              if(value=='appeal')unawaited(appeal(item));
-              if(value=='remove')unawaited(remove(item));
-            },itemBuilder:(_)=>[
-              const PopupMenuItem(value:'edit',child:Text('Düzenle')),
-              if(['flagged','rejected','pending'].contains(item['status']))
-                const PopupMenuItem(value:'appeal',child:Text('İtiraz et')),
-              const PopupMenuItem(value:'remove',child:Text('İlanı kaldır'))]),
-            onTap:()=>unawaited(edit(item))));
-        }));
-    }));
+  Widget _listingCard(Map<String, dynamic> item) {
+    final status = (item['status'] ?? '').toString();
+    final location = [item['city'], item['district']]
+      .where((value) => value != null && value.toString().trim().isNotEmpty).join(' · ');
+    final category = categoryName((item['category'] ?? '').toString());
+    final colors = Theme.of(context).colorScheme;
+    final color = switch (status) {
+      'approved' => colors.primary, 'pending' => colors.tertiary,
+      'flagged' || 'rejected' => colors.error, _ => colors.onSurfaceVariant,
+    };
+    return Card(margin: const EdgeInsets.only(bottom: 10), child: ListTile(
+      contentPadding: const EdgeInsets.fromLTRB(14, 8, 6, 8),
+      leading: CircleAvatar(backgroundColor: color.withValues(alpha: .12),
+        child: Icon(Icons.local_shipping_outlined, color: color)),
+      title: Text((item['title'] ?? 'İlan').toString(), maxLines: 2,
+        overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
+      subtitle: Padding(padding: const EdgeInsets.only(top: 5),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          if (location.isNotEmpty) Text(location, maxLines: 1, overflow: TextOverflow.ellipsis),
+          const SizedBox(height: 5),
+          Wrap(spacing: 7, runSpacing: 5, children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(color: color.withValues(alpha: .12),
+                borderRadius: BorderRadius.circular(8)),
+              child: Text(statusLabel(status), style: TextStyle(
+                color: color, fontSize: 11, fontWeight: FontWeight.w800))),
+            if (category.isNotEmpty) Text(category,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colors.onSurfaceVariant)),
+          ]),
+        ])),
+      trailing: PopupMenuButton<String>(
+        tooltip: 'İlan işlemleri',
+        onSelected: (value) {
+          if (value == 'edit') unawaited(edit(item));
+          if (value == 'appeal') unawaited(appeal(item));
+          if (value == 'remove') unawaited(remove(item));
+        },
+        itemBuilder: (_) => [
+          const PopupMenuItem(value: 'edit', child: Text('Düzenle')),
+          if (['flagged', 'rejected', 'pending'].contains(status))
+            const PopupMenuItem(value: 'appeal', child: Text('İtiraz et')),
+          const PopupMenuItem(value: 'remove', child: Text('İlanı kaldır')),
+        ],
+      ),
+      onTap: () => unawaited(edit(item)),
+    ));
+  }
+  @override Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('İlanlarım'), actions: [
+      IconButton(tooltip: 'Yenile', onPressed: refresh, icon: const Icon(Icons.refresh_rounded)),
+    ]),
+    floatingActionButton: FloatingActionButton.extended(
+      onPressed: newListing, icon: const Icon(Icons.add_rounded), label: const Text('Yeni ilan')),
+    body: FutureBuilder<List<Map<String, dynamic>>>(
+      future: future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) return const Loading();
+        if (snapshot.hasError) return Retry(onTap: refresh);
+        final rows = snapshot.data ?? const <Map<String, dynamic>>[];
+        final visible = rows.where((item) => _matches(item, filter)).toList(growable: false);
+        return RefreshIndicator(onRefresh: refresh, child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+          children: [
+            Card(child: Padding(padding: const EdgeInsets.all(15),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('İlan durumun', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
+                const SizedBox(height: 4),
+                Text('${rows.length} ilan · Durumuna göre filtrele',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                const SizedBox(height: 10),
+                Wrap(spacing: 7, runSpacing: 5, children: [
+                  for (final entry in filters.entries)
+                    ChoiceChip(label: Text('${entry.value} · ${_count(rows, entry.key)}'),
+                      selected: filter == entry.key, onSelected: (_) => setState(() => filter = entry.key)),
+                ]),
+              ]))),
+            const SizedBox(height: 8),
+            if (visible.isEmpty) Padding(padding: const EdgeInsets.symmetric(vertical: 26),
+              child: Column(children: [
+                Empty(rows.isEmpty ? 'Henüz ilan vermedin.' : 'Bu durumda ilan bulunmuyor.'),
+                if (rows.isEmpty) FilledButton.icon(onPressed: newListing,
+                  icon: const Icon(Icons.add_rounded), label: const Text('İlk ilanını oluştur')),
+              ])),
+            ...visible.map(_listingCard),
+          ],
+        ));
+      },
+    ),
+  );
 }
 
 class ListingEditorScreen extends StatefulWidget {
@@ -1589,16 +1869,28 @@ class _ListingEditorScreenState extends State<ListingEditorScreen>{
 }
 class AccountLink extends StatelessWidget {
   const AccountLink({super.key, required this.icon, required this.title,
-    required this.subtitle, required this.onTap});
-  final IconData icon; final String title, subtitle;
+    required this.subtitle, required this.onTap, this.badge});
+  final IconData icon;
+  final String title, subtitle;
   final VoidCallback onTap;
-  @override Widget build(BuildContext context) => Card(
-    child: ListTile(
-      leading: CircleAvatar(backgroundColor: Theme.of(context).colorScheme.primaryContainer, child: Icon(icon)),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
-      subtitle: Text(subtitle), trailing: const Icon(Icons.chevron_right),
-      onTap: onTap,
-    ));
+  final String? badge;
+  @override Widget build(BuildContext context) => Card(child: ListTile(
+    leading: CircleAvatar(
+      backgroundColor: Theme.of(context).colorScheme.primaryContainer, child: Icon(icon)),
+    title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+    subtitle: Text(subtitle),
+    trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+      if (badge != null) Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(color: Theme.of(context).colorScheme.secondaryContainer,
+          borderRadius: BorderRadius.circular(12)),
+        child: Text(badge!, style: TextStyle(
+          color: Theme.of(context).colorScheme.onSecondaryContainer,
+          fontSize: 12, fontWeight: FontWeight.w900))),
+      const SizedBox(width: 6), const Icon(Icons.chevron_right),
+    ]),
+    onTap: onTap,
+  ));
 }
 
 String categoryName(String category) => switch (category) {
@@ -1621,9 +1913,10 @@ String? listingPhotoUrl(YukListing item) {
 }
 
 class ListingCard extends StatelessWidget {
-  const ListingCard({super.key, required this.item, this.onFavoriteChanged});
+  const ListingCard({super.key, required this.item, this.onFavoriteChanged, this.onViewed});
   final YukListing item;
   final VoidCallback? onFavoriteChanged;
+  final VoidCallback? onViewed;
 
   Future<void> contact(BuildContext context, Uri uri) async {
     try {
@@ -1643,9 +1936,12 @@ class ListingCard extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-          builder: (_) => ListingDetail(itemId: item.id),
-        )),
+        onTap: () async {
+          await Navigator.of(context).push<void>(MaterialPageRoute<void>(
+            builder: (_) => ListingDetail(itemId: item.id),
+          ));
+          onViewed?.call();
+        },
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           AspectRatio(
             aspectRatio: 1.72,
