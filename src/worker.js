@@ -7,6 +7,8 @@ import * as nearbySearch from '../functions/api/ai/nearby.js';
 import * as moderationAdmin from '../functions/api/admin-moderation.js';
 import * as priceCheck from '../functions/api/listings/price-check.js';
 import { renderHome } from "../functions/_lib/home-render.js";
+import { membershipExpiryUi } from "./membership-expiry-ui.js";
+import { contactPrivacyUi, redactPublicListingContacts } from "./contact-privacy.js";
 // Former Pages handlers are bundled and dispatched through this single Workers entry.
 import * as health from "../functions/api/saglik.js";
 import * as r0 from "../functions/api/admin-activity.js";
@@ -109,7 +111,10 @@ function secure(response, request, isApi = false) {
   if ((isApi && !publicPhoto) || /^\/(?:admin|giris|ilan-ver|hesabim|yonetici-kurulum)(?:\/|$)/.test(path)) headers.set('x-robots-tag', 'noindex, nofollow');
   let result = new Response(response.body, { status: response.status, statusText: response.statusText, headers });
   if (response.status === 200 && /text\/html/i.test(headers.get('content-type') || '') && !/^\/(?:admin|giris|ilan-ver|hesabim|yonetici-kurulum)(?:\/|$)/.test(path)) {
-    result = new HTMLRewriter().on('link[rel="stylesheet"][href="/assets/site.css"]',{element(el){el.replace('<style data-site-styles>'+siteStyles+'</style>',{html:true})}}).on('head', { element(el) { el.append('<style data-analytics-styles>'+analyticsStyles+'</style><script src="/assets/analytics.js" defer></script>', { html: true }); } }).transform(result);
+    result = new HTMLRewriter().on('link[rel="stylesheet"][href="/assets/site.css"]',{element(el){el.replace('<style data-site-styles>'+siteStyles+'</style>',{html:true})}}).on('head', { element(el) { el.append('<style data-analytics-styles>'+analyticsStyles+'</style><script src="/assets/analytics.js" defer></script><script src="/assets/contact-privacy.js?v=20261124" defer></script>', { html: true }); } }).transform(result);
+  }
+  if (response.status === 200 && /text\/html/i.test(headers.get('content-type') || '') && /^\/(?:admin|hesabim)(?:\/|$)/.test(path)) {
+    result = new HTMLRewriter().on('body', { element(el) { el.append('<script src="/assets/membership-expiry-ui.js?v=20261124" defer></script>', { html: true }); } }).transform(result);
   }
   return result;
 }
@@ -160,6 +165,14 @@ export default {
       return secure(Response.redirect(url.toString(), 301), request);
     }
     const pathname = url.pathname.length > 1 ? url.pathname.replace(/\/+$/, "") : "/";
+    if (pathname === '/assets/membership-expiry-ui.js') {
+      if (!['GET', 'HEAD'].includes(request.method)) return secure(new Response('Method not allowed', { status: 405, headers: { allow: 'GET, HEAD' } }), request);
+      return secure(new Response(request.method === 'HEAD' ? null : membershipExpiryUi, { status: 200, headers: { 'content-type': 'application/javascript; charset=utf-8', 'cache-control': 'public, max-age=300' } }), request);
+    }
+    if (pathname === '/assets/contact-privacy.js') {
+      if (!['GET', 'HEAD'].includes(request.method)) return secure(new Response('Method not allowed', { status: 405, headers: { allow: 'GET, HEAD' } }), request);
+      return secure(new Response(request.method === 'HEAD' ? null : contactPrivacyUi, { status: 200, headers: { 'content-type': 'application/javascript; charset=utf-8', 'cache-control': 'public, max-age=300' } }), request);
+    }
     for (const route of ROUTES) {
       let params = {};
       if (typeof route.path === "string") {
@@ -173,7 +186,10 @@ export default {
       const method = request.method.toLowerCase();
       const handler = route.handlers[`onRequest${method[0].toUpperCase()}${method.slice(1)}`] || (method === "head" ? route.handlers.onRequestGet : undefined);
       if (!handler) return secure(new Response("Method not allowed", { status: 405, headers: { allow: Object.keys(route.handlers).filter((key) => key.startsWith("onRequest")).map((key) => key.slice(8).toUpperCase()).join(", ") } }), request, pathname.startsWith('/api/'));
-      const response = await handler({ request, env, params, ctx });
+      let response = await handler({ request, env, params, ctx });
+      if ((pathname === '/api/listings' && request.method === 'GET') || pathname === '/api/ai/assistant' || pathname === '/api/ai/nearby') {
+        response = await redactPublicListingContacts(response);
+      }
       if (request.method === "HEAD") return secure(new Response(null, { status: response.status, statusText: response.statusText, headers: response.headers }), request, pathname.startsWith('/api/'));
       return secure(response, request, pathname.startsWith('/api/'));
     }

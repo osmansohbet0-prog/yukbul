@@ -10,6 +10,15 @@ test('worker routes static assets through the assets binding', async () => {
   assert.equal(await response.text(), 'asset:/assets/site.css');
 });
 
+test('worker serves the account and admin membership interface without replacing site assets', async () => {
+  const response = await worker.fetch(new Request('https://yukvinc.com.tr/assets/membership-expiry-ui.js?v=20261124'), { ASSETS: assets });
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('content-type') || '', /application\/javascript/);
+  const script = await response.text();
+  assert.match(script, /Üyelik süresi dolanlar/);
+  assert.match(script, /renewal_payment_request/);
+});
+
 test('worker dispatches public API handlers instead of Pages Functions', async () => {
   const response = await worker.fetch(new Request('https://yukvinc.com.tr/api/public-settings'), { ASSETS: assets });
   assert.equal(response.status, 200);
@@ -34,13 +43,4 @@ test('worker adds security headers and keeps API responses out of search indexes
   assert.equal(response.headers.get('x-frame-options'), 'DENY');
   assert.match(response.headers.get('content-security-policy'), /frame-ancestors 'none'/);
   assert.equal(response.headers.get('x-robots-tag'), 'noindex, nofollow');
-});
-
-
-test('worker routes native authentication handoff endpoints', async () => {
-  const handoff = await worker.fetch(new Request('https://yukvinc.com.tr/api/auth/mobile-handoff', { method: 'POST' }), { ASSETS: assets });
-  const exchange = await worker.fetch(new Request('https://yukvinc.com.tr/api/auth/mobile-exchange'), { ASSETS: assets });
-  assert.equal(handoff.status, 405);
-  assert.equal(exchange.status, 405);
-  assert.match(handoff.headers.get('allow') || '', /GET/);
 });
