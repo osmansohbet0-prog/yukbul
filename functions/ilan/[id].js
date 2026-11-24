@@ -16,7 +16,29 @@ const slugify = (value) => String(value || '')
   .slice(0, 80)
   .replace(/-+$/g, '') || 'ilan';
 
-export async function onRequestGet({ params, env }) {
+function expiredListingPage(canonical) {
+  const plans = '<ul><li>Standart — 599 TL / 30 gün</li><li>Öne Çıkan — 2.899 TL / 30 gün</li><li>Premium — 3.000 TL / 30 gün</li></ul>';
+  const html = '<!doctype html><html lang="tr"><head>' + iconTags +
+    '<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<meta name="robots" content="noindex,follow"><title>İlan süresi doldu | YükVinç</title>' +
+    '<meta name="description" content="Bu ilanın yayın süresi sona erdi. İlan sahibi Hesabım bölümünden yenileme seçeneklerini görebilir.">' +
+    '<link rel="canonical" href="' + esc(canonical) + '"><link rel="stylesheet" href="/assets/site.css"></head><body>' +
+    '<header><div class="nav wrap"><a class="brand" href="/">YükVinç</a><a class="post-btn" href="/ilan-ver/">İlan ver</a></div></header>' +
+    '<main class="wrap section narrow"><p class="eyebrow">İlan durumu</p><h1>Bu ilanın yayın süresi doldu</h1>' +
+    '<p class="lead">İlan 30 günlük yayın süresinin ardından askıya alındı. İlan kaydı ve bu adres korunuyor; yeniden yayınlamak için Hesabım bölümünden bir paket seçebilirsin.</p>' +
+    '<h2>Yenileme seçenekleri</h2>' + plans +
+    '<p><a class="button" href="/hesabim/">Hesabımda yenileme seçeneklerini gör</a></p>' +
+    '<p><a class="button secondary" href="/">Tüm ilanlara dön</a></p></main>' +
+    '<script src="/assets/sidebar.js" defer></script></body></html>';
+  return new Response(html, { status: 200, headers: {
+    'content-type': 'text/html; charset=utf-8',
+    'cache-control': 'no-store, max-age=0',
+    'x-robots-tag': 'noindex, follow',
+    'x-content-type-options': 'nosniff'
+  } });
+}
+
+export async function onRequestGet({ params, env, request }) {
   if (!env.DB) return new Response('İlan bulunamadı', { status: 404 });
   const id = String(params.id || '');
 
@@ -25,10 +47,23 @@ export async function onRequestGet({ params, env }) {
       "SELECT id,(SELECT source FROM listing_directory directory_public WHERE directory_public.listing_id=listings.id) AS public_source,listing_type,COALESCE(service_category,category_detail,category) AS category,title,description,city,district,price_amount,price_unit,contact_phone,created_at,updated_at,(SELECT id FROM listing_photos p WHERE p.listing_id=listings.id ORDER BY sort_order LIMIT 1) photo_id FROM listings WHERE id=? AND status='approved' AND (category='operator' OR EXISTS(SELECT 1 FROM users u WHERE u.id=listings.user_id AND u.role='admin') OR trial_expires_at>unixepoch() OR paid_until>unixepoch())"
     ).bind(id).first();
 
-    if (!item) return new Response('İlan bulunamadı', {
-      status: 404,
-      headers: { 'content-type': 'text/plain; charset=utf-8' }
-    });
+    if (!item) {
+      const expired = await env.DB.prepare(
+        "SELECT l.id FROM listings l JOIN users u ON u.id=l.user_id WHERE l.id=? AND l.status='approved' AND COALESCE(l.service_category,l.category_detail,l.category)<>'operator' AND u.role<>'admin' AND MAX(COALESCE(l.trial_expires_at,0),COALESCE(l.paid_until,0))<=unixepoch()"
+      ).bind(id).first();
+      if (expired) {
+        const canonical = new URL(request?.url || 'https://yukvinc.com.tr/ilan/' + encodeURIComponent(id) + '/', 'https://yukvinc.com.tr');
+        canonical.hostname = 'yukvinc.com.tr';
+        canonical.protocol = 'https:';
+        canonical.search = '';
+        canonical.hash = '';
+        return expiredListingPage(canonical.toString());
+      }
+      return new Response('İlan bulunamadı', {
+        status: 404,
+        headers: { 'content-type': 'text/plain; charset=utf-8' }
+      });
+    }
 
     const canonical = 'https://yukvinc.com.tr/ilan/' + encodeURIComponent(id) + '/' + slugify(item.title) + '/';
     if (params.slug !== slugify(item.title)) return Response.redirect(canonical, 301);
@@ -114,9 +149,9 @@ export async function onRequestGet({ params, env }) {
       related + '<h1>' + esc(item.title) + '</h1><p class="lead">' + esc(item.description || '') + '</p>' +
       (item.public_source&&item.public_source!=='owner'?'<p class="directory-notice">Firma bilgileri kamuya açık kaynaklardan derlenmiştir. Düzeltme veya kaldırma için iletişime geçin. <a href="/iletisim/">İletişim</a></p>':'')+'<p><strong>' + esc(price) + '</strong></p>' + photoHtml +
       (item.contact_phone && /^[+0-9 ()-]{7,20}$/.test(item.contact_phone)
-        ? '<p><a class="button" data-metric="phone" href="tel:' + esc(item.contact_phone.replace(/[^+0-9]/g, '')) + '">İlan sahibini ara</a></p>'
+        ? '<p><a class="button" data-metric="phone" href="/api/listings/' + esc(encodeURIComponent(item.id)) + '?contact=call" aria-label="İlan sahibini ara">Ara</a></p>'
         : '<p>Bu ilanda telefon paylaşılmamış.</p>') +
-      (item.contact_phone?'<p><a class="button secondary" data-metric="whatsapp" rel="noopener" href="https://wa.me/'+esc(item.contact_phone.replace(/\D/g,'').replace(/^0/,'90'))+'">WhatsApp ile iletişime geç</a></p>':'')+'<p>İlanın güncelliğini ve uygunluğunu ilan sahibiyle doğrulayın.</p>' +
+      (item.contact_phone?'<p><a class="button secondary" data-metric="whatsapp" rel="noopener" href="/api/listings/'+esc(encodeURIComponent(item.id))+'?contact=whatsapp">WhatsApp ile iletişime geç</a></p>':'')+'<p>İlanın güncelliğini ve uygunluğunu ilan sahibiyle doğrulayın.</p>' +
       '<p><a class="button secondary" href="/">Tüm ilanlara dön</a></p>' +
       '<details><summary>Şikayet et</summary><form id="report-form">' +
       '<label>Şikayet sebebi<textarea name="reason" minlength="5" maxlength="300" required></textarea></label>' +

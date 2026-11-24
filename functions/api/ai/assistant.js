@@ -24,8 +24,7 @@ const safeModelAnswer=async(env,topic,fallback)=>{
   return redactForAI(checked.response).slice(0,300);
  }catch{return fallback}finally{clearTimeout(timer)}
 };
-function phoneHref(value){const digits=String(value||'').replace(/[^+0-9]/g,'');return digits.replace(/\D/g,'').length>=10?digits:''}
-function publicCards(items){return items.slice(0,3).map(x=>({...x,contact_phone:phoneHref(x.contact_phone)}))}
+function publicCards(items){return items.slice(0,3).map(x=>{const item={...x,has_contact_phone:Boolean(x.has_contact_phone)};delete item.contact_phone;return item})}
 function contactResponse(kind){
  const pricing=kind==='pricing';
  return{ name:'YükUsta',answer:pricing?'İlan ücreti ve hizmet kapsamını ilan sahibiyle netleştir. YükVinç’e fiyat/pazarlık veya başka bir konu iletmek için İletişim sayfasını kullan.':'Şikâyet, ilan düzeltme/kaldırma veya başka bir talep için İletişim sayfasından ilan başlığı ve numarasıyla mesaj gönder.',listings:[],alternatives:[],contact_url:'/iletisim/',conversation_id:'',mode:'contact'};
