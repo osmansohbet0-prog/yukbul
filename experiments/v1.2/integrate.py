@@ -11,6 +11,7 @@ marker = "export default v222Extras;"
 if base.count(marker) != 1:
     raise SystemExit("Expected one v222Extras export from the verified Worker 246 code")
 scripts = {
+    "style": (root / "board.css").read_text(encoding="utf-8-sig"),
     "board": (root / "board.js").read_text(encoding="utf-8-sig"),
     "guardian": (root / "guardian-ui.js").read_text(encoding="utf-8-sig"),
 }

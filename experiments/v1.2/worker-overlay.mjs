@@ -5,7 +5,15 @@ import {notificationApi,scanTenderAlerts,sendTenderAlerts} from './notifications
 
 const enabled=(env,name)=>env[name]==='true';
 const replyError=(status,message)=>Response.json({error:message},{status,headers:{'cache-control':'private, no-store'}});
-const urls={board:'/assets/yv-v12-tender-board.js',guardian:'/assets/yv-v12-guardian.js'};
+const urls={board:'/assets/yv-v12-tender-board.js',guardian:'/assets/yv-v12-guardian.js',style:'/assets/yv-v12-tender-board.css'};
+
+const panel=alerts=>'<section class="section-settings" id="yv12-opportunities" data-alerts="'+Number(alerts)+'"><h2>Sana uygun ihaleler</h2></section>';
+const styleTag='<link rel="stylesheet" href="'+urls.style+'?v=2">';
+const scriptTag='<script defer src="'+urls.board+'?v=2"></script>';
+function publicTenderPage(){
+  return new Response('<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,follow"><title>İhale Duyuruları | YükVinç</title><link rel="stylesheet" href="/assets/site.css?v=20261027f">'+styleTag+'</head><body><header><nav class="nav wrap" aria-label="Ana gezinme"><a class="brand" href="/">Yük<span>Vinç</span></a><a class="post-btn" href="/giris/?next=%2Fihale-duyurulari%2F">Giriş yap</a></nav></header><main class="wrap">'+panel(false)+scriptTag+'</main></body></html>',
+    {headers:{'content-type':'text/html; charset=utf-8','cache-control':'private, no-store','x-content-type-options':'nosniff','content-security-policy':"default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'"}});
+}
 
 export function createV12Worker(base,deps,scripts){
   return {
@@ -18,12 +26,12 @@ export function createV12Worker(base,deps,scripts){
       const guardian=enabled(env,'V12_GUARDIAN_ENABLED');
       const alerts=enabled(env,'V12_ALERTS_ENABLED');
       try{
-        if(path===urls.board||path===urls.guardian){
-          const active=path===urls.board?tenders:guardian;
+        if(path===urls.board||path===urls.guardian||path===urls.style){
+          const active=path===urls.guardian?guardian:tenders;
           if(!active)return replyError(404,'Bulunamadı.');
           if(request.method!=='GET'&&request.method!=='HEAD')return replyError(405,'Yöntem desteklenmiyor.');
-          return new Response(request.method==='HEAD'?null:path===urls.board?scripts.board:scripts.guardian,
-            {headers:{'content-type':'application/javascript; charset=utf-8','cache-control':'public, max-age=300','x-content-type-options':'nosniff'}});
+          return new Response(request.method==='HEAD'?null:path===urls.style?scripts.style:path===urls.board?scripts.board:scripts.guardian,
+            {headers:{'content-type':path===urls.style?'text/css; charset=utf-8':'application/javascript; charset=utf-8','cache-control':'public, max-age=300','x-content-type-options':'nosniff'}});
         }
         if(path==='/api/v12/tenders')return tenders?await tenderApi(context,deps):replyError(404,'Bulunamadı.');
         if(path==='/api/v12/tender-guide')return tenders?await guideTender(context,deps):replyError(404,'Bulunamadı.');
@@ -34,11 +42,19 @@ export function createV12Worker(base,deps,scripts){
         return replyError(503,'Bu özellik şu anda kullanılamıyor.');
       }
       const result=await base.fetch(request,env,ctx);
-      if(request.method!=='GET'||!result.ok||!result.headers.get('content-type')?.includes('text/html'))return result;
+      if(request.method!=='GET')return result;
+      if(path==='/ihale-duyurulari'&&tenders&&result.status>=300&&result.status<400){
+        const location=result.headers.get('location');
+        if(location){
+          const target=new URL(location,url);
+          if(target.origin===url.origin&&target.pathname.replace(/\/$/,'')==='/giris')return publicTenderPage();
+        }
+      }
+      if(!result.ok||!result.headers.get('content-type')?.includes('text/html'))return result;
       if(path==='/ihale-duyurulari'&&tenders){
-        return new HTMLRewriter().on('main',{element(main){
-          main.prepend('<section class="section-settings" id="yv12-opportunities" data-alerts="'+Number(alerts)+'"><h2>SANA UYGUN İHALELER</h2></section>',{html:true});
-        }}).on('body',{element(body){body.append('<script defer src="'+urls.board+'"></script>',{html:true})}}).transform(result);
+        return new HTMLRewriter().on('head',{element(head){head.append(styleTag,{html:true})}})
+          .on('main',{element(main){main.prepend(panel(alerts),{html:true})}})
+          .on('body',{element(body){body.append(scriptTag,{html:true})}}).transform(result);
       }
       if(path==='/admin'&&guardian){
         return new HTMLRewriter().on('#panel-usage',{element(panel){
