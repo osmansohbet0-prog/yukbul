@@ -15,5 +15,11 @@ Canlı Worker sürümü `c1ce4909-7638-4691-8085-776bc9c5d074` üç avatar yanı
 
 İlk yüklemede `ASSETS` binding eksik olduğu için ana sayfa hata verdi. Bu yükleme hemen geri alındı; son sürümde `ASSETS` binding açıkça korundu. Canlı ana sayfa, Hesabım, ilan ayrıntısı ve 256×256 WebP görüntüleri yeniden kontrol edildi.
 
+## İlanlarda avatar yerleşimi
+
+`avatar-layout.mjs` ilan sahibi profil fotoğraflarını kartlarda yuvarlak gösterir. İlan ayrıntısında fotoğrafı 52×52 piksel olarak firma adının yanına yerleştirir. Fotoğrafın veri kaynağı ve ilan galerisindeki fotoğraflar değiştirilmez. Bu stil, mevcut `style-src 'self'` güvenlik kuralına uyacak şekilde ayrı bir CSS yanıtından yüklenir.
+
+Canlı Worker sürümü: `a9388d3c-9399-4a01-a206-711f852ddf31`. Önceki çalışan sürüm `c1ce4909-7638-4691-8085-776bc9c5d074` geri dönüş noktasıdır. Gebze Kiralık Vinç ilanında masaüstü ve mobil avatar boyutu, ana sayfadaki ilan kartları ve yatay taşma kontrol edildi.
+
 Ücretli servis, Netgsm ve SMS çağrısı yoktur. Tekil ziyaretçi ve bildirimler takip anahtarı ile bot filtresine bağlıdır. Arama ve WhatsApp sayıları yalnızca tıklamayı gösterir.
 
